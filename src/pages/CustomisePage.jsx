@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 const SIZES = [
   { id: "A4", label: "A4", dims: "210 × 297 mm", price: 2500 },
@@ -39,7 +39,7 @@ export default function CustomisePage({ photoData, onBack }) {
         <div className="flex gap-2.5">
           <button
             type="button"
-            className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0d0c1a]"
+            className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0d0c1a]"
             onClick={onBack}
           >
             ← Back
@@ -96,18 +96,19 @@ export default function CustomisePage({ photoData, onBack }) {
               <button
                 key={s.id}
                 type="button"
-                className={`flex flex-col gap-2 rounded-xl border p-4 text-left transition ${
+                className={`flex flex-col gap-2 rounded-xl border p-4 text-left transition ${ 
                   sizeId === s.id
-                    ? "border-[#6366f1] bg-[#f5f3ff]"
+                    ? "border-[#6366f1] bg-[#f5f3ff] "
                     : "border-[#e7e5f1] bg-white"
+                   
                 }`}
                 onClick={() => setSizeId(s.id)}
               >
-                <span className="flex flex-col gap-1 text-[15px] font-bold">
+                <span className="flex flex-col gap-1 text-[15px]   font-bold">
                   {s.label}
-                  <small className="text-sm font-medium text-[#6b6885]">{s.dims}</small>
+                  <small className="text-sm font-medium text-[#6b6885] ">{s.dims}</small>
                 </span>
-                <span className={`text-sm ${sizeId === s.id ? "text-[#6366f1]" : "text-[#6b6885]"}`}>
+                <span className={`text-sm ${sizeId === s.id ? "text-[#6366f1]" : "text-[#6b6885]" }`}>
                   from {fmt(s.price)}
                 </span>
               </button>
@@ -222,16 +223,7 @@ export default function CustomisePage({ photoData, onBack }) {
             </button>
           </section>
 
-          <section className="rounded-[18px] bg-white p-6 text-[#1b1830] shadow-xl sm:p-7">
-            <h2 className="text-xl font-bold">📸 Photo Tips</h2>
-            <ul className="mt-3 flex list-disc flex-col gap-2 pl-5 text-sm text-[#38354f]">
-              <li>Clear, well-lit face</li>
-              <li>Min 1000px wide</li>
-              <li>Front or ¾ angle</li>
-              <li>No sunglasses</li>
-              <li>No heavy filters</li>
-            </ul>
-          </section>
+         
         </div>
       </main>
     </div>

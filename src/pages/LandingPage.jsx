@@ -1,5 +1,3 @@
-import React from "react";
-
 const stats = [
   { value: "200+", label: "Portraits delivered" },
   { value: "4.9★", label: "Average rating" },
@@ -67,7 +65,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
             </a>
           </nav>
           <div className="flex items-center gap-3">
-            <button className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]">
+            <button className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]">
               Sign In
             </button>
             <button

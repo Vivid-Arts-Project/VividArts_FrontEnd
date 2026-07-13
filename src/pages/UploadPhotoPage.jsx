@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
-export default function UploadPhotoPage({ onNext }) {
+export default function UploadPhotoPage({ onNext, onBack = () => {} }) {
   const [photo, setPhoto] = useState(null);
   const [preview, setPreview] = useState("original");
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -41,7 +41,11 @@ export default function UploadPhotoPage({ onNext }) {
       <header className="mx-auto flex max-w-[700px] items-center justify-between px-8 pt-7">
         <span className="text-sm font-bold tracking-[0.2em]">PENCIL PORTRAITS</span>
         <div className="flex gap-2.5">
-          <button className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0d0c1a]">
+          <button
+            type="button"
+            className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0d0c1a]"
+            onClick={onBack}
+          >
             ← Back
           </button>
           <button className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0d0c1a]">

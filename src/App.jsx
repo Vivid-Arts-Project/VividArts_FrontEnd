@@ -8,22 +8,11 @@ function App() {
 
   return (
     <div>
-      <div className="app-switcher">
-        <button
-          className={page === 'landing' ? 'active' : ''}
-          onClick={() => setPage('landing')}
-        >
-          Landing
-        </button>
-        <button
-          className={page === 'commission' ? 'active' : ''}
-          onClick={() => setPage('commission')}
-        >
-          Commission Flow
-        </button>
-      </div>
-
-      {page === 'landing' ? <LandingPage /> : <CommissionFlow />}
+      {page === 'landing' ? (
+        <LandingPage onNavigate={() => setPage('commission')} />
+      ) : (
+        <CommissionFlow onBack={() => setPage('landing')} />
+      )}
     </div>
   );
 }
