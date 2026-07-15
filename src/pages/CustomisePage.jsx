@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import Stepper from "../components/Stepper";
 
 const SIZES = [
   { id: "A4", label: "A4", dims: "210 × 297 mm", price: 2500 },
@@ -17,11 +18,11 @@ function fmt(n) {
   return `LKR ${n.toLocaleString("en-LK")}`;
 }
 
-export default function CustomisePage({ photoData, onBack }) {
-  const [sizeId, setSizeId] = useState("A3");
-  const [frameId, setFrameId] = useState("classic");
-  const [people, setPeople] = useState(1);
-  const [notes, setNotes] = useState("");
+export default function CustomisePage({ photoData, initialOrder = null, onNext = () => {}, onBack }) {
+  const [sizeId, setSizeId] = useState(initialOrder?.sizeId ?? "A3");
+  const [frameId, setFrameId] = useState(initialOrder?.frameId ?? "classic");
+  const [people, setPeople] = useState(initialOrder?.people ?? 1);
+  const [notes, setNotes] = useState(initialOrder?.notes ?? "");
 
   const size = SIZES.find((s) => s.id === sizeId);
   const frame = FRAMES.find((f) => f.id === frameId);
@@ -31,6 +32,22 @@ export default function CustomisePage({ photoData, onBack }) {
     [size, frame, people]
   );
   const deposit = Math.round(total * 0.5);
+
+  function handleContinue() {
+    onNext({
+      sizeId,
+      frameId,
+      people,
+      notes,
+      size,
+      frame,
+      basePrice: size.price,
+      framePrice: frame.price,
+      peoplePrice: Math.max(0, people - 1) * EXTRA_PERSON,
+      total,
+      deposit,
+    });
+  }
 
   return (
     <div className="min-h-screen bg-[#0d0c1a] pb-16 font-sans text-white">
@@ -50,22 +67,8 @@ export default function CustomisePage({ photoData, onBack }) {
         </div>
       </header>
 
-      <div className="mx-auto mt-7 flex max-w-7xl items-center gap-2.5 px-8">
-        {[1, 2, 3, 4].map((n) => (
-          <span
-            key={n}
-            className={`flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-              n === 2
-                ? "bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white"
-                : n === 1
-                ? "bg-[#6366f1]/20 text-[#a78bfa]"
-                : "bg-white/10 text-[#aaa6c8]"
-            }`}
-          >
-            {n === 1 ? "✓" : n}
-          </span>
-        ))}
-        <span className="text-sm text-[#c9c6e0]">Customise Your Portrait</span>
+      <div className="mx-auto mt-7 max-w-7xl px-8">
+        <Stepper current={2} />
       </div>
 
       <main className="mx-auto mt-7 grid max-w-7xl gap-6 px-8 lg:grid-cols-[1.5fr_1fr] lg:items-start">
@@ -218,7 +221,11 @@ export default function CustomisePage({ photoData, onBack }) {
               </span>
             </div>
 
-            <button className="mt-4 w-full rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-white">
+            <button
+              type="button"
+              onClick={handleContinue}
+              className="mt-4 w-full rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-white"
+            >
               Continue to payment →
             </button>
           </section>

@@ -1,9 +1,10 @@
 import { useState } from "react";
+import Stepper from "../components/Stepper";
 
-export default function UploadPhotoPage({ onNext, onBack = () => {} }) {
-  const [photo, setPhoto] = useState(null);
+export default function UploadPhotoPage({ onNext, onBack = () => {}, initialPhotoData = null }) {
+  const [photo, setPhoto] = useState(initialPhotoData?.photo ?? null);
   const [preview, setPreview] = useState("original");
-  const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(initialPhotoData?.previewUrl ?? null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
 
@@ -54,20 +55,8 @@ export default function UploadPhotoPage({ onNext, onBack = () => {} }) {
         </div>
       </header>
 
-      <div className="mx-auto mt-7 flex max-w-[700px] items-center gap-2.5 px-8">
-        {[1, 2, 3, 4].map((n) => (
-          <span
-            key={n}
-            className={`flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-              n === 1
-                ? "bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white"
-                : "bg-white/10 text-[#aaa6c8]"
-            }`}
-          >
-            {n}
-          </span>
-        ))}
-        <span className="text-sm text-[#c9c6e0]">Upload Photo</span>
+      <div className="mx-auto mt-7 max-w-[700px] px-8">
+        <Stepper current={1} />
       </div>
 
       <main className="mx-auto mt-7 max-w-[700px] px-8">

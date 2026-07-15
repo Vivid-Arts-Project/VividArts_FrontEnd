@@ -1,7 +1,17 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
+import Stepper from '../components/Stepper';
 
-const prices = { base: 3800, frame: 800, people: 500 }
+const fallbackOrder = {
+  size: { id: 'A3', label: 'A3' },
+  frame: { id: 'classic', label: 'Classic' },
+  people: 1,
+  basePrice: 3800,
+  framePrice: 800,
+  peoplePrice: 0,
+  total: 4600,
+  deposit: 2300,
+}
 const currencies = [
   { code: 'LKR', label: 'LKR – Sri Lankan rupee', rate: 1 },
 
@@ -29,7 +39,8 @@ function submitCheckoutForm(actionUrl, fields) {
   form.submit()
 }
 
-export default function Payment({ onBack = () => {}, onComplete = () => {} }) {
+export default function Payment({ order, onBack = () => {}, onComplete = () => {} }) {
+  const safeOrder = order || fallbackOrder
   const [currency] = useState(currencies[0])
   const [isProcessing, setIsProcessing] = useState(false)
   const [orderId, setOrderId] = useState(null);
@@ -96,6 +107,12 @@ export default function Payment({ onBack = () => {}, onComplete = () => {} }) {
     try {
       const result = await api.createPayhereCheckout({
         currency: currency.code,
+        order: {
+          sizeId: safeOrder.sizeId || safeOrder.size?.id,
+          frameId: safeOrder.frameId || safeOrder.frame?.id,
+          people: safeOrder.people,
+          notes: safeOrder.notes || ''
+        },
         customer: {
           firstName: 'Vivid',
           lastName: 'Arts',
@@ -120,43 +137,14 @@ export default function Payment({ onBack = () => {}, onComplete = () => {} }) {
     }
   };
 
-  const total = prices.base + prices.frame + prices.people
-  const dueAmount = Math.round(total * 0.5)
+  const total = safeOrder.total
+  const dueAmount = safeOrder.deposit
   const displayValue = (amount) => formatMoney(amount, currency.code, currency.rate)
 
   if (showConfirmation) {
     return (
       <div className="max-w-[980px] mx-auto p-[18px]">
-        <div className="bg-white border-b border-black/10 px-3 md:px-[22px] py-3 md:py-[18px] rounded-[20px] mb-[18px]">
-          <div className="flex items-center justify-center gap-0.5 md:gap-2 overflow-x-auto">
-            <div className="flex items-center gap-1 md:gap-2 shrink-0">
-              <div className="w-7 h-7 md:w-[30px] md:h-[30px] shrink-0 rounded-full flex items-center justify-center text-xs font-semibold bg-[#534ab7] text-white">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              </div>
-              <span className="hidden md:inline text-xs font-medium text-[#534ab7] whitespace-nowrap">Upload & customise</span>
-            </div>
-            <div className="w-4 md:w-[54px] h-px bg-[#534ab7] mx-1 md:mx-2 shrink-0"></div>
-            <div className="flex items-center gap-1 md:gap-2 shrink-0">
-              <div className="w-7 h-7 md:w-[30px] md:h-[30px] shrink-0 rounded-full flex items-center justify-center text-xs font-semibold bg-[#534ab7] text-white">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              </div>
-              <span className="hidden md:inline text-xs font-medium text-[#534ab7] whitespace-nowrap">Review</span>
-            </div>
-            <div className="w-4 md:w-[54px] h-px bg-[#534ab7] mx-1 md:mx-2 shrink-0"></div>
-            <div className="flex items-center gap-1 md:gap-2 shrink-0">
-              <div className="w-7 h-7 md:w-[30px] md:h-[30px] shrink-0 rounded-full flex items-center justify-center text-xs font-semibold bg-[#534ab7] text-white">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              </div>
-              <span className="hidden md:inline text-xs font-medium text-[#534ab7] whitespace-nowrap">Payment</span>
-            </div>
-            <div className="w-4 md:w-[54px] h-px bg-[#534ab7] mx-1 md:mx-2 shrink-0"></div>
-            <div className="flex items-center gap-1 md:gap-2 shrink-0">
-              <div className="w-7 h-7 md:w-[30px] md:h-[30px] shrink-0 rounded-full flex items-center justify-center text-xs font-semibold bg-[#534ab7] text-white outline outline-[3px] outline-[rgba(127,119,221,0.18)]">4</div>
-              <span className="hidden md:inline text-xs font-medium text-[#534ab7] whitespace-nowrap">Confirmation</span>
-            </div>
-          </div>
-          <p className="md:hidden text-center text-[11px] font-medium text-[#534ab7] mt-2">Step 4 of 4 — Confirmation</p>
-        </div>
+        <Stepper current={4} />
 
         <div className="bg-white rounded-[18px] border border-black/10 text-[#222] text-center p-6 sm:p-10">
           <div className="text-[48px] sm:text-[60px] mb-5">✅</div>
@@ -203,39 +191,12 @@ export default function Payment({ onBack = () => {}, onComplete = () => {} }) {
         </div>
 
         <nav className="flex gap-6 max-[720px]:hidden">
-            <a href="#" className="text-[#5a3fbb] text-base font-bold bg-[rgba(109,91,255,0.12)] px-[18px] py-[10px] rounded-full transition-colors hover:text-[#3c2ca8] hover:bg-[rgba(109,91,255,0.18)]">Gallery</a>
+            <a href="/" className="text-[#5a3fbb] text-base font-bold bg-[rgba(109,91,255,0.12)] px-[18px] py-[10px] rounded-full transition-colors hover:text-[#3c2ca8] hover:bg-[rgba(109,91,255,0.18)]">Home</a>
             <a href="#" className="text-[#5a3fbb] text-base font-bold bg-[rgba(109,91,255,0.12)] px-[18px] py-[10px] rounded-full transition-colors hover:text-[#3c2ca8] hover:bg-[rgba(109,91,255,0.18)]">My Orders</a>
         </nav>
     </header>
 
-      <div className="bg-white border-b border-black/10 px-3 md:px-[22px] py-3 md:py-[18px] rounded-[20px] mb-[18px]">
-        <div className="flex items-center justify-center gap-0.5 md:gap-2 overflow-x-auto">
-          <div className="flex items-center gap-1 md:gap-2 shrink-0">
-            <div className="w-7 h-7 md:w-[30px] md:h-[30px] shrink-0 rounded-full flex items-center justify-center text-xs font-semibold bg-[#534ab7] text-white">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            </div>
-            <span className="hidden md:inline text-xs font-medium text-[#534ab7] whitespace-nowrap">Upload & customise</span>
-          </div>
-          <div className="w-4 md:w-[54px] h-px bg-[#534ab7] mx-1 md:mx-2 shrink-0"></div>
-          <div className="flex items-center gap-1 md:gap-2 shrink-0">
-            <div className="w-7 h-7 md:w-[30px] md:h-[30px] shrink-0 rounded-full flex items-center justify-center text-xs font-semibold bg-[#534ab7] text-white">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            </div>
-            <span className="hidden md:inline text-xs font-medium text-[#534ab7] whitespace-nowrap">Review</span>
-          </div>
-          <div className="w-4 md:w-[54px] h-px bg-[#534ab7] mx-1 md:mx-2 shrink-0"></div>
-          <div className="flex items-center gap-1 md:gap-2 shrink-0">
-            <div className="w-7 h-7 md:w-[30px] md:h-[30px] shrink-0 rounded-full flex items-center justify-center text-xs font-semibold bg-[#534ab7] text-white outline outline-[3px] outline-[rgba(127,119,221,0.18)]">3</div>
-            <span className="hidden md:inline text-xs font-medium text-[#534ab7] whitespace-nowrap">Payment</span>
-          </div>
-          <div className="w-4 md:w-[54px] h-px bg-[#ddd] mx-1 md:mx-2 shrink-0"></div>
-          <div className="flex items-center gap-1 md:gap-2 shrink-0">
-            <div className="w-7 h-7 md:w-[30px] md:h-[30px] shrink-0 rounded-full flex items-center justify-center text-xs font-semibold bg-[#e4e4f0] text-[#999]">4</div>
-            <span className="hidden md:inline text-xs font-medium text-[#bbb]">Confirmation</span>
-          </div>
-        </div>
-        <p className="md:hidden text-center text-[11px] font-medium text-[#534ab7] mt-2">Step 3 of 4 — Payment</p>
-      </div>
+      <Stepper current={3} />
 
       <main className="grid grid-cols-[1fr_340px] max-[720px]:grid-cols-1 gap-5 items-start">
         <div>
@@ -320,14 +281,20 @@ export default function Payment({ onBack = () => {}, onComplete = () => {} }) {
               </div>
               <div>
                 <div className="text-sm font-medium">Pencil portrait commission</div>
-                <div className="text-xs text-[#6b6b80] mt-0.5">A3 · 2 subjects · Classic frame</div>
+                <div className="text-xs text-[#6b6b80] mt-0.5">
+                  {safeOrder.size.label} · {safeOrder.people} subject{safeOrder.people > 1 ? 's' : ''} · {safeOrder.frame.label} frame
+                </div>
               </div>
             </div>
 
             <div>
-              <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Base price (A3)</span><span className="font-medium">{displayValue(prices.base)}</span></div>
-              <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Classic frame</span><span className="font-medium">{displayValue(prices.frame)}</span></div>
-              <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">2nd subject</span><span className="font-medium">{displayValue(prices.people)}</span></div>
+              <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Base price ({safeOrder.size.label})</span><span className="font-medium">{displayValue(safeOrder.basePrice)}</span></div>
+              {safeOrder.framePrice > 0 && (
+                <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">{safeOrder.frame.label} frame</span><span className="font-medium">{displayValue(safeOrder.framePrice)}</span></div>
+              )}
+              {safeOrder.peoplePrice > 0 && (
+                <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Extra subjects</span><span className="font-medium">{displayValue(safeOrder.peoplePrice)}</span></div>
+              )}
               <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Delivery</span><span className="font-medium">Courier</span></div>
             </div>
 
@@ -357,9 +324,11 @@ export default function Payment({ onBack = () => {}, onComplete = () => {} }) {
             <div className="flex justify-between text-xs py-[5px]"><span className="text-[#6b6b80]">Delivery estimate</span><span className="text-[#534ab7] font-medium">7–10 working days</span></div>
           </div>
 
-          <button type="button" className="border border-[#534ab7]/30 rounded-full px-6 py-[14px] cursor-pointer transition-colors bg-transparent text-[#534ab7] hover:bg-[#534ab7]/[0.08] w-full mt-[18px]" onClick={onBack}>
-            ← Back to details
-          </button>
+          <div className="rounded-full p-[1.5px] bg-gradient-to-r from-[#7f6cff] to-[#5cd1ff] w-full mt-[18px]">
+            <button type="button" className="w-full rounded-full px-6 py-[14px] cursor-pointer transition-colors bg-white text-black hover:bg-gray-50" onClick={onBack}>
+              ← Back to details
+            </button>
+          </div>
         </div>
       </main>
     </div>
