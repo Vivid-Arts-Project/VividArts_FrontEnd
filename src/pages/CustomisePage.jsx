@@ -18,11 +18,11 @@ function fmt(n) {
   return `LKR ${n.toLocaleString("en-LK")}`;
 }
 
-export default function CustomisePage({ photoData, onBack }) {
-  const [sizeId, setSizeId] = useState("A3");
-  const [frameId, setFrameId] = useState("classic");
-  const [people, setPeople] = useState(1);
-  const [notes, setNotes] = useState("");
+export default function CustomisePage({ photoData, initialOrder = null, onNext = () => {}, onBack }) {
+  const [sizeId, setSizeId] = useState(initialOrder?.sizeId ?? "A3");
+  const [frameId, setFrameId] = useState(initialOrder?.frameId ?? "classic");
+  const [people, setPeople] = useState(initialOrder?.people ?? 1);
+  const [notes, setNotes] = useState(initialOrder?.notes ?? "");
 
   const size = SIZES.find((s) => s.id === sizeId);
   const frame = FRAMES.find((f) => f.id === frameId);
@@ -32,6 +32,22 @@ export default function CustomisePage({ photoData, onBack }) {
     [size, frame, people]
   );
   const deposit = Math.round(total * 0.5);
+
+  function handleContinue() {
+    onNext({
+      sizeId,
+      frameId,
+      people,
+      notes,
+      size,
+      frame,
+      basePrice: size.price,
+      framePrice: frame.price,
+      peoplePrice: Math.max(0, people - 1) * EXTRA_PERSON,
+      total,
+      deposit,
+    });
+  }
 
   return (
     <div className="min-h-screen bg-[#0d0c1a] pb-16 font-sans text-white">

@@ -1,10 +1,10 @@
 import { useState } from "react";
 import ProgressBar from "../components/ProgressBar";
 
-export default function UploadPhotoPage({ onNext, onBack = () => {} }) {
-  const [photo, setPhoto] = useState(null);
+export default function UploadPhotoPage({ onNext, onBack = () => {}, initialPhotoData = null }) {
+  const [photo, setPhoto] = useState(initialPhotoData?.photo ?? null);
   const [preview, setPreview] = useState("original");
-  const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(initialPhotoData?.previewUrl ?? null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState("");
 
