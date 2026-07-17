@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import ProgressBar from "../components/ProgressBar";
 
 const SIZES = [
   { id: "A4", label: "A4", dims: "210 × 297 mm", price: 2500 },
@@ -50,23 +51,7 @@ export default function CustomisePage({ photoData, onBack }) {
         </div>
       </header>
 
-      <div className="mx-auto mt-7 flex max-w-7xl items-center gap-2.5 px-8">
-        {[1, 2, 3, 4].map((n) => (
-          <span
-            key={n}
-            className={`flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-              n === 2
-                ? "bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white"
-                : n === 1
-                ? "bg-[#6366f1]/20 text-[#a78bfa]"
-                : "bg-white/10 text-[#aaa6c8]"
-            }`}
-          >
-            {n === 1 ? "✓" : n}
-          </span>
-        ))}
-        <span className="text-sm text-[#c9c6e0]">Customise Your Portrait</span>
-      </div>
+      <ProgressBar step={2} maxWidthClass={"max-w-7xl"} />
 
       <main className="mx-auto mt-7 grid max-w-7xl gap-6 px-8 lg:grid-cols-[1.5fr_1fr] lg:items-start">
         <section className="rounded-[18px] bg-white p-6 text-[#1b1830] shadow-xl sm:p-7">
@@ -218,7 +203,10 @@ export default function CustomisePage({ photoData, onBack }) {
               </span>
             </div>
 
-            <button className="mt-4 w-full rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-white">
+            <button
+              className="mt-4 w-full rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-white"
+              style={{ color: "#ffffff" }}
+            >
               Continue to payment →
             </button>
           </section>
