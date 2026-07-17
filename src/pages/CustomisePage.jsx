@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import Stepper from "../components/Stepper";
+import ProgressBar from "../components/ProgressBar";
 
 const SIZES = [
   { id: "A4", label: "A4", dims: "210 × 297 mm", price: 2500 },
@@ -67,9 +67,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
         </div>
       </header>
 
-      <div className="mx-auto mt-7 max-w-7xl px-8">
-        <Stepper current={2} />
-      </div>
+      <ProgressBar step={2} maxWidthClass={"max-w-7xl"} />
 
       <main className="mx-auto mt-7 grid max-w-7xl gap-6 px-8 lg:grid-cols-[1.5fr_1fr] lg:items-start">
         <section className="rounded-[18px] bg-white p-6 text-[#1b1830] shadow-xl sm:p-7">
@@ -222,9 +220,8 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
             </div>
 
             <button
-              type="button"
-              onClick={handleContinue}
               className="mt-4 w-full rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-white"
+              style={{ color: "#ffffff" }}
             >
               Continue to payment →
             </button>
