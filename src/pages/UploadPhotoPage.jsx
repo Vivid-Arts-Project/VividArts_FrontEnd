@@ -1,5 +1,5 @@
 import { useState } from "react";
-import ProgressBar from "../components/ProgressBar";
+import Stepper from "../components/Stepper";
 
 export default function UploadPhotoPage({ onNext, onBack = () => {}, initialPhotoData = null }) {
   const [photo, setPhoto] = useState(initialPhotoData?.photo ?? null);
@@ -55,7 +55,9 @@ export default function UploadPhotoPage({ onNext, onBack = () => {}, initialPhot
         </div>
       </header>
 
-      <ProgressBar step={1} maxWidthClass={"max-w-[700px]"} />
+      <div className="mx-auto mt-7 max-w-[700px] px-8">
+        <Stepper current={1} />
+      </div>
 
       <main className="mx-auto mt-7 max-w-[700px] px-8">
         <div className="rounded-[18px] bg-white p-7 text-[#1b1830] shadow-xl">
