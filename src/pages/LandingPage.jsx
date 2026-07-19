@@ -65,12 +65,15 @@ export default function LandingPage({ onNavigate = () => {} }) {
             </a>
           </nav>
           <div className="flex items-center gap-3">
-            <button className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]">
+            <button
+              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
+              onClick={() => onNavigate('login')}
+            >
               Sign In
             </button>
             <button
               className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
-              onClick={onNavigate}
+              onClick={() => onNavigate('commission')}
             >
               Commission a Portrait
             </button>
@@ -99,7 +102,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
             <div className="mb-11 flex flex-wrap gap-3.5">
               <button
                 className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
-                onClick={onNavigate}
+                onClick={() => onNavigate('commission')}
               >
                 Commission Now →
               </button>
