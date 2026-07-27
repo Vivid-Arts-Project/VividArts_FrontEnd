@@ -225,6 +225,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
               type="button"
               onClick={handleContinue}
               className="mt-4 w-full rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-white"
+              style={{ color: "#ffffff" }}
             >
               Continue to payment →
             </button>

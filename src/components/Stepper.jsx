@@ -1,4 +1,4 @@
-const STEPS = ['Upload photo', 'Customise', 'Payment', 'Confirmation'];
+const STEPS = ['Upload photo', 'Customize', 'Payment', 'Confirmation'];
 
 export default function Stepper({ current }) {
   return (
