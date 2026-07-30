@@ -1,0 +1,67 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ── ADMIN DESIGN TOKENS (Vivid Arts admin panel) ──
+   Tailwind v4 reads custom utilities straight from this @theme block —
+   there's no tailwind.config.js in this project, so this replaces it. */
+@theme {
+  --color-va-blue: #2B8FE0;
+  --color-va-blue-2: #1a7acc;
+  --color-va-purple: #5B3FA8;
+  --color-va-purple-mid: #7B4FC8;
+  --color-va-dark: #12102A;
+  --color-va-dark2: #1E1848;
+  --color-va-dark3: #2A2660;
+  --color-va-bg: #F4F3FA;
+  --color-va-bg2: #EDEAF6;
+  --color-va-white: #FFFFFF;
+  --color-va-border: #DDD9F5;
+  --color-va-border2: #C8C2E8;
+  --color-va-text: #0D0D0D;
+  --color-va-text2: #2A2640;
+  --color-va-text3: #7A748F;
+  --color-va-success: #2D9E6E;
+  --color-va-success-bg: #E8F8F1;
+  --color-va-warn: #C97C1A;
+  --color-va-warn-bg: #FEF3E5;
+  --color-va-danger: #C9353B;
+  --color-va-danger-bg: #FEF0F0;
+  --color-va-info: #2563EB;
+  --color-va-info-bg: #EFF6FF;
+
+  --background-image-grad: linear-gradient(135deg, #2B8FE0 0%, #7B4FC8 55%, #5B3FA8 100%);
+  --background-image-grad-dark: linear-gradient(145deg, #12102A 0%, #1E1848 100%);
+  --background-image-grad-soft: linear-gradient(135deg, #EEF4FD 0%, #F0EBFA 100%);
+
+  --font-outfit: 'Outfit', sans-serif;
+  --font-sans: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --radius-va: 10px;
+  --radius-va-sm: 6px;
+
+  --shadow-va: 0 2px 12px rgba(91,63,168,.07);
+  --shadow-va-md: 0 6px 24px rgba(91,63,168,.12);
+
+  --animate-toast: slideUp .25s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Plain CSS vars too, for the couple of spots that reference var(--va-*) directly */
+:root {
+  --sidebar-w: 230px;
+  --topbar-h: 60px;
+}
+
+/* Scoped reset for the admin panel only — NOT applied to <body>,
+   so it never touches your landing page's own background/fonts. */
+.va-admin {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--color-va-bg);
+  color: var(--color-va-text);
+  min-height: 100vh;
+}
