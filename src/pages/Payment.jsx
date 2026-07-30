@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { api } from '../api';
 import Stepper from '../components/Stepper';
 
+// 💡 1. Notification function එක Import කරගන්න (path එක exact location එකට අනුව)
+import { showNotification } from './NotificationContainer';
+
 const fallbackOrder = {
   size: { id: 'A3', label: 'A3' },
   frame: { id: 'classic', label: 'Classic' },
@@ -14,7 +17,6 @@ const fallbackOrder = {
 }
 const currencies = [
   { code: 'LKR', label: 'LKR – Sri Lankan rupee', rate: 1 },
-
 ]
 
 function formatMoney(amount, code, rate) {
@@ -52,13 +54,11 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [successMessage, setSuccessMessage] = useState('Your deposit has been received.');
 
-
- // Fetch prices on mount
+  // Fetch prices on mount
   useEffect(() => {
     api.getPrices()
       .then(data => {
         if (data.success) {
-          // Update prices if needed
           console.log('Prices loaded:', data.prices);
         }
       })
@@ -71,6 +71,8 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
     const paymentStatus = params.get('payment');
 
     if (paymentStatus === 'cancelled') {
+      // 💡 2. Payment cancel වුණොත් Warning/Error Toast එකක් පෙන්නන්න
+      showNotification('warning', 'Payment was cancelled. You can try again.');
       window.history.replaceState({}, document.title, window.location.pathname);
       return;
     }
@@ -85,17 +87,25 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
           throw new Error(result.error || 'Unable to read payment status');
         }
 
-        setOrderId(result.payment.orderId)
-        setSuccessMessage(
-          result.payment.status === 'completed'
-            ? 'Your PayHere payment has been confirmed.'
-            : 'Your PayHere payment was submitted. We will confirm it as soon as PayHere sends the notification.'
-        )
+        setOrderId(result.payment.orderId);
+        
+        const msg = result.payment.status === 'completed'
+          ? 'Your PayHere payment has been confirmed.'
+          : 'Your PayHere payment was submitted. We will confirm it as soon as PayHere sends the notification.';
+        
+        setSuccessMessage(msg);
         setShowConfirmation(true);
+
+        // 💡 3. Payment එක සාර්ථක වුණාම Auto Payment Success Toast එක පෙන්නන්න
+        showNotification('payment_success', msg);
+
         window.history.replaceState({}, document.title, window.location.pathname);
       })
       .catch((err) => {
-        setError(err.message || 'Unable to check payment status. Please contact support.');
+        const errText = err.message || 'Unable to check payment status. Please contact support.';
+        setError(errText);
+        // 💡 4. Error එකක් ආවොත් Error Toast එක පෙන්නන්න
+        showNotification('error', errText);
       })
       .finally(() => setIsProcessing(false));
   }, []);
@@ -131,7 +141,10 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
       setOrderId(result.orderId);
       submitCheckoutForm(result.checkoutUrl, result.checkoutFields);
     } catch (err) {
-      setError(err.message || 'Payment failed. Please try again.');
+      const errText = err.message || 'Payment failed. Please try again.';
+      setError(errText);
+      // 💡 5. PayHere Redirect වෙන්න කලින් error එකක් ආවොත් Toast එක පෙන්නන්න
+      showNotification('error', errText);
       console.error('Payment error:', err);
       setIsProcessing(false);
     }
@@ -181,7 +194,6 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
     );
   }
 
-
   return (
     <div className="max-w-[980px] mx-auto p-[18px]">
       <header className="h-[88px] max-[720px]:h-auto bg-white flex items-center justify-between px-14 max-[720px]:px-4 max-[720px]:py-[14px] border-b border-[#e7e2ff] mb-[18px] max-[720px]:flex-wrap">
@@ -194,7 +206,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
             <a href="/" className="text-[#5a3fbb] text-base font-bold bg-[rgba(109,91,255,0.12)] px-[18px] py-[10px] rounded-full transition-colors hover:text-[#3c2ca8] hover:bg-[rgba(109,91,255,0.18)]">Home</a>
             <a href="#" className="text-[#5a3fbb] text-base font-bold bg-[rgba(109,91,255,0.12)] px-[18px] py-[10px] rounded-full transition-colors hover:text-[#3c2ca8] hover:bg-[rgba(109,91,255,0.18)]">My Orders</a>
         </nav>
-    </header>
+      </header>
 
       <Stepper current={3} />
 

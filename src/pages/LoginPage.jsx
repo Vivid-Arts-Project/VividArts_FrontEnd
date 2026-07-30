@@ -1,5 +1,8 @@
 import { useState } from 'react';
 
+// 💡 1. Notification function එක Import කරගන්න (path එක exact location එකට අනුව සකසන්න)
+import { showNotification } from './NotificationContainer';
+
 function LoginPage({ onNavigate }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,9 +26,17 @@ function LoginPage({ onNavigate }) {
 
       localStorage.setItem('token', data.token);
       setMessage('Login successful.');
+      
+      // 💡 2. Login එක Success වුණාම Toast එක පෙන්වීම
+      showNotification('success', 'Login successful! Welcome back.');
+      
       onNavigate('profile');
     } catch (error) {
-      setMessage(error.message || 'Login failed');
+      const errText = error.message || 'Login failed. Please check your credentials.';
+      setMessage(errText);
+
+      // 💡 3. Login එක Fail වුණාම Error Toast එක පෙන්වීම
+      showNotification('error', errText);
     }
   };
 
@@ -44,7 +55,7 @@ function LoginPage({ onNavigate }) {
         </div>
         <button type="submit" style={{ width: '100%', padding: '10px 14px', backgroundColor: '#111827', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Login</button>
       </form>
-      {message && <p style={{ marginTop: '12px', color: '#b91c1c' }}>{message}</p>}
+      {message && <p style={{ marginTop: '12px', color: message.includes('successful') ? '#059669' : '#b91c1c' }}>{message}</p>}
       <p style={{ marginTop: '16px' }}>
         New here?{' '}
         <button type="button" onClick={() => onNavigate('register')} style={{ color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Create an account</button>
