@@ -1,6 +1,9 @@
 import { useState } from "react";
 import Stepper from "../components/Stepper";
 
+// 💡 1. Notification function එක Import කරගන්න
+import { showNotification } from "./NotificationContainer";
+
 export default function UploadPhotoPage({ onNext, onBack = () => {}, initialPhotoData = null }) {
   const [photo, setPhoto] = useState(initialPhotoData?.photo ?? null);
   const [preview, setPreview] = useState("original");
@@ -13,11 +16,17 @@ export default function UploadPhotoPage({ onNext, onBack = () => {}, initialPhot
     if (!file) return;
 
     if (!["image/jpeg", "image/png"].includes(file.type)) {
-      setError("Only JPG or PNG files are allowed.");
+      const errText = "Only JPG or PNG files are allowed.";
+      setError(errText);
+      // 💡 Validation Error Toast
+      showNotification("error", errText);
       return;
     }
     if (file.size > 20 * 1024 * 1024) {
-      setError("File must be under 20MB.");
+      const errText = "File must be under 20MB.";
+      setError(errText);
+      // 💡 Validation Error Toast
+      showNotification("error", errText);
       return;
     }
 
@@ -25,13 +34,20 @@ export default function UploadPhotoPage({ onNext, onBack = () => {}, initialPhot
     setPhoto(file);
 
     const reader = new FileReader();
-    reader.onload = (e) => setPreviewUrl(e.target.result);
+    reader.onload = (e) => {
+      setPreviewUrl(e.target.result);
+      // 💡 2. Photo එක සාර්ථකව Load වුණාම Success Notification එකක් පෙන්වීම
+      showNotification("success", "Photo uploaded successfully!");
+    };
     reader.readAsDataURL(file);
   }
 
   function handleNext() {
     if (!photo) {
-      setError("Please upload a photo before continuing.");
+      const errText = "Please upload a photo before continuing.";
+      setError(errText);
+      // 💡 Error Notification
+      showNotification("error", errText);
       return;
     }
     onNext({ photo, previewUrl });
