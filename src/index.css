@@ -1,6 +1,17 @@
 @import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
+html {
+  scroll-behavior: smooth;
+}
+
+#home,
+#gallery,
+#how-it-works,
+#about {
+  scroll-margin-top: 88px;
+}
+
 /* ── ADMIN DESIGN TOKENS (Vivid Arts admin panel) ──
    Tailwind v4 reads custom utilities straight from this @theme block —
    there's no tailwind.config.js in this project, so this replaces it. */
@@ -49,6 +60,295 @@
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+.notification-pop {
+  animation: notificationPop .22s cubic-bezier(.2,.8,.2,1);
+  transform-origin: top right;
+}
+
+.toast-progress {
+  animation: toastProgress 2.8s linear forwards;
+  transform-origin: left;
+}
+
+@keyframes notificationPop {
+  from { opacity: 0; transform: translateY(-8px) scale(.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toastProgress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+.Toastify__toast.app-notification {
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1px solid #e7e3f5;
+  border-radius: 16px;
+  background: rgba(255,255,255,.98);
+  color: #2a2640;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 18px 45px rgba(30,24,72,.18);
+  backdrop-filter: blur(12px);
+}
+
+.Toastify__toast.app-notification--success { border-left: 4px solid #2d9e6e; }
+.Toastify__toast.app-notification--error { border-left: 4px solid #c9353b; }
+.Toastify__toast.app-notification--info { border-left: 4px solid #2b8fe0; }
+
+.notification-status-icon {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.notification-status-icon--success { color: #2d9e6e; background: #e8f8f1; }
+.notification-status-icon--error { color: #c9353b; background: #fef0f0; }
+.notification-status-icon--info { color: #2b8fe0; background: #eff6ff; }
+
+.app-notification .Toastify__toast-icon {
+  width: 40px;
+  margin-inline-end: 12px;
+}
+
+.app-notification .Toastify__close-button {
+  color: #7a748f;
+  opacity: .7;
+  align-self: center;
+}
+
+.app-notification .Toastify__progress-bar--success { background: linear-gradient(90deg, #2d9e6e, #57c995); }
+.app-notification .Toastify__progress-bar--error { background: linear-gradient(90deg, #c9353b, #ef6b70); }
+.app-notification .Toastify__progress-bar--info { background: linear-gradient(90deg, #2b8fe0, #7b4fc8); }
+
+.login-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: linear-gradient(to bottom, black, transparent 88%);
+}
+
+.login-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(2px);
+  pointer-events: none;
+  animation: loginOrbFloat 10s ease-in-out infinite alternate;
+}
+
+.login-orb-one {
+  width: 420px;
+  height: 420px;
+  left: -170px;
+  top: 12%;
+  background: radial-gradient(circle, rgba(43,143,224,.24), transparent 68%);
+}
+
+.login-orb-two {
+  width: 520px;
+  height: 520px;
+  right: -160px;
+  top: -130px;
+  background: radial-gradient(circle, rgba(123,79,200,.28), transparent 67%);
+  animation-delay: -3s;
+}
+
+.login-orb-three {
+  width: 360px;
+  height: 360px;
+  left: 42%;
+  bottom: -180px;
+  background: radial-gradient(circle, rgba(92,209,255,.17), transparent 70%);
+  animation-delay: -6s;
+}
+
+.login-card-enter { animation: loginCardEnter .7s cubic-bezier(.2,.8,.2,1) both; }
+.login-copy-enter { animation: loginCopyEnter .8s .12s cubic-bezier(.2,.8,.2,1) both; }
+
+.login-art-card {
+  position: absolute;
+  width: 225px;
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255,255,255,.1), rgba(255,255,255,.035));
+  box-shadow: 0 24px 60px rgba(0,0,0,.24);
+  backdrop-filter: blur(16px);
+}
+
+.login-art-card-one {
+  left: 10px;
+  top: 12px;
+  transform: rotate(-4deg);
+  animation: loginCardFloatOne 5s ease-in-out infinite;
+}
+
+.login-art-card-two {
+  left: 250px;
+  top: 35px;
+  transform: rotate(4deg);
+  animation: loginCardFloatTwo 5.8s .5s ease-in-out infinite;
+}
+
+.login-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255,255,255,.35);
+  border-top-color: white;
+  border-radius: 999px;
+  animation: loginSpin .75s linear infinite;
+}
+
+.register-benefit-stage {
+  position: relative;
+  height: 310px;
+}
+
+.register-benefit-card {
+  position: absolute;
+  width: 250px;
+  height: 145px;
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255,255,255,.09), rgba(255,255,255,.035));
+  box-shadow: 0 24px 60px rgba(0,0,0,.24);
+  backdrop-filter: blur(16px);
+  opacity: 0;
+  transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
+}
+
+.register-benefit-card-1 { left: 4px; top: 8px; z-index: 2; }
+.register-benefit-card-2 { right: 4px; top: 22px; z-index: 1; }
+.register-benefit-card-3 { left: 18px; bottom: 4px; z-index: 1; }
+.register-benefit-card-4 { right: 14px; bottom: 0; z-index: 2; }
+
+.register-benefit-card--up {
+  animation:
+    registerBenefitEnter .55s var(--register-delay) cubic-bezier(.2,.8,.2,1) forwards,
+    registerBenefitFloatUp 5s calc(var(--register-delay) + .7s) ease-in-out infinite;
+}
+
+.register-benefit-card--down {
+  animation:
+    registerBenefitEnter .55s var(--register-delay) cubic-bezier(.2,.8,.2,1) forwards,
+    registerBenefitFloatDown 5.6s calc(var(--register-delay) + .7s) ease-in-out infinite;
+}
+
+.register-benefit-card:hover {
+  border-color: rgba(158,140,255,.35);
+  background: rgba(255,255,255,.07);
+  box-shadow: 0 28px 68px rgba(0,0,0,.32);
+}
+
+.register-match-message {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  animation: registerMessageIn .2s ease-out;
+}
+
+.password-strength-enter {
+  animation: registerMessageIn .2s ease-out;
+}
+
+.auth-prompt-backdrop {
+  animation: authBackdropIn .2s ease-out both;
+}
+
+.auth-prompt-card {
+  animation: authPromptIn .32s cubic-bezier(.2,.85,.25,1) both;
+}
+
+@keyframes loginOrbFloat {
+  from { transform: translate3d(0,0,0) scale(1); }
+  to { transform: translate3d(45px,-25px,0) scale(1.12); }
+}
+
+@keyframes loginCardEnter {
+  from { opacity: 0; transform: translateY(24px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes loginCopyEnter {
+  from { opacity: 0; transform: translateX(-28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes loginCardFloatOne {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-10px) rotate(-2deg); }
+}
+
+@keyframes loginCardFloatTwo {
+  0%, 100% { transform: translateY(0) rotate(4deg); }
+  50% { transform: translateY(12px) rotate(2deg); }
+}
+
+@keyframes loginSpin { to { transform: rotate(360deg); } }
+
+@keyframes registerBenefitEnter {
+  from { opacity: 0; transform: translateY(18px) rotate(var(--card-rotation)) scale(.96); }
+  to { opacity: 1; transform: translateY(0) rotate(var(--card-rotation)) scale(1); }
+}
+
+@keyframes registerBenefitFloatUp {
+  0%, 100% { transform: translateY(0) rotate(var(--card-rotation)); }
+  50% { transform: translateY(-10px) rotate(var(--card-rotation)); }
+}
+
+@keyframes registerBenefitFloatDown {
+  0%, 100% { transform: translateY(0) rotate(var(--card-rotation)); }
+  50% { transform: translateY(10px) rotate(var(--card-rotation)); }
+}
+
+@keyframes registerMessageIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes authBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes authPromptIn {
+  from { opacity: 0; transform: translateY(18px) scale(.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .login-orb,
+  .login-card-enter,
+  .login-copy-enter,
+  .login-art-card,
+  .register-benefit-card,
+  .register-match-message,
+  .password-strength-enter,
+  .auth-prompt-backdrop,
+  .auth-prompt-card,
+  .login-spinner {
+    animation: none;
+  }
 }
 
 /* Plain CSS vars too, for the couple of spots that reference var(--va-*) directly */

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Badge from '../components/Badge';
+import Icon from '../components/Icon';
 import { getOrders, getCustomers, uploadProof } from '../api/adminApi';
 
 const CARD       = 'bg-white border border-va-border rounded-va shadow-va overflow-hidden';
@@ -63,25 +64,25 @@ export function DashboardPage({ onToast, onNav }) {
     <div className="py-[22px] px-6 flex-1">
       <div className="grid grid-cols-4 gap-3.5 mb-4">
         <div className="bg-grad border border-transparent rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
-          <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center text-lg mb-3">📋</div>
+          <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center text-white mb-3"><Icon name="orders"/></div>
           <div className="font-outfit text-[28px] font-extrabold text-white">{counts.active}</div>
           <div className="text-xs text-white/60 mt-0.5">Active orders</div>
           <div className="text-xs font-semibold mt-2 text-white/70">This month</div>
         </div>
         <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
-          <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-lg mb-3">👤</div>
+          <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-purple mb-3"><Icon name="user"/></div>
           <div className="font-outfit text-[28px] font-extrabold text-va-text">—</div>
           <div className="text-xs text-va-text3 mt-0.5">Total clients</div>
           <div className="text-xs font-semibold mt-2 text-va-success">All time</div>
         </div>
         <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
-          <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-lg mb-3">✅</div>
+          <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-success mb-3"><Icon name="completed"/></div>
           <div className="font-outfit text-[28px] font-extrabold text-va-text">{counts.approved}</div>
           <div className="text-xs text-va-text3 mt-0.5">Completed</div>
           <div className="text-xs font-semibold mt-2 text-va-success">All time</div>
         </div>
         <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
-          <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-lg mb-3">⭐</div>
+          <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-warn mb-3"><Icon name="rating"/></div>
           <div className="font-outfit text-[28px] font-extrabold text-va-text">4.9</div>
           <div className="text-xs text-va-text3 mt-0.5">Avg client rating</div>
           <div className="text-xs font-semibold mt-2 text-va-success">↑ +0.1 this month</div>
@@ -148,7 +149,9 @@ export function DashboardPage({ onToast, onNav }) {
                 </div>
               ))}
               {orders.filter(o => ['waiting_for_feedback','revision'].includes(o.status)).length === 0 && (
-                <div className="p-5 text-va-text3 text-[13px] text-center">✅ No urgent actions needed.</div>
+                <div className="p-5 text-va-text3 text-[13px] flex items-center justify-center gap-2">
+                  <Icon name="completed" size={18} className="text-va-success"/> No urgent actions needed.
+                </div>
               )}
             </div>
           </div>
@@ -205,13 +208,13 @@ export function ProofsPage({ onToast }) {
   return (
     <div className="py-[22px] px-6 flex-1">
       <div className="rounded-lg px-3.5 py-2.5 text-sm flex gap-2 items-start mb-4 bg-va-info-bg border border-blue-300 text-va-info">
-        📋 {orders.length} orders are waiting for a proof upload. Upload a watermarked image to send to the client for review.
+        <Icon name="orders" size={18} className="shrink-0"/> {orders.length} orders are waiting for a proof upload. Upload a watermarked image to send to the client for review.
       </div>
       <div className="grid grid-cols-2 gap-3.5">
         {/* Left: order list */}
         <div>
           {orders.length === 0 ? (
-            <div className={CARD}><div className="text-center py-8 text-va-text3">✅ All pending orders have proofs uploaded.</div></div>
+            <div className={CARD}><div className="py-8 text-va-text3 flex items-center justify-center gap-2"><Icon name="completed" size={20} className="text-va-success"/> All pending orders have proofs uploaded.</div></div>
           ) : orders.map(o => (
             <div
               key={o.id}
@@ -244,7 +247,7 @@ export function ProofsPage({ onToast }) {
             <div className={CARD_BODY}>
               {!selected ? (
                 <div className="text-center py-8 text-va-text3">
-                  <div className="text-4xl mb-2">👈</div>
+                  <Icon name="pointer" size={34} className="mx-auto mb-2 text-va-purple"/>
                   <div className="text-[13px]">Select an order from the left to upload its proof image</div>
                 </div>
               ) : (
@@ -255,11 +258,11 @@ export function ProofsPage({ onToast }) {
 
                   <div className="text-xs font-bold text-va-text mb-2">Upload Watermarked Proof</div>
                   <div className="rounded-lg px-3.5 py-2.5 text-sm flex gap-2 items-start mb-3 bg-va-info-bg border border-blue-300 text-va-info">
-                    💡 Upload a low-resolution version with your watermark. The client will review this before the high-res is released.
+                    <Icon name="info" size={18} className="shrink-0"/> Upload a low-resolution version with your watermark. The client will review this before the high-res is released.
                   </div>
                   <label className="block border-[1.5px] border-dashed border-va-border2 rounded-lg px-3.5 py-5 text-center cursor-pointer transition-all bg-va-bg hover:border-va-blue hover:bg-va-info-bg">
                     <input type="file" accept="image/*" className="hidden" onChange={e => handleUpload(e.target.files[0])}/>
-                    <div className="text-[28px] mb-1.5">{uploading ? '⏳' : '📸'}</div>
+                    <Icon name={uploading ? 'pending' : 'upload'} size={28} className="mx-auto mb-1.5 text-va-purple"/>
                     <div className="text-xs font-semibold text-va-text">{uploading ? 'Uploading to Cloudinary…' : 'Drag and drop or click to browse'}</div>
                     <div className="text-[11px] text-va-text3 mt-[3px]">JPG or PNG · Max 10 MB · Watermark applied</div>
                   </label>
@@ -285,13 +288,13 @@ export function RevisionsPage({ onToast, onNav }) {
   return (
     <div className="py-[22px] px-6 flex-1">
       <div className="rounded-lg px-3.5 py-2.5 text-sm flex gap-2 items-start mb-4 bg-va-warn-bg border border-orange-300 text-va-warn">
-        ⚠️ {orders.length} revision requests are waiting for your response. Upload updated proofs to continue.
+        <Icon name="alert" size={18} className="shrink-0"/> {orders.length} revision requests are waiting for your response. Upload updated proofs to continue.
       </div>
       <div className={CARD}>
         <div className={CARD_HEAD}><div className={CARD_TITLE}>Open Revision Requests</div></div>
         <div className="p-0">
           {orders.length === 0 && (
-            <div className="text-center py-10 text-va-text3">✅ No open revision requests.</div>
+            <div className="py-10 text-va-text3 flex items-center justify-center gap-2"><Icon name="completed" size={20} className="text-va-success"/> No open revision requests.</div>
           )}
           {orders.map(o => (
             <div key={o.id} className="px-5 py-4 border-b border-va-border">
@@ -392,23 +395,23 @@ export function PaymentsPage() {
     <div className="py-[22px] px-6 flex-1">
       <div className="grid grid-cols-4 gap-3.5 mb-4">
         <div className="bg-grad border border-transparent rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
-          <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center text-lg mb-3">💳</div>
+          <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center text-white mb-3"><Icon name="payments"/></div>
           <div className="font-outfit text-[28px] font-extrabold text-white">LKR —</div>
           <div className="text-xs text-white/60 mt-0.5">Collected this month</div>
         </div>
         <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
-          <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-lg mb-3">⏳</div>
+          <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-warn mb-3"><Icon name="pending"/></div>
           <div className="font-outfit text-[28px] font-extrabold text-va-text">LKR —</div>
           <div className="text-xs text-va-text3 mt-0.5">Balance pending</div>
           <div className="text-xs font-semibold mt-2 text-va-warn">Half-paid orders</div>
         </div>
         <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
-          <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-lg mb-3">🏦</div>
+          <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-success mb-3"><Icon name="bank"/></div>
           <div className="font-outfit text-[28px] font-extrabold text-va-text">{orders.filter(o => o.paymentType === 'full').length}</div>
           <div className="text-xs text-va-text3 mt-0.5">Fully paid</div>
         </div>
         <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
-          <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-lg mb-3">💰</div>
+          <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-purple mb-3"><Icon name="advance"/></div>
           <div className="font-outfit text-[28px] font-extrabold text-va-text">{orders.filter(o => o.paymentType === 'advance').length}</div>
           <div className="text-xs text-va-text3 mt-0.5">Advance paid</div>
         </div>

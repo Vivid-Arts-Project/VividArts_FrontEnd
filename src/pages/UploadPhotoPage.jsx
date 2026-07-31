@@ -174,7 +174,7 @@ export default function UploadPhotoPage({ onNext, onBack = () => {}, initialPhot
             style={{ color: "#ffffff" }}
             onClick={handleNext}
           >
-            Next: Customise Your Portrait →
+            Next: Customize Your Portrait →
           </button>
         </div>
       </main>

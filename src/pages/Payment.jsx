@@ -4,6 +4,7 @@ import Stepper from '../components/Stepper';
 
 // 💡 1. Notification function එක Import කරගන්න (path එක exact location එකට අනුව)
 import { showNotification } from './NotificationContainer';
+import Icon from '../components/Icon';
 
 const fallbackOrder = {
   size: { id: 'A3', label: 'A3' },
@@ -177,18 +178,21 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
             </a>
           )}
           <br />
-          <button
-            className="border-none rounded-full px-6 py-[14px] cursor-pointer transition-all bg-gradient-to-br from-[#7f6cff] to-[#5cd1ff] text-white shadow-[0_18px_40px_rgba(92,209,255,0.22)] hover:-translate-y-px mt-5 px-[30px] py-3"
-            onClick={() => onComplete()}
-          >
-            Go to Dashboard
-          </button>
-          <button
-            className="border-none bg-transparent cursor-pointer transition-colors text-[#64748b] hover:text-[#475569] mt-[10px] px-6 py-[14px]"
-            onClick={() => setShowConfirmation(false)}
-          >
-            Back to Payment
-          </button>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <button
+              className="min-w-[190px] rounded-full px-[30px] py-3 cursor-pointer transition-all border border-[#cfc8ff] bg-gradient-to-br from-[#f7f5ff] to-[#edf8ff] text-[#5a3fbb] font-semibold shadow-[0_12px_28px_rgba(91,63,168,0.12)] hover:-translate-y-0.5 hover:border-[#8b7cff] hover:shadow-[0_18px_36px_rgba(91,63,168,0.2)]"
+              onClick={() => onComplete()}
+            >
+              Go to Dashboard
+            </button>
+            <button
+              className="min-w-[190px] rounded-full px-[30px] py-3 cursor-pointer transition-all border border-[#cfc8ff] bg-gradient-to-br from-[#f7f5ff] to-[#edf8ff] text-[#5a3fbb] font-semibold shadow-[0_12px_28px_rgba(91,63,168,0.12)] hover:-translate-y-0.5 hover:border-[#8b7cff] hover:shadow-[0_18px_36px_rgba(91,63,168,0.2)] inline-flex items-center justify-center gap-2"
+              onClick={() => setShowConfirmation(false)}
+            >
+              <Icon name="arrowLeft" size={18}/>
+              Back to Payment
+            </button>
+          </div>
         </div>
       </div>
     );

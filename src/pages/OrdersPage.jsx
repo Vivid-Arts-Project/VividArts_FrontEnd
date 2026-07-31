@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import Icon from '../components/Icon';
 import Badge, { STATUS_MAP } from '../components/Badge';
 import { getOrders, updateStatus, uploadProof, sendMessage, setLocation } from '../api/adminApi';
 
@@ -295,25 +296,25 @@ export default function OrdersPage({ search, onToast, navigateTo }) {
         {/* Stats */}
         <div className="grid grid-cols-4 gap-3.5 mb-4">
           <div className="bg-grad border border-transparent rounded-va px-5 py-[18px] shadow-va relative overflow-hidden after:content-[''] after:absolute after:-top-5 after:-right-5 after:w-20 after:h-20 after:rounded-full after:bg-white/[0.04]">
-            <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center text-lg mb-3">📋</div>
+            <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center text-white mb-3"><Icon name="orders"/></div>
             <div className="font-outfit text-[28px] font-extrabold text-white">{stats.total ?? '—'}</div>
             <div className="text-xs text-white/60 mt-0.5">Active Orders</div>
             <div className="text-xs font-semibold mt-2 text-white/70">{stats.urgentActive ? `⚠ ${stats.urgentActive} urgent` : 'This month'}</div>
           </div>
           <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
-            <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-lg mb-3">🔍</div>
+            <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-warn mb-3"><Icon name="approval"/></div>
             <div className="font-outfit text-[28px] font-extrabold text-va-text">{stats.waitingFeedback ?? '—'}</div>
             <div className="text-xs text-va-text3 mt-0.5">Awaiting Approval</div>
             <div className="text-xs font-semibold mt-2 text-va-warn">Proofs sent to clients</div>
           </div>
           <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
-            <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-lg mb-3">✅</div>
+            <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-success mb-3"><Icon name="completed"/></div>
             <div className="font-outfit text-[28px] font-extrabold text-va-text">{orders.filter(o => o.status === 'done').length}</div>
             <div className="text-xs text-va-text3 mt-0.5">Completed</div>
             <div className="text-xs font-semibold mt-2 text-va-success">All time</div>
           </div>
           <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
-            <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-lg mb-3">💰</div>
+            <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-success mb-3"><Icon name="revenue"/></div>
             <div className="font-outfit text-[22px] font-extrabold text-va-text">
               {stats.total ? `LKR ${(stats.total * 3800 / 1000).toFixed(0)}k` : '—'}
             </div>
