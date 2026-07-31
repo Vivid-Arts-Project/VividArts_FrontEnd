@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import Icon from './Icon';
 
 const PAGE_META = {
   orders:    { title: 'Order Management',   bread: 'Orders'    },
@@ -40,15 +41,15 @@ export default function Topbar({ page, onNewOrder, search, onSearch }) {
               className="border-none bg-transparent outline-none text-[13px] font-sans text-va-text w-full"
             />
           </div>
-          <div className="w-9 h-9 rounded-lg border border-va-border bg-white flex items-center justify-center cursor-pointer text-base relative transition-all hover:border-va-border2 hover:bg-va-bg" onClick={() => setShowNotif(v => !v)}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M8 2a5 5 0 00-5 5v3l-1 1v1h12v-1l-1-1V7a5 5 0 00-5-5z"
-                stroke="var(--va-text2)" strokeWidth="1.2"/>
-              <path d="M6.5 13a1.5 1.5 0 003 0"
-                stroke="var(--va-text2)" strokeWidth="1.2" strokeLinecap="round"/>
-            </svg>
-            <div className="absolute top-[7px] right-[7px] w-2 h-2 bg-va-danger rounded-full border-2 border-white"/>
-          </div>
+          <button
+            type="button"
+            aria-label="Notifications"
+            className={`w-9 h-9 rounded-lg border flex items-center justify-center cursor-pointer relative transition-all ${showNotif ? 'border-va-purple bg-grad-soft text-va-purple shadow-[0_0_0_3px_rgba(91,63,168,0.08)]' : 'border-va-border bg-white text-va-text2 hover:border-va-border2 hover:bg-va-bg hover:text-va-purple'}`}
+            onClick={() => setShowNotif(v => !v)}
+          >
+            <Icon name="bell" size={18}/>
+            <span className="absolute top-[6px] right-[6px] w-2 h-2 bg-va-danger rounded-full border-2 border-white"/>
+          </button>
           <button
             className="px-4 py-2 bg-grad text-white border-none rounded-lg text-[13px] font-semibold cursor-pointer font-sans transition-all flex items-center gap-1.5 hover:opacity-90 hover:-translate-y-px hover:shadow-[0_4px_14px_rgba(91,63,168,0.3)]"
             onClick={onNewOrder}
@@ -59,16 +60,28 @@ export default function Topbar({ page, onNewOrder, search, onSearch }) {
       </header>
 
       {showNotif && (
-        <div className="fixed top-[60px] right-4 w-[300px] bg-white border border-va-border rounded-va shadow-va-md z-[300] overflow-hidden">
-          <div className="px-4 py-3 border-b border-va-border flex items-center justify-between">
-            <div className="font-outfit text-[13px] font-bold">Notifications</div>
-          </div>
-          <div className="flex gap-2.5 px-4 py-3 border-b-0 items-start hover:bg-va-bg">
-            <div className="w-2 h-2 rounded-full shrink-0 mt-1" style={{ background: 'var(--va-blue)' }}/>
-            <div>
-              <div className="text-xs text-va-text2 leading-relaxed">System ready — logged in as <strong>{admin?.username}</strong></div>
-              <div className="text-[11px] text-va-text3 mt-[3px]">Just now</div>
+        <div className="fixed top-[68px] right-4 w-[330px] bg-white border border-va-border rounded-xl shadow-[0_18px_50px_rgba(30,24,72,0.18)] z-[300] overflow-hidden notification-pop">
+          <div className="absolute -top-1.5 right-[77px] w-3 h-3 rotate-45 bg-white border-l border-t border-va-border"/>
+          <div className="px-4 py-3.5 border-b border-va-border flex items-center justify-between bg-gradient-to-r from-[#f5f9ff] to-[#f6f1ff]">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-grad text-white flex items-center justify-center shadow-sm"><Icon name="bell" size={17}/></div>
+              <div>
+                <div className="font-outfit text-sm font-bold text-va-text">Notifications</div>
+                <div className="text-[10px] text-va-text3">Your latest account activity</div>
+              </div>
             </div>
+            <span className="text-[10px] font-bold text-va-purple bg-white border border-va-border rounded-full px-2 py-1">1 new</span>
+          </div>
+          <div className="flex gap-3 px-4 py-4 items-start bg-blue-50/40 hover:bg-blue-50 transition-colors cursor-default">
+            <div className="w-9 h-9 rounded-full bg-va-info-bg text-va-info flex items-center justify-center shrink-0"><Icon name="info" size={18}/></div>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs text-va-text2 leading-relaxed"><strong>System ready</strong> — logged in as {admin?.username}</div>
+              <div className="text-[11px] text-va-text3 mt-1">Just now</div>
+            </div>
+            <div className="w-2 h-2 rounded-full shrink-0 mt-1.5 bg-va-blue"/>
+          </div>
+          <div className="px-4 py-2.5 text-center border-t border-va-border bg-white">
+            <button type="button" className="border-none bg-transparent text-[11px] font-semibold text-va-purple cursor-pointer hover:underline">Mark all as read</button>
           </div>
         </div>
       )}

@@ -1,6 +1,21 @@
 import React from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Icon from '../components/Icon';
+
+const notificationIcon = (name, tone) => (
+  <span className={`notification-status-icon notification-status-icon--${tone}`}>
+    <Icon name={name} size={21}/>
+  </span>
+);
+
+const options = {
+  success: { icon: notificationIcon('completed', 'success'), className: 'app-notification app-notification--success' },
+  error: { icon: notificationIcon('alert', 'error'), className: 'app-notification app-notification--error' },
+  order: { icon: notificationIcon('orders', 'success'), className: 'app-notification app-notification--success' },
+  update: { icon: notificationIcon('pending', 'info'), className: 'app-notification app-notification--info' },
+  payment: { icon: notificationIcon('payments', 'success'), className: 'app-notification app-notification--success' },
+};
 
 export const NotificationContainer = () => {
   return (
@@ -14,6 +29,7 @@ export const NotificationContainer = () => {
       pauseOnFocusLoss
       draggable
       pauseOnHover
+      toastClassName="app-notification"
     />
   );
 };
@@ -21,31 +37,27 @@ export const NotificationContainer = () => {
 export const showNotification = (type, message) => {
   switch (type) {
     case 'success':
-      toast.success(`🟢 ${message}`);
+      toast.success(message, options.success);
       break;
 
     case 'error':
-      toast.error(`🔴 ${message}`);
+      toast.error(message, options.error);
       break;
 
     case 'order_success':
-      toast.success(`🎉 SUCCESS: ${message}`, {
-        icon: "🎨",
-        style: { background: "#e6fffa", color: "#006d5b", fontWeight: "bold" }
-      });
+      toast.success(message, options.order);
       break;
 
     case 'status_update':
-      toast.info(`📅 UPDATE: ${message}`, {
-        icon: "⏱️",
-        style: { background: "#ebf8ff", color: "#2b6cb0" }
-      });
+      toast.info(message, options.update);
+      break;
+
+    case 'payment_success':
+      toast.success(message, options.payment);
       break;
 
     default:
-      toast(message);
-
-      
+      toast(message, { icon: notificationIcon('bell', 'info'), className: 'app-notification app-notification--info' });
   }
 };
 
