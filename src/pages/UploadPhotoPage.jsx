@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Stepper from "../components/Stepper";
 import { showNotification } from "./NotificationContainer"; // 💡 1. Notification function එක Import කරගන්න
+import BrandLogo from "../components/BrandLogo";
 
 export default function UploadPhotoPage({ onNext, onBack = () => {}, onNavigate = () => {}, initialPhotoData = null }) {
   const [photo, setPhoto] = useState(initialPhotoData?.photo ?? null);
@@ -54,7 +55,7 @@ export default function UploadPhotoPage({ onNext, onBack = () => {}, onNavigate 
   return (
     <div className="min-h-screen bg-[#0d0c1a] pb-16 font-sans text-white">
       <header className="mx-auto flex max-w-[700px] items-center justify-between px-8 pt-7">
-        <span className="text-sm font-bold tracking-[0.2em]">PENCIL PORTRAITS</span>
+        <span className="flex items-center gap-3"><BrandLogo size={44}/><span className="text-sm font-bold tracking-[0.2em]">PENCIL PORTRAITS</span></span>
         <div className="flex gap-2.5">
           <button
             type="button"

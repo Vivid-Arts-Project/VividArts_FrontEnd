@@ -5,6 +5,7 @@ import Stepper from '../components/Stepper';
 // 💡 1. Notification function එක Import කරගන්න (path එක exact location එකට අනුව)
 import { showNotification } from './NotificationContainer';
 import Icon from '../components/Icon';
+import BrandLogo from '../components/BrandLogo';
 
 const fallbackOrder = {
   size: { id: 'A3', label: 'A3' },
@@ -218,7 +219,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
     <div className="max-w-[980px] mx-auto p-[18px]">
       <header className="h-[88px] max-[720px]:h-auto bg-white flex items-center justify-between px-14 max-[720px]:px-4 max-[720px]:py-[14px] border-b border-[#e7e2ff] mb-[18px] max-[720px]:flex-wrap">
         <div className="flex items-center gap-4">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#4da3ff] to-[#7c3aed] flex items-center justify-center text-white text-2xl font-bold">M</div>
+            <BrandLogo size={54}/>
             <span className="text-xl font-extrabold text-gray-900 tracking-[-0.5px]">VIVID ARTS</span>
         </div>
 

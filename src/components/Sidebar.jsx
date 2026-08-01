@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Icon from './Icon';
+import BrandLogo from './BrandLogo';
 
 const NAV = [
   { section: 'Overview' },
@@ -54,12 +55,7 @@ export default function Sidebar({ page, onNav, stats }) {
     <nav className="w-[230px] bg-grad-dark flex flex-col h-screen shrink-0 fixed top-0 left-0 z-[200] border-r border-white/[0.04]">
       {/* Logo — uses real businessName from DB */}
       <div className="px-5 pt-[22px] pb-[18px] border-b border-white/[0.06] flex items-center gap-2.5">
-        <div className="w-[34px] h-[34px] rounded-lg bg-grad flex items-center justify-center shrink-0">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M3 16L6.5 4L10 10.5L13 6.5L17 16"
-              stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </div>
+        <BrandLogo size={38}/>
         <div>
           <div className="font-outfit text-base font-extrabold text-white tracking-[-0.3px]">{businessName}</div>
           <span className="text-[10px] font-semibold text-white/30 bg-white/[0.07] rounded block mt-[3px] px-[7px] py-0.5 tracking-wide uppercase">Admin Panel</span>

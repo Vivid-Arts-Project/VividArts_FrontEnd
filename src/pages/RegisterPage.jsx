@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Icon from '../components/Icon';
 import { showNotification } from './NotificationContainer';
+import BrandLogo from '../components/BrandLogo';
 
 function RegisterPage({ onNavigate }) {
   const [username, setUsername] = useState('');
@@ -71,9 +72,7 @@ function RegisterPage({ onNavigate }) {
 
       <header className="relative z-20 mx-auto flex max-w-7xl items-center justify-between px-6 py-6 sm:px-8">
         <button type="button" onClick={() => onNavigate('landing')} className="flex items-center gap-3 border-none bg-transparent text-white cursor-pointer">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#2b8fe0] via-[#7b4fc8] to-[#5b3fa8] shadow-[0_8px_28px_rgba(91,63,168,.45)]">
-            <svg width="23" height="23" viewBox="0 0 20 20" fill="none"><path d="M3 16 6.5 4 10 10.5 13 6.5 17 16" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          </span>
+          <BrandLogo size={48}/>
           <span className="text-left"><strong className="block font-outfit text-base tracking-wide">VIVID ARTS</strong><span className="block text-[10px] tracking-[.18em] text-white/40">PENCIL PORTRAITS</span></span>
         </button>
         <button type="button" onClick={() => onNavigate('landing')} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.06] px-4 py-2 text-xs font-semibold text-white/80 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/10 hover:text-white">

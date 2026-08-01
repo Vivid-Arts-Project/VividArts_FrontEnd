@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import NotificationBell from './NotificationBell';
 import Icon from '../components/Icon';
+import BrandLogo from '../components/BrandLogo';
 
 const stats = [
   { value: "200+", label: "Portraits delivered" },
@@ -68,7 +69,10 @@ export default function LandingPage({ onNavigate = () => {} }) {
     <div id="home" className="min-h-screen bg-[#0a0916] font-sans text-[#f5f4fb]">
       <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0a0916]/85 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 sm:px-8 lg:px-8">
-          <span className="text-sm font-bold tracking-[0.2em]">PENCIL PORTRAITS</span>
+          <span className="flex items-center gap-3">
+            <BrandLogo size={44}/>
+            <span className="text-sm font-bold tracking-[0.2em]">PENCIL PORTRAITS</span>
+          </span>
           <nav className="hidden gap-8 text-sm text-[#a9a6c4] md:flex">
             <a className="transition hover:text-white" href="#home">
               Home
@@ -217,14 +221,10 @@ export default function LandingPage({ onNavigate = () => {} }) {
               <div className="absolute inset-x-8 inset-y-0 rounded-[28px] border border-white/10 bg-gradient-to-br from-[#20204a] via-[#17152f] to-[#121025] shadow-[0_30px_80px_rgba(0,0,0,.35)]">
                 <div className="absolute inset-5 rounded-[20px] border border-white/[.08] bg-[radial-gradient(circle_at_50%_32%,rgba(147,197,253,.2),transparent_48%)]"/>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <svg width="225" height="225" viewBox="0 0 220 220" fill="none" className="text-[#a99bff] opacity-90">
-                    <path d="M43 174 76 48l37 68 29-45 36 103" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M57 174h109" stroke="white" strokeOpacity=".18" strokeWidth="2"/>
-                    <circle cx="110" cy="110" r="82" stroke="white" strokeOpacity=".08"/>
-                  </svg>
+                  <BrandLogo size={230} full className="opacity-95 drop-shadow-[0_18px_30px_rgba(43,143,224,.18)]"/>
                 </div>
                 <div className="absolute bottom-7 left-7 right-7 flex items-end justify-between">
-                  <div><span className="block text-[10px] uppercase tracking-[.2em] text-white/35">The Vivid Arts mark</span><strong className="mt-1 block font-outfit text-lg">Drawn with intention</strong></div>
+                  <div><span className="block text-[10px] uppercase tracking-[.2em] text-white/35">Vivid Arts</span><strong className="mt-1 block font-outfit text-lg">Drawn with intention</strong></div>
                   <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[.07] text-[#9ccfff]"><Icon name="pencil" size={22}/></span>
                 </div>
               </div>
@@ -232,7 +232,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
                 <strong className="block text-lg text-white">100%</strong>
                 <span className="text-[11px] text-white/45">Hand-drawn</span>
               </div>
-              <div className="absolute -right-1 bottom-12 rounded-2xl border border-white/10 bg-[#15132d]/90 px-4 py-3 shadow-xl backdrop-blur-xl">
+              <div className="absolute -right-1 top-10 rounded-2xl border border-white/10 bg-[#15132d]/90 px-4 py-3 shadow-xl backdrop-blur-xl">
                 <strong className="block text-lg text-white">Sri Lanka</strong>
                 <span className="text-[11px] text-white/45">Made locally</span>
               </div>

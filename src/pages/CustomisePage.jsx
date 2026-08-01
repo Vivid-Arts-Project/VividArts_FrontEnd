@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import Stepper from "../components/Stepper";
+import BrandLogo from "../components/BrandLogo";
 
 const SIZES = [
   { id: "A4", label: "A4", dims: "210 × 297 mm", price: 2500 },
@@ -52,7 +53,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
   return (
     <div className="min-h-screen bg-[#0d0c1a] pb-16 font-sans text-white">
       <header className="mx-auto flex max-w-7xl items-center justify-between px-8 pt-7">
-        <span className="text-sm font-bold tracking-[0.2em]">PENCIL PORTRAITS</span>
+        <span className="flex items-center gap-3"><BrandLogo size={44}/><span className="text-sm font-bold tracking-[0.2em]">PENCIL PORTRAITS</span></span>
         <div className="flex gap-2.5">
           <button
             type="button"
