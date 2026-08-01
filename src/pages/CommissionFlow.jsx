@@ -9,7 +9,7 @@ import Payment from "./Payment";
  * Manages the three-step commission flow, each step as a real sub-route
  * so the URL and browser back/forward buttons track progress:
  *   /commission/upload    → UploadPhotoPage  (upload reference photo)
- *   /commission/customise → CustomisePage    (size, frame, people, notes + order summary)
+ *   /commission/customize → CustomisePage    (size, frame, people, notes + order summary)
  *   /commission/payment   → Payment          (pay the deposit via PayHere)
  *
  * photoData and order are lifted up here (not into the URL) so that
@@ -27,7 +27,7 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
 
   function handlePhotoNext(data) {
     setPhotoData(data);
-    navigate('customise');
+    navigate('customize');
   }
 
   function handleCustomiseNext(orderData) {
@@ -57,7 +57,7 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
           }
         />
         <Route
-          path="customise"
+          path="customize"
           element={
             <CustomisePage
               photoData={photoData}
@@ -70,7 +70,7 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
         />
         <Route
           path="payment"
-          element={<Payment order={order} onBack={() => navigate('customise')} onComplete={handlePaymentComplete} />}
+          element={<Payment order={order} onBack={() => navigate('customize')} onComplete={handlePaymentComplete} />}
         />
       </Routes>
     </div>

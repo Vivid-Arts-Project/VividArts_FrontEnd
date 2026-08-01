@@ -73,7 +73,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
 
       <main className="mx-auto mt-7 grid max-w-7xl gap-6 px-8 lg:grid-cols-[1.5fr_1fr] lg:items-start">
         <section className="rounded-[18px] bg-white p-6 text-[#1b1830] shadow-xl sm:p-7">
-          <h2 className="text-xl font-bold">Customise Your Portrait</h2>
+          <h2 className="text-xl font-bold">Customize Your Portrait</h2>
           <p className="mt-1 text-sm text-[#6b6885]">
             Price updates in real-time as you choose
           </p>

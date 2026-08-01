@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
+import { NotificationContainer } from './pages/NotificationContainer';
+
 // Customer side — untouched, still owns its own internal page-switching
 import CustomerApp from './CustomerApp';
 
@@ -34,6 +36,7 @@ export default function App() {
           <Route path="/*" element={<CustomerApp />} />
         </Routes>
       </AuthProvider>
+      <NotificationContainer />
     </BrowserRouter>
   );
 }

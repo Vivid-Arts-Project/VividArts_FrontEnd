@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import Icon from './Icon';
 
 const NAV = [
   { section: 'Overview' },
-  { id: 'orders',    icon: '📋', label: 'Orders',        badgeDanger: false },
-  { id: 'dashboard', icon: '📊', label: 'Dashboard',     badgeDanger: false },
+  { id: 'orders',    icon: 'orders', label: 'Orders',        badgeDanger: false },
+  { id: 'dashboard', icon: 'dashboard', label: 'Dashboard',     badgeDanger: false },
   { section: 'Workflow' },
-  { id: 'proofs',    icon: '🖼️', label: 'Proof Upload',  badgeDanger: false },
-  { id: 'revisions', icon: '💬', label: 'Revisions',     badgeDanger: true  },
+  { id: 'proofs',    icon: 'proofs', label: 'Proof Upload',  badgeDanger: false },
+  { id: 'revisions', icon: 'revisions', label: 'Revisions',     badgeDanger: true  },
   { section: 'People' },
-  { id: 'clients',   icon: '👤', label: 'Clients',       badgeDanger: false },
+  { id: 'clients',   icon: 'clients', label: 'Clients',       badgeDanger: false },
   { section: 'Finance' },
-  { id: 'payments',  icon: '💳', label: 'Payments',      badgeDanger: false },
-  { id: 'invoices',  icon: '📄', label: 'Invoices',      badgeDanger: false },
+  { id: 'payments',  icon: 'payments', label: 'Payments',      badgeDanger: false },
+  { id: 'invoices',  icon: 'invoices', label: 'Invoices',      badgeDanger: false },
   { section: 'System' },
-  { id: 'settings',  icon: '⚙️', label: 'Settings',      badgeDanger: false },
+  { id: 'settings',  icon: 'settings', label: 'Settings',      badgeDanger: false },
 ];
 
 export default function Sidebar({ page, onNav, stats }) {
@@ -80,7 +81,9 @@ export default function Sidebar({ page, onNav, stats }) {
             className={`flex items-center gap-2.5 py-2.5 px-3 rounded-lg mx-2 my-[1px] cursor-pointer transition-all duration-[180ms] text-[13px] font-medium select-none border-none w-[calc(100%-16px)] text-left ${active ? 'bg-grad text-white font-semibold' : 'bg-transparent text-white/45 hover:bg-white/[0.07] hover:text-white/85'}`}
             onClick={() => onNav(item.id)}
           >
-            <span className="w-[18px] text-center text-[15px] shrink-0">{item.icon}</span>
+            <span className="w-[18px] flex items-center justify-center shrink-0">
+              <Icon name={item.icon} size={18}/>
+            </span>
             <span className="flex-1">{item.label}</span>
             {badge && (
               <span className={`text-[10px] font-bold px-[7px] py-0.5 rounded-full ${badgeCls}`}>{badge}</span>
