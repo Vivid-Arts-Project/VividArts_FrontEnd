@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from 'react-router-dom';
 import Stepper from "../components/Stepper";
 
 // 💡 1. Notification function එක Import කරගන්න
@@ -56,7 +57,15 @@ export default function UploadPhotoPage({ onNext, onBack = () => {}, initialPhot
   return (
     <div className="min-h-screen bg-[#0d0c1a] pb-16 font-sans text-white">
       <header className="mx-auto flex max-w-[700px] items-center justify-between px-8 pt-7">
-        <span className="text-sm font-bold tracking-[0.2em]">PENCIL PORTRAITS</span>
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-bold tracking-[0.2em]">PENCIL PORTRAITS</span>
+          {localStorage.getItem('username') && (
+            <div className="hidden sm:flex items-center gap-2 text-sm text-white/80">
+              <div className="h-7 w-7 rounded-full bg-white/10 flex items-center justify-center text-xs font-semibold">{(localStorage.getItem('username')||'U').slice(0,1).toUpperCase()}</div>
+              <div>{localStorage.getItem('username')}</div>
+            </div>
+          )}
+        </div>
         <div className="flex gap-2.5">
           <button
             type="button"
@@ -65,9 +74,7 @@ export default function UploadPhotoPage({ onNext, onBack = () => {}, initialPhot
           >
             ← Back
           </button>
-          <button className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0d0c1a]">
-            My Account
-          </button>
+          <MyAccountButton onBack={onBack} />
         </div>
       </header>
 
@@ -179,5 +186,26 @@ export default function UploadPhotoPage({ onNext, onBack = () => {}, initialPhot
         </div>
       </main>
     </div>
+  );
+}
+
+function MyAccountButton({ onBack }) {
+  const navigate = useNavigate();
+  const handleClick = () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      navigate('/profile');
+    } else {
+      navigate('/login');
+    }
+  };
+
+  return (
+    <button
+      className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0d0c1a]"
+      onClick={handleClick}
+    >
+      My Account
+    </button>
   );
 }
