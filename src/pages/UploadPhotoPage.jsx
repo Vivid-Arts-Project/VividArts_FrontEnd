@@ -54,7 +54,15 @@ export default function UploadPhotoPage({ onNext, onBack = () => {}, onNavigate 
   return (
     <div className="min-h-screen bg-[#0d0c1a] pb-16 font-sans text-white">
       <header className="mx-auto flex max-w-[700px] items-center justify-between px-8 pt-7">
-        <span className="text-sm font-bold tracking-[0.2em]">PENCIL PORTRAITS</span>
+        <div className="flex items-center gap-4">
+          <span className="text-sm font-bold tracking-[0.2em]">PENCIL PORTRAITS</span>
+          {localStorage.getItem('username') && (
+            <div className="hidden sm:flex items-center gap-2 text-sm text-white/80">
+              <div className="h-7 w-7 rounded-full bg-white/10 flex items-center justify-center text-xs font-semibold">{(localStorage.getItem('username')||'U').slice(0,1).toUpperCase()}</div>
+              <div>{localStorage.getItem('username')}</div>
+            </div>
+          )}
+        </div>
         <div className="flex gap-2.5">
           <button
             type="button"

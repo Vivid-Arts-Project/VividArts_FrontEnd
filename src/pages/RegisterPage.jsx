@@ -10,6 +10,7 @@ function RegisterPage({ onNavigate }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [message, setMessage] = useState('');
+  const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleRegister = async (event) => {
@@ -24,23 +25,34 @@ function RegisterPage({ onNavigate }) {
 
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/customers/register', {
+      const response = await fetch('/api/customers/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ username, email, password, confirmPassword }),
       });
 
-      const data = await response.json();
+      // Be defensive: some endpoints may return an empty body or non-JSON.
+      const raw = await response.text();
+      let data;
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = { message: raw || response.statusText };
+      }
+
       if (!response.ok) {
         throw new Error(data.message || 'Registration failed');
       }
 
       const successMessage = data.message || 'Registration successful.';
+      setIsError(false);
       setMessage(successMessage);
       showNotification('success', successMessage);
-      setTimeout(() => onNavigate('login'), 1200);
+      // Registration is complete: immediately open the login page.
+      onNavigate('login');
     } catch (error) {
       const errorMessage = error.message || 'Registration failed';
+      setIsError(true);
       setMessage(errorMessage);
       showNotification('error', errorMessage);
     } finally {
@@ -168,7 +180,11 @@ function RegisterPage({ onNavigate }) {
                 </div>
               )}
 
-              {message && <div className={`flex items-center gap-2 rounded-xl border px-3.5 py-3 text-xs ${message.toLowerCase().includes('success') ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300' : 'border-red-400/20 bg-red-400/10 text-red-300'}`}><Icon name={message.toLowerCase().includes('success') ? 'completed' : 'alert'} size={17}/>{message}</div>}
+              {message && (
+                <div className={`flex items-center gap-2 rounded-xl border px-3.5 py-3 text-xs ${!isError ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300' : 'border-red-400/20 bg-red-400/10 text-red-300'}`}>
+                  <Icon name={!isError ? 'completed' : 'alert'} size={17}/>{message}
+                </div>
+              )}
 
               <button type="submit" disabled={isLoading} className="group flex h-[50px] w-full items-center justify-center gap-2 rounded-xl border-none bg-gradient-to-r from-[#2b8fe0] via-[#7161d8] to-[#7b4fc8] text-sm font-bold text-white shadow-[0_14px_35px_rgba(91,63,168,.36)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(91,63,168,.5)] disabled:cursor-wait disabled:opacity-70">
                 {isLoading ? <span className="login-spinner"/> : <>Create account <Icon name="arrowRight" size={17} className="transition-transform group-hover:translate-x-1"/></>}
