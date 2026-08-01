@@ -5,6 +5,23 @@ html {
   scroll-behavior: smooth;
 }
 
+.brand-logo {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.brand-logo-image {
+  position: absolute;
+  max-width: none;
+  object-fit: contain;
+  left: -17.8%;
+}
+
+.brand-logo-image--mark { top: -65.5%; }
+.brand-logo-image--full { top: -52.3%; }
+
 #home,
 #gallery,
 #how-it-works,
@@ -275,6 +292,29 @@ html {
   animation: authPromptIn .32s cubic-bezier(.2,.85,.25,1) both;
 }
 
+.admin-login-stage {
+  position: relative;
+  height: 265px;
+}
+
+.admin-login-float-card {
+  position: absolute;
+  width: 245px;
+  height: 145px;
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255,255,255,.09), rgba(255,255,255,.035));
+  box-shadow: 0 24px 60px rgba(0,0,0,.25);
+  backdrop-filter: blur(16px);
+}
+
+.admin-login-float-card-1 { left: 6px; top: 8px; z-index: 2; animation: adminFloatOne 5.2s ease-in-out infinite; }
+.admin-login-float-card-2 { left: 270px; top: 35px; z-index: 1; animation: adminFloatTwo 5.8s .4s ease-in-out infinite; }
+.admin-login-float-card-3 { left: 145px; top: 155px; z-index: 3; animation: adminFloatThree 6.2s .8s ease-in-out infinite; }
+
 @keyframes loginOrbFloat {
   from { transform: translate3d(0,0,0) scale(1); }
   to { transform: translate3d(45px,-25px,0) scale(1.12); }
@@ -332,6 +372,21 @@ html {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+@keyframes adminFloatOne {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-10px) rotate(-2deg); }
+}
+
+@keyframes adminFloatTwo {
+  0%, 100% { transform: translateY(0) rotate(4deg); }
+  50% { transform: translateY(11px) rotate(2deg); }
+}
+
+@keyframes adminFloatThree {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-8px) rotate(1deg); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -346,6 +401,7 @@ html {
   .password-strength-enter,
   .auth-prompt-backdrop,
   .auth-prompt-card,
+  .admin-login-float-card,
   .login-spinner {
     animation: none;
   }
