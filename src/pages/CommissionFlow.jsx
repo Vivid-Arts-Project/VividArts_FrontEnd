@@ -16,7 +16,7 @@ import Payment from "./Payment";
  * navigating back and forth between steps doesn't lose what the
  * customer already chose.
  */
-export default function CommissionFlow({ onBack = () => {} }) {
+export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {} }) {
   const navigate = useNavigate();
   const [photoData, setPhotoData] = useState(null);
   const [order, setOrder] = useState(null);
@@ -47,7 +47,14 @@ export default function CommissionFlow({ onBack = () => {} }) {
         <Route index element={<Navigate to={defaultStep} replace />} />
         <Route
           path="upload"
-          element={<UploadPhotoPage initialPhotoData={photoData} onNext={handlePhotoNext} onBack={onBack} />}
+          element={
+            <UploadPhotoPage 
+              initialPhotoData={photoData} 
+              onNext={handlePhotoNext} 
+              onBack={onBack} 
+              onNavigate={onNavigate}
+            />
+          }
         />
         <Route
           path="customize"
@@ -57,7 +64,8 @@ export default function CommissionFlow({ onBack = () => {} }) {
               initialOrder={order}
               onNext={handleCustomiseNext}
               onBack={() => navigate('upload')}
-            />
+              onNavigate={onNavigate}
+             />
           }
         />
         <Route

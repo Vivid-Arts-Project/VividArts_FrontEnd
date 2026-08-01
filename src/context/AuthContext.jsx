@@ -15,27 +15,30 @@ export function AuthProvider({ children }) {
   // This handles page refresh — the session cookie persists so the admin
   // doesn't have to log in again every time they refresh the page.
   useEffect(() => {
-    api.get('/api/admin/me')
+    api.get('/admin/me')
       .then(res => setAdmin(res.data))
       .catch(() => setAdmin(null))       // 401 = not logged in, just clear admin
       .finally(() => setLoading(false));
   }, []);
 
   const login = async (username, password) => {
-    const res = await api.post('/api/admin/login', { username, password });
+    const res = await api.post('/admin/login', { username, password });
     setAdmin(res.data.admin);
     return res.data.admin;
   };
 
   const register = async (formData) => {
-    const res = await api.post('/api/admin/register', formData);
+    const res = await api.post('/admin/register', formData);
     setAdmin(res.data.admin);
     return res.data.admin;
   };
 
   const logout = async () => {
-    await api.post('/api/admin/logout');
-    setAdmin(null);
+    try {
+      await api.post('/admin/logout');
+    } finally {
+      setAdmin(null);
+    }
   };
 
   // updateAdmin is called by the Settings page after a successful PATCH —

@@ -18,3 +18,15 @@ export const uploadProof = (id, file) => {
 
 // ── Customers (for Clients page) ──────────────────────────────────────────────
 export const getCustomers = () => api.get('/customers');
+
+// Admin profile and settings
+export const getProfile          = ()     => api.get('/admin/me');
+export const updateProfile       = (data) => api.patch('/admin/profile', data);
+export const updateBusiness      = (data) => api.patch('/admin/business', data);
+export const updateNotifications = (data) => api.patch('/admin/notifications', data);
+export const changePassword      = (data) => api.patch('/admin/password', data);
+
+// Pricing configuration
+export const getPricing     = ()         => api.get('/admin/pricing');
+export const updatePriceRow = (id, data) => api.patch(`/admin/pricing/${id}`, data);
+export const calculatePrice = (options)  => api.post('/admin/pricing/calculate', options);
