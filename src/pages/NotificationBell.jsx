@@ -1,55 +1,33 @@
 import { useState, useEffect } from 'react';
+import Icon from '../components/Icon';
 
 export default function NotificationBell() {
-  const [isLoggedIn] = useState(() => Boolean(localStorage.getItem('token')));
   const [showDropdown, setShowDropdown] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [readIds, setReadIds] = useState(new Set());
 
-  // Check login status via token directly
   const token = localStorage.getItem('token');
   const isLoggedIn = Boolean(token);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
     if (!token) return;
 
-    async function fetchNotifications() {
-    if (!token) return;
-
-    // Fetch function placed inside useEffect to satisfy ESLint rules
     const fetchNotifications = async () => {
       try {
-        const res = await fetch('http://localhost:3001/api/orders/notifications', {
+        const res = await fetch('/api/orders/notifications', {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {
           const data = await res.json();
-          setNotifications(data); // Database එකේ Save වෙලා තියෙන List එකම State එකට සෙට් වෙනවා
           setNotifications(data);
         }
       } catch (err) {
-        console.error("Notifications fetch error:", err);
+        console.error('Notifications fetch error:', err);
       }
-    }
-
-    // මුලින්ම Notifications Fetch කිරීම
-    fetchNotifications();
-
-    // තත්පර 10කට සැරයක් Auto Check වෙනවා (Live Update එකට)
-    const interval = setInterval(fetchNotifications, 10000);
-
-    return () => clearInterval(interval);
-  }, []);
     };
 
-    // Initial fetch on component mount
     fetchNotifications();
-
-    // Auto-fetch notifications every 10 seconds
-    const interval = setInterval(() => {
-      fetchNotifications();
-    }, 10000);
+    const interval = setInterval(fetchNotifications, 10000);
 
     return () => clearInterval(interval);
   }, [token]);
@@ -73,8 +51,9 @@ export default function NotificationBell() {
   return (
     <div style={{ position: 'relative' }}>
       
-      {/* 🔔 Bell Icon Button */}
       <button
+        type="button"
+        aria-label="Notifications"
         onClick={toggleDropdown}
         style={{
           backgroundColor: '#1f2937',
@@ -91,7 +70,7 @@ export default function NotificationBell() {
           position: 'relative'
         }}
       >
-        🔔
+        <Icon name="bell" size={19}/>
         {/* Red badge indicator for unread notifications */}
         {unreadCount > 0 && (
           <span style={{
@@ -132,7 +111,7 @@ export default function NotificationBell() {
           zIndex: 1000
         }}>
           <h4 style={{ margin: '0 0 12px 0', fontSize: '15px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
-            Notifications History 📦
+            Notifications History
           </h4>
 
           {notifications.length === 0 ? (
