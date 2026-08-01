@@ -1,49 +1,65 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function NotificationBell() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [readIds, setReadIds] = useState(new Set());
+
+  // Check login status via token directly
+  const token = localStorage.getItem('token');
+  const isLoggedIn = Boolean(token);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      setIsLoggedIn(true);
+    if (!token) return;
 
-      // මුලින්ම Notifications Fetch කිරීම
-      fetchNotifications(token);
-
-      // තත්පර 10කට සැරයක් Auto Check වෙනවා (Live Update එකට)
-      const interval = setInterval(() => {
-        fetchNotifications(token);
-      }, 10000);
-
-      return () => clearInterval(interval);
-    }
-  }, []);
-
-  const fetchNotifications = async (token) => {
-    try {
-      const res = await fetch('http://localhost:3001/api/orders/notifications', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setNotifications(data); // Database එකේ Save වෙලා තියෙන List එකම State එකට සෙට් වෙනවා
+    // Fetch function placed inside useEffect to satisfy ESLint rules
+    const fetchNotifications = async () => {
+      try {
+        const res = await fetch('http://localhost:3001/api/orders/notifications', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setNotifications(data);
+        }
+      } catch (err) {
+        console.error("Notifications fetch error:", err);
       }
-    } catch (err) {
-      console.error("Notifications fetch error:", err);
+    };
+
+    // Initial fetch on component mount
+    fetchNotifications();
+
+    // Auto-fetch notifications every 10 seconds
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [token]);
+
+  // Toggle dropdown and mark all current notifications as read locally
+  const toggleDropdown = () => {
+    if (!showDropdown) {
+      const allIds = new Set(notifications.map((n) => n.id));
+      setReadIds((prev) => new Set([...prev, ...allIds]));
     }
+    setShowDropdown(!showDropdown);
   };
 
   if (!isLoggedIn) return null;
 
+  // Calculate total number of unread notifications
+  const unreadCount = notifications.filter(
+    (n) => !n.isRead && !readIds.has(n.id)
+  ).length;
+
   return (
     <div style={{ position: 'relative' }}>
       
-      {/* 🔔 Bell Button (නොකියවපු Notifications තියෙනවනම් Badge එකක් එක්ක) */}
+      {/* 🔔 Bell Icon Button */}
       <button
-        onClick={() => setShowDropdown(!showDropdown)}
+        onClick={toggleDropdown}
         style={{
           backgroundColor: '#1f2937',
           color: 'white',
@@ -60,7 +76,8 @@ export default function NotificationBell() {
         }}
       >
         🔔
-        {notifications.length > 0 && (
+        {/* Red badge indicator for unread notifications */}
+        {unreadCount > 0 && (
           <span style={{
             position: 'absolute',
             top: '-2px',
@@ -76,12 +93,12 @@ export default function NotificationBell() {
             justifyContent: 'center',
             fontWeight: 'bold'
           }}>
-            {notifications.length}
+            {unreadCount}
           </span>
         )}
       </button>
 
-      {/* Store වුණු Notifications පිළිවෙළට පෙන්වන Dropdown Box එක */}
+      {/* Notifications Dropdown Container */}
       {showDropdown && (
         <div style={{
           position: 'absolute',
@@ -107,13 +124,13 @@ export default function NotificationBell() {
               No notifications yet.
             </p>
           ) : (
-            notifications.map((notif) => (
+            notifications.map((notif, index) => (
               <div 
-                key={notif.id} 
+                key={notif.id || index} 
                 style={{ 
                   marginBottom: '12px', 
                   paddingBottom: '10px', 
-                  borderBottom: '1px solid rgba(255,255,255,0.05)' 
+                  borderBottom: '1px solid rgba(255,255,255,0.05)'
                 }}
               >
                 <div style={{ fontWeight: 'bold', fontSize: '13.5px', color: '#a78bfa', marginBottom: '2px' }}>
