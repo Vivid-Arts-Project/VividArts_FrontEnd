@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { showNotification } from './NotificationContainer';
+import { showNotification } from './notifications';
 import Icon from '../components/Icon';
 import BrandLogo from '../components/BrandLogo';
 

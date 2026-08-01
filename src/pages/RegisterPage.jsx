@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Icon from '../components/Icon';
-import { showNotification } from './NotificationContainer';
+import { showNotification } from './notifications';
 import BrandLogo from '../components/BrandLogo';
 
 function RegisterPage({ onNavigate }) {

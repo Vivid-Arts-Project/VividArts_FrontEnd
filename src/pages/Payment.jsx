@@ -3,7 +3,7 @@ import { api } from '../api';
 import Stepper from '../components/Stepper';
 
 // 💡 1. Notification function එක Import කරගන්න (path එක exact location එකට අනුව)
-import { showNotification } from './NotificationContainer';
+import { showNotification } from './notifications';
 import Icon from '../components/Icon';
 import BrandLogo from '../components/BrandLogo';
 
@@ -97,13 +97,19 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
     const paymentStatus = params.get('payment');
 
     if (paymentStatus === 'cancelled') {
+      // Clear the query params synchronously so React StrictMode's second
+      // dev-mode effect invocation doesn't see them and fire this again.
+      window.history.replaceState({}, document.title, window.location.pathname);
       // 💡 2. Payment cancel වුණොත් Warning/Error Toast එකක් පෙන්නන්න
       showNotification('warning', 'Payment was cancelled. You can try again.');
-      window.history.replaceState({}, document.title, window.location.pathname);
       return;
     }
 
     if (paymentStatus !== 'success' || !returnedOrderId) return;
+
+    // Clear the query params synchronously (see comment above) before any
+    // async work, so a StrictMode double-invoke can't show this twice.
+    window.history.replaceState({}, document.title, window.location.pathname);
 
     Promise.resolve()
       .then(() => setIsProcessing(true))
@@ -124,8 +130,6 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
 
         // 💡 3. Payment එක සාර්ථක වුණාම Auto Payment Success Toast එක පෙන්නන්න
         showNotification('payment_success', msg);
-
-        window.history.replaceState({}, document.title, window.location.pathname);
       })
       .catch((err) => {
         const errText = err.message || 'Unable to check payment status. Please contact support.';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import NotificationBell from './NotificationBell';
 import Icon from '../components/Icon';
 import BrandLogo from '../components/BrandLogo';
@@ -75,7 +75,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
   }, []);
 
   const handleLogout = () => {
-    try { localStorage.removeItem('token'); } catch (_) {}
+    try { localStorage.removeItem('token'); } catch { /* localStorage unavailable */ }
     setIsSignedIn(false);
     // Optionally navigate to landing/home
     onNavigate('landing');

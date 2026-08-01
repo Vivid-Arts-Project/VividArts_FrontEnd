@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
 export default function NotificationBell() {
+  const [isLoggedIn] = useState(() => Boolean(localStorage.getItem('token')));
   const [showDropdown, setShowDropdown] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [readIds, setReadIds] = useState(new Set());
@@ -10,6 +11,10 @@ export default function NotificationBell() {
   const isLoggedIn = Boolean(token);
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    async function fetchNotifications() {
     if (!token) return;
 
     // Fetch function placed inside useEffect to satisfy ESLint rules
@@ -20,11 +25,22 @@ export default function NotificationBell() {
         });
         if (res.ok) {
           const data = await res.json();
+          setNotifications(data); // Database එකේ Save වෙලා තියෙන List එකම State එකට සෙට් වෙනවා
           setNotifications(data);
         }
       } catch (err) {
         console.error("Notifications fetch error:", err);
       }
+    }
+
+    // මුලින්ම Notifications Fetch කිරීම
+    fetchNotifications();
+
+    // තත්පර 10කට සැරයක් Auto Check වෙනවා (Live Update එකට)
+    const interval = setInterval(fetchNotifications, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
     };
 
     // Initial fetch on component mount

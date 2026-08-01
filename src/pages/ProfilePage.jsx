@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import OrderTracker from './OrderTracker';
 
 function ProfilePage({ onNavigate }) {
@@ -7,6 +7,8 @@ function ProfilePage({ onNavigate }) {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [orders, setOrders] = useState([]);
+  const coverInputRef = useRef(null);
+  const avatarInputRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -67,7 +69,7 @@ function ProfilePage({ onNavigate }) {
       }
 
       setMessage(data.message || 'Profile updated successfully');
-      try { localStorage.setItem('username', username); } catch (_) {}
+      try { localStorage.setItem('username', username); } catch { /* localStorage unavailable */ }
     } catch (error) {
       setMessage(error.message || 'Update failed');
     }
@@ -84,9 +86,6 @@ function ProfilePage({ onNavigate }) {
   }
 
   const initials = (user.username || 'U').slice(0, 1).toUpperCase();
-  // refs for hidden file inputs
-  let coverInputRef = null;
-  let avatarInputRef = null;
 
   const uploadImage = async (file, type) => {
     const token = localStorage.getItem('token');
@@ -106,8 +105,8 @@ function ProfilePage({ onNavigate }) {
       if (!res.ok) throw new Error(data.message || 'Upload failed');
       // refresh profile data in-place
       setUser(prev => ({ ...prev, profile_image_url: data.profile_image_url || prev.profile_image_url, cover_image_url: data.cover_image_url || prev.cover_image_url }));
-      try { if (data.profile_image_url) localStorage.setItem('profile_image_url', data.profile_image_url); } catch (_) {}
-      try { if (data.cover_image_url) localStorage.setItem('cover_image_url', data.cover_image_url); } catch (_) {}
+      try { if (data.profile_image_url) localStorage.setItem('profile_image_url', data.profile_image_url); } catch { /* localStorage unavailable */ }
+      try { if (data.cover_image_url) localStorage.setItem('cover_image_url', data.cover_image_url); } catch { /* localStorage unavailable */ }
       setMessage('Image updated');
       // update display name in localStorage if username changed elsewhere
     } catch (err) {
@@ -131,11 +130,12 @@ function ProfilePage({ onNavigate }) {
             <div style={{ marginTop: 6, color: '#c7c3e6' }}>{user.email}</div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <input ref={(el) => (coverInputRef = el)} type="file" accept="image/*" style={{ display: 'none' }} onChange={onCoverSelected} />
-            <input ref={(el) => (avatarInputRef = el)} type="file" accept="image/*" style={{ display: 'none' }} onChange={onAvatarSelected} />
-            <button onClick={() => coverInputRef && coverInputRef.click()} style={{ padding: '10px 14px', background: '#2b8fe0', color: '#fff', borderRadius: 8, border: 'none' }}>Edit Cover Photo</button>
-            <button onClick={() => avatarInputRef && avatarInputRef.click()} style={{ padding: '10px 14px', background: '#fff', color: '#111827', borderRadius: 8, border: 'none' }}>Edit Profile Picture</button>
+            <input ref={coverInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onCoverSelected} />
+            <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onAvatarSelected} />
+            <button onClick={() => coverInputRef.current && coverInputRef.current.click()} style={{ padding: '10px 14px', background: '#2b8fe0', color: '#fff', borderRadius: 8, border: 'none' }}>Edit Cover Photo</button>
+            <button onClick={() => avatarInputRef.current && avatarInputRef.current.click()} style={{ padding: '10px 14px', background: '#fff', color: '#111827', borderRadius: 8, border: 'none' }}>Edit Profile Picture</button>
             <button onClick={() => onNavigate('landing')} style={{ padding: '10px 14px', background: '#111827', color: '#fff', borderRadius: 8, border: 'none' }}>Back to Landing</button>
+            <button onClick={handleLogout} style={{ padding: '10px 14px', background: '#e54d4d', color: '#fff', borderRadius: 8, border: 'none' }}>Logout</button>
           </div>
         </div>
       </div>

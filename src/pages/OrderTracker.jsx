@@ -1,5 +1,3 @@
-import React from 'react';
-
 // Admin Backend එකට ගැළපෙන Stages 6
 const STAGES = [
   { key: 'in_queue', label: 'Order Received' },
