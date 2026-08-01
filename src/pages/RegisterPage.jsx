@@ -10,52 +10,87 @@ function RegisterPage({ onNavigate }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [step, setStep] = useState(1);
+  const [otp, setOtp] = useState('');
+  const [verificationToken, setVerificationToken] = useState('');
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const readResponse = async (response) => {
+    const raw = await response.text();
+    try {
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return { message: raw || response.statusText };
+    }
+  };
+
+  const sendOtp = async () => {
+    setMessage('');
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/customers/register/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email }),
+      });
+      const data = await readResponse(response);
+      if (!response.ok) {
+        throw new Error(data.message || 'Unable to send the verification code.');
+      }
+      setIsError(false);
+      setMessage(data.message);
+      setStep(2);
+    } catch (error) {
+      setIsError(true);
+      setMessage(error.message || 'Unable to send the verification code.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    setMessage('');
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/customers/register/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: otp }),
+      });
+      const data = await readResponse(response);
+      if (!response.ok) throw new Error(data.message || 'Unable to verify the code.');
+      setVerificationToken(data.verificationToken);
+      setIsError(false);
+      setMessage(data.message);
+      setStep(3);
+    } catch (error) {
+      setIsError(true);
+      setMessage(error.message || 'Unable to verify the code.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleRegister = async (event) => {
     event.preventDefault();
+    if (password !== confirmPassword) return setMessage('Passwords do not match.'), setIsError(true);
     setMessage('');
-
-    if (password !== confirmPassword) {
-      setMessage('Passwords do not match.');
-      showNotification('error', 'Passwords do not match.');
-      return;
-    }
-
     setIsLoading(true);
     try {
       const response = await fetch('/api/customers/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password, confirmPassword }),
+        body: JSON.stringify({ username, email, password, confirmPassword, verificationToken }),
       });
-
-      // Be defensive: some endpoints may return an empty body or non-JSON.
-      const raw = await response.text();
-      let data;
-      try {
-        data = raw ? JSON.parse(raw) : {};
-      } catch {
-        data = { message: raw || response.statusText };
-      }
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      const successMessage = data.message || 'Registration successful.';
-      setIsError(false);
-      setMessage(successMessage);
-      showNotification('success', successMessage);
-      // Registration is complete: immediately open the login page.
+      const data = await readResponse(response);
+      if (!response.ok) throw new Error(data.message || 'Registration failed.');
+      showNotification('success', data.message || 'Registration successful.');
       onNavigate('login');
     } catch (error) {
-      const errorMessage = error.message || 'Registration failed';
       setIsError(true);
-      setMessage(errorMessage);
-      showNotification('error', errorMessage);
+      setMessage(error.message || 'Registration failed.');
     } finally {
       setIsLoading(false);
     }
@@ -63,18 +98,6 @@ function RegisterPage({ onNavigate }) {
 
   const passwordsMatch = Boolean(password && confirmPassword && password === confirmPassword);
   const fieldClass = 'group flex items-center gap-3 rounded-xl border border-white/10 bg-white/[.055] px-4 transition focus-within:border-[#7b8cff] focus-within:bg-white/[.08] focus-within:shadow-[0_0_0_4px_rgba(99,102,241,.1)]';
-  const passwordScore = [
-    password.length >= 8,
-    /[a-z]/.test(password) && /[A-Z]/.test(password),
-    /\d/.test(password),
-    /[^A-Za-z0-9]/.test(password),
-  ].filter(Boolean).length;
-  const passwordStrength = passwordScore <= 1
-    ? { label: 'Poor', level: 1, text: 'text-red-300', bar: 'bg-red-500' }
-    : passwordScore <= 3
-      ? { label: 'Middle', level: 2, text: 'text-yellow-300', bar: 'bg-yellow-400' }
-      : { label: 'Strong', level: 3, text: 'text-emerald-300', bar: 'bg-emerald-500' };
-
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#090816] font-sans text-white">
       <div className="login-grid absolute inset-0 opacity-30"/>
@@ -133,7 +156,13 @@ function RegisterPage({ onNavigate }) {
               <p className="mt-2 text-sm text-[#8f8ba8]">Your portrait journey starts here.</p>
             </div>
 
-            <form onSubmit={handleRegister} className="space-y-4">
+            <div className="mb-6 grid grid-cols-3 gap-2 text-center text-[11px] font-semibold">
+              {['Account', 'Verify email', 'Password'].map((label, index) => (
+                <div key={label} className={step >= index + 1 ? 'text-[#a99bff]' : 'text-white/30'}>{index + 1}. {label}</div>
+              ))}
+            </div>
+
+            {step === 1 && <div className="space-y-4">
               {[
                 { label: 'Username', type: 'text', value: username, setter: setUsername, icon: 'user', placeholder: 'Choose a username', autoComplete: 'username' },
                 { label: 'Email address', type: 'email', value: email, setter: setEmail, icon: 'mail', placeholder: 'you@example.com', autoComplete: 'email' },
@@ -146,38 +175,25 @@ function RegisterPage({ onNavigate }) {
                   </span>
                 </label>
               ))}
+              <button type="button" onClick={sendOtp} disabled={isLoading || !username.trim() || !email.trim()} className="group flex h-[50px] w-full items-center justify-center gap-2 rounded-xl border-none bg-gradient-to-r from-[#2b8fe0] via-[#7161d8] to-[#7b4fc8] text-sm font-bold text-white disabled:cursor-wait disabled:opacity-70">{isLoading ? <span className="login-spinner"/> : <>Send verification code <Icon name="arrowRight" size={17}/></>}</button>
+            </div>}
 
+            {step === 2 && <div className="space-y-4">
+              <p className="text-sm leading-6 text-[#8f8ba8]">We sent a six-digit code to <strong className="text-white">{email}</strong>.</p>
+              <label className="block"><span className="mb-1.5 block text-xs font-semibold text-white/70">Email verification code</span><span className={fieldClass}><Icon name="mail" size={18} className="text-[#77738e]"/><input inputMode="numeric" maxLength="6" value={otp} onChange={event => setOtp(event.target.value.replace(/\D/g, ''))} placeholder="Enter 6-digit code" className="h-11 w-full border-none bg-transparent text-sm text-white outline-none placeholder:text-white/25"/></span></label>
+              <button type="button" onClick={verifyOtp} disabled={isLoading || otp.length !== 6} className="group flex h-[50px] w-full items-center justify-center gap-2 rounded-xl border-none bg-gradient-to-r from-[#2b8fe0] via-[#7161d8] to-[#7b4fc8] text-sm font-bold text-white disabled:cursor-wait disabled:opacity-70">Verify email</button>
+              <button type="button" onClick={() => setStep(1)} className="w-full border-none bg-transparent text-xs font-semibold text-[#9e91ff]">Change email or resend code</button>
+            </div>}
+
+            {step === 3 && <form onSubmit={handleRegister} className="space-y-4">
+              <p className="text-sm text-emerald-300">Email verified. Create a password for your account.</p>
               {[
                 { label: 'Password', value: password, setter: setPassword, visible: showPassword, toggle: setShowPassword, autoComplete: 'new-password' },
                 { label: 'Confirm password', value: confirmPassword, setter: setConfirmPassword, visible: showConfirmPassword, toggle: setShowConfirmPassword, autoComplete: 'new-password' },
-              ].map(field => (
-                <label className="block" key={field.label}>
-                  <span className="mb-1.5 block text-xs font-semibold text-white/70">{field.label}</span>
-                  <span className={fieldClass}>
-                    <Icon name="lock" size={18} className="text-[#77738e] transition group-focus-within:text-[#8da7ff]"/>
-                    <input type={field.visible ? 'text' : 'password'} value={field.value} onChange={event => field.setter(event.target.value)} required autoComplete={field.autoComplete} placeholder={field.label} className="h-11 min-w-0 flex-1 border-none bg-transparent text-sm text-white outline-none placeholder:text-white/25"/>
-                    <button type="button" onClick={() => field.toggle(previous => !previous)} className="flex h-8 w-8 items-center justify-center rounded-lg border-none bg-transparent text-[#77738e] cursor-pointer transition hover:bg-white/5 hover:text-white" aria-label={field.visible ? `Hide ${field.label.toLowerCase()}` : `Show ${field.label.toLowerCase()}`}>
-                      <Icon name={field.visible ? 'eyeOff' : 'eye'} size={18}/>
-                    </button>
-                  </span>
-                  {field.label === 'Password' && password && (
-                    <span className="mt-2 block password-strength-enter">
-                      <span className="flex gap-1.5">
-                        {[1, 2, 3].map(level => (
-                          <span key={level} className={`h-1 flex-1 rounded-full transition-all duration-300 ${level <= passwordStrength.level ? passwordStrength.bar : 'bg-white/10'}`}/>
-                        ))}
-                      </span>
-                    </span>
-                  )}
-                </label>
-              ))}
-
-              {confirmPassword && (
-                <div className={`register-match-message ${passwordsMatch ? 'text-emerald-300' : 'text-red-300'}`}>
-                  <Icon name={passwordsMatch ? 'completed' : 'alert'} size={16}/>
-                  {passwordsMatch ? 'Passwords match' : 'Passwords do not match'}
-                </div>
-              )}
+              ].map(field => <label className="block" key={field.label}><span className="mb-1.5 block text-xs font-semibold text-white/70">{field.label}</span><span className={fieldClass}><Icon name="lock" size={18} className="text-[#77738e]"/><input type={field.visible ? 'text' : 'password'} value={field.value} onChange={event => field.setter(event.target.value)} required autoComplete={field.autoComplete} placeholder={field.label} className="h-11 min-w-0 flex-1 border-none bg-transparent text-sm text-white outline-none placeholder:text-white/25"/><button type="button" onClick={() => field.toggle(previous => !previous)} className="flex h-8 w-8 items-center justify-center rounded-lg border-none bg-transparent text-[#77738e]" aria-label={field.visible ? `Hide ${field.label.toLowerCase()}` : `Show ${field.label.toLowerCase()}`}><Icon name={field.visible ? 'eyeOff' : 'eye'} size={18}/></button></span></label>)}
+              {confirmPassword && <div className={`register-match-message ${passwordsMatch ? 'text-emerald-300' : 'text-red-300'}`}><Icon name={passwordsMatch ? 'completed' : 'alert'} size={16}/>{passwordsMatch ? 'Passwords match' : 'Passwords do not match'}</div>}
+              <button type="submit" disabled={isLoading} className="group flex h-[50px] w-full items-center justify-center gap-2 rounded-xl border-none bg-gradient-to-r from-[#2b8fe0] via-[#7161d8] to-[#7b4fc8] text-sm font-bold text-white disabled:cursor-wait disabled:opacity-70">{isLoading ? <span className="login-spinner"/> : <>Create account <Icon name="arrowRight" size={17}/></>}</button>
+            </form>}
 
               {message && (
                 <div className={`flex items-center gap-2 rounded-xl border px-3.5 py-3 text-xs ${!isError ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300' : 'border-red-400/20 bg-red-400/10 text-red-300'}`}>
@@ -185,10 +201,6 @@ function RegisterPage({ onNavigate }) {
                 </div>
               )}
 
-              <button type="submit" disabled={isLoading} className="group flex h-[50px] w-full items-center justify-center gap-2 rounded-xl border-none bg-gradient-to-r from-[#2b8fe0] via-[#7161d8] to-[#7b4fc8] text-sm font-bold text-white shadow-[0_14px_35px_rgba(91,63,168,.36)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(91,63,168,.5)] disabled:cursor-wait disabled:opacity-70">
-                {isLoading ? <span className="login-spinner"/> : <>Create account <Icon name="arrowRight" size={17} className="transition-transform group-hover:translate-x-1"/></>}
-              </button>
-            </form>
 
             <p className="mt-6 text-center text-xs text-white/45">Already have an account? <button type="button" onClick={() => onNavigate('login')} className="border-none bg-transparent p-0 font-bold text-[#9e91ff] cursor-pointer hover:text-[#bcb3ff] hover:underline">Sign in</button></p>
           </div>
