@@ -1,15 +1,16 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import Sidebar  from '../../components/Sidebar';
 import Topbar   from '../../components/Topbar';
 import Toast    from '../../components/Toast';
 import { NewOrderModal } from '../../components/Modals';
-import { useAuth } from '../../context/AuthContext';
+//import { useAuth } from '../../context/AuthContext';
 
 import OrdersPage    from '../OrdersPage';
 import {
   DashboardPage, ProofsPage, RevisionsPage,
-  ClientsPage, PaymentsPage, InvoicesPage, SettingsPage,
+  ClientsPage, PaymentsPage, InvoicesPage,
 } from '../OtherPages';
+import SettingsPage from '../SettingsPage';
 
 export default function AdminApp() {
   const [page, setPage]           = useState('orders');

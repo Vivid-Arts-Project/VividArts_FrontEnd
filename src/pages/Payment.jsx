@@ -51,6 +51,10 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
   );
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [successMessage, setSuccessMessage] = useState('Your deposit has been received.');
+  const [customerInfo, setCustomerInfo] = useState({
+    firstName: '', lastName: '', email: '', phone: '',
+    address: 'Colombo', city: 'Colombo', country: 'Sri Lanka',
+  });
 
 
  // Fetch prices on mount
@@ -63,6 +67,26 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
         }
       })
       .catch(err => console.error('Failed to load prices:', err));
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    api.getProfile(token)
+      .then((data) => {
+        const fullName = (data.full_name || data.username || '').trim();
+        const [firstName = '', ...lastNameParts] = fullName.split(/\s+/);
+        setCustomerInfo((previous) => ({
+          ...previous,
+          firstName,
+          lastName: lastNameParts.join(' '),
+          email: data.email || '',
+          phone: data.phone_number || '',
+          address: data.address && data.address !== 'N/A' ? data.address : previous.address,
+        }));
+      })
+      .catch((err) => console.error('Failed to load customer profile:', err));
   }, []);
 
   useEffect(() => {
@@ -113,15 +137,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
           people: safeOrder.people,
           notes: safeOrder.notes || ''
         },
-        customer: {
-          firstName: 'Vivid',
-          lastName: 'Arts',
-          email: 'customer@example.com',
-          phone: '0771234567',
-          address: 'Colombo',
-          city: 'Colombo',
-          country: 'Sri Lanka'
-        }
+        customer: customerInfo
       });
 
       if (!result.success || !result.checkoutUrl || !result.checkoutFields) {

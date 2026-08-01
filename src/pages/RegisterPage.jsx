@@ -23,6 +23,7 @@ function RegisterPage({ onNavigate }) {
       }
 
       setMessage(data.message || 'Registration successful.');
+      setTimeout(() => onNavigate('login'), 1200);
     } catch (error) {
       setMessage(error.message || 'Registration failed');
     }

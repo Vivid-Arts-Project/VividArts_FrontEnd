@@ -96,6 +96,13 @@ export const api = {
     return fetchAPI(`${API_URL}/customers`);
   },
 
+  // Get the currently authenticated customer's profile
+  getProfile: async (token) => {
+    return fetchAPI(`${API_URL}/customers/profile`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
   // ==================== HEALTH CHECK ====================
 
   // Check if server is running

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Stepper from "../components/Stepper";
 
-export default function UploadPhotoPage({ onNext, onBack = () => {}, initialPhotoData = null }) {
+export default function UploadPhotoPage({ onNext, onBack = () => {}, onNavigate = () => {}, initialPhotoData = null }) {
   const [photo, setPhoto] = useState(initialPhotoData?.photo ?? null);
   const [preview, setPreview] = useState("original");
   const [previewUrl, setPreviewUrl] = useState(initialPhotoData?.previewUrl ?? null);
@@ -49,7 +49,7 @@ export default function UploadPhotoPage({ onNext, onBack = () => {}, initialPhot
           >
             ← Back
           </button>
-          <button className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0d0c1a]">
+          <button type="button" onClick={() => onNavigate('profile')} className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0d0c1a]">
             My Account
           </button>
         </div>
