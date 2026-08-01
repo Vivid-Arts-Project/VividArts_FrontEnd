@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import NotificationBell from './NotificationBell';
 import Icon from '../components/Icon';
 import BrandLogo from '../components/BrandLogo';
@@ -51,6 +51,8 @@ const gallery = [
 
 export default function LandingPage({ onNavigate = () => {} }) {
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(Boolean(localStorage.getItem('token')));
+  const [displayName, setDisplayName] = useState(localStorage.getItem('username') || '');
 
   const handleCommission = () => {
     if (localStorage.getItem('token')) {
@@ -58,6 +60,25 @@ export default function LandingPage({ onNavigate = () => {} }) {
       return;
     }
     setShowAuthPrompt(true);
+  };
+
+  useEffect(() => {
+    const onStorage = () => setIsSignedIn(Boolean(localStorage.getItem('token')));
+    const onStorageName = () => setDisplayName(localStorage.getItem('username') || '');
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('storage', onStorageName);
+
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('storage', onStorageName);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    try { localStorage.removeItem('token'); } catch (_) {}
+    setIsSignedIn(false);
+    // Optionally navigate to landing/home
+    onNavigate('landing');
   };
 
   const handleAuthNavigation = (page) => {
@@ -69,10 +90,13 @@ export default function LandingPage({ onNavigate = () => {} }) {
     <div id="home" className="min-h-screen bg-[#0a0916] font-sans text-[#f5f4fb]">
       <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0a0916]/85 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 sm:px-8 lg:px-8">
-          <span className="flex items-center gap-3">
-            <BrandLogo size={44}/>
-            <span className="text-sm font-bold tracking-[0.2em]">PENCIL PORTRAITS</span>
-          </span>
+          <span className="text-sm font-bold tracking-[0.2em]">PENCIL PORTRAITS</span>
+          {isSignedIn && (
+            <div className="hidden md:flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center text-sm font-semibold">{(displayName || 'U').slice(0,1).toUpperCase()}</div>
+              <div className="text-sm font-medium text-white/90">{displayName}</div>
+            </div>
+          )}
           <nav className="hidden gap-8 text-sm text-[#a9a6c4] md:flex">
             <a className="transition hover:text-white" href="#home">
               Home
@@ -92,12 +116,29 @@ export default function LandingPage({ onNavigate = () => {} }) {
             {/* Notification Bell Icon එක */}
             <NotificationBell />
 
-            <button
-              className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
-              onClick={() => onNavigate('login')}
-            >
-              Sign In
-            </button>
+            {!isSignedIn ? (
+              <button
+                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
+                onClick={() => onNavigate('login')}
+              >
+                Sign In
+              </button>
+            ) : (
+              <>
+                <button
+                  className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
+                  onClick={() => onNavigate('profile')}
+                >
+                  My Account
+                </button>
+                <button
+                  className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </button>
+              </>
+            )}
             <button
               className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
               onClick={handleCommission}

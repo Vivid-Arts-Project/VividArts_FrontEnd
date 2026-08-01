@@ -8,6 +8,7 @@ function LoginPage({ onNavigate }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
+  const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (event) => {
@@ -16,23 +17,36 @@ function LoginPage({ onNavigate }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/customers/login', {
+      const response = await fetch('/api/customers/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await response.json();
+      // Defensive parsing: handle empty or non-JSON responses gracefully
+      const raw = await response.text();
+      let data;
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = { message: raw || response.statusText };
+      }
+
       if (!response.ok) {
         throw new Error(data.message || 'Login failed');
       }
 
       localStorage.setItem('token', data.token);
+      // Store the display name for the landing-page header.
+      localStorage.setItem('username', data.customer?.username || username);
+      setIsError(false);
       setMessage('Login successful.');
       showNotification('success', 'Login successful! Welcome back.');
-      onNavigate('profile');
+      // After successful login, immediately open the landing page.
+      onNavigate('landing');
     } catch (error) {
       const errText = error.message || 'Login failed. Please check your credentials.';
+      setIsError(true);
       setMessage(errText);
       showNotification('error', errText);
     } finally {
@@ -94,10 +108,10 @@ function LoginPage({ onNavigate }) {
 
             <form onSubmit={handleLogin} className="space-y-5">
               <label className="block">
-                <span className="mb-2 block text-xs font-semibold text-white/70">Username</span>
+                <span className="mb-2 block text-xs font-semibold text-white/70">Username or email</span>
                 <span className="group flex items-center gap-3 rounded-xl border border-white/10 bg-white/[.055] px-4 transition focus-within:border-[#7b8cff] focus-within:bg-white/[.08] focus-within:shadow-[0_0_0_4px_rgba(99,102,241,.1)]">
                   <Icon name="user" size={18} className="text-[#77738e] transition group-focus-within:text-[#8da7ff]"/>
-                  <input type="text" value={username} onChange={(event) => setUsername(event.target.value)} required autoComplete="username" placeholder="Enter your username" className="h-12 w-full border-none bg-transparent text-sm text-white outline-none placeholder:text-white/25"/>
+                  <input type="text" value={username} onChange={(event) => setUsername(event.target.value)} required autoComplete="username" placeholder="Enter your username or email" className="h-12 w-full border-none bg-transparent text-sm text-white outline-none placeholder:text-white/25"/>
                 </span>
               </label>
 
@@ -113,8 +127,8 @@ function LoginPage({ onNavigate }) {
               </label>
 
               {message && (
-                <div className={`flex items-center gap-2 rounded-xl border px-3.5 py-3 text-xs ${message.includes('successful') ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300' : 'border-red-400/20 bg-red-400/10 text-red-300'}`}>
-                  <Icon name={message.includes('successful') ? 'completed' : 'alert'} size={17}/>{message}
+                <div className={`flex items-center gap-2 rounded-xl border px-3.5 py-3 text-xs ${!isError ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300' : 'border-red-400/20 bg-red-400/10 text-red-300'}`}>
+                  <Icon name={!isError ? 'completed' : 'alert'} size={17}/>{message}
                 </div>
               )}
 
