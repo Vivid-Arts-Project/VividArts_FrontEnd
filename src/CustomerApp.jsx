@@ -17,7 +17,7 @@ const PATHS = {
   profile: '/profile',
 };
 
-function App() {
+function CustomerApp() {
   const navigate = useNavigate();
   const navigateTo = (target = 'landing') => navigate(PATHS[target] ?? '/');
 
@@ -25,7 +25,7 @@ function App() {
     <div>
       <Routes>
         <Route path="/" element={<LandingPage onNavigate={navigateTo} />} />
-        <Route path="/commission/*" element={<CommissionFlow onBack={() => navigateTo('landing')} />} />
+        <Route path="/commission/*" element={<CommissionFlow onBack={() => navigateTo('landing')} onNavigate={navigateTo} />} />
         <Route path="/login" element={<LoginPage onNavigate={navigateTo} />} />
         <Route path="/register" element={<RegisterPage onNavigate={navigateTo} />} />
         <Route path="/profile" element={<ProfilePage onNavigate={navigateTo} />} />
@@ -34,4 +34,4 @@ function App() {
   );
 }
 
-export default App;
+export default CustomerApp;

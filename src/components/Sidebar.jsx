@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Icon from './Icon';
@@ -22,6 +22,7 @@ const NAV = [
 export default function Sidebar({ page, onNav, stats }) {
   const { admin, logout } = useAuth();
   const navigate = useNavigate();
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const getBadge = (id) => {
     if (!stats) return null;
@@ -32,8 +33,14 @@ export default function Sidebar({ page, onNav, stats }) {
   };
 
   const handleLogout = async () => {
-    await logout();
-    navigate('/admin/login');
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await logout();
+    } finally {
+      navigate('/admin/login', { replace: true });
+      setLoggingOut(false);
+    }
   };
 
   // Build initials and display name from real DB data
@@ -59,6 +66,7 @@ export default function Sidebar({ page, onNav, stats }) {
         </div>
       </div>
 
+      <div className="flex-1 min-h-0 overflow-y-auto pb-2">
       {/* Nav items */}
       {NAV.map((item, i) => {
         if (item.section) return <div key={i} className="px-4 pt-4 pb-[5px] text-[10px] font-bold text-white/20 tracking-[1.2px] uppercase">{item.section}</div>;
@@ -83,9 +91,10 @@ export default function Sidebar({ page, onNav, stats }) {
           </button>
         );
       })}
+      </div>
 
       {/* User section — shows real name and role from DB */}
-      <div className="mt-auto px-3 py-3.5 border-t border-white/[0.06]">
+      <div className="shrink-0 px-3 py-3.5 border-t border-white/[0.06] bg-[#12102A]">
         <div className="flex items-center gap-2.5 cursor-pointer rounded-lg p-1.5 transition-colors hover:bg-white/[0.06]" onClick={() => onNav('settings')}>
           <div className="w-9 h-9 rounded-full bg-grad flex items-center justify-center font-bold text-[13px] text-white shrink-0">{initials}</div>
           <div className="flex-1 min-w-0">
@@ -98,7 +107,8 @@ export default function Sidebar({ page, onNav, stats }) {
         {/* Logout button */}
         <button
           onClick={handleLogout}
-          className="mt-2 w-full px-3 py-[7px] bg-white/[0.06] border border-white/10 rounded-lg text-white/50 text-xs font-semibold cursor-pointer text-left"
+          disabled={loggingOut}
+          className="mt-2 w-full px-3 py-2 bg-white/[0.06] border border-white/10 rounded-lg text-white/60 text-xs font-semibold cursor-pointer text-left transition-colors hover:bg-red-500/15 hover:border-red-400/25 hover:text-red-200 disabled:cursor-wait disabled:opacity-60"
         >
           ⇠ Sign out
         </button>

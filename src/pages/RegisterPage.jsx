@@ -38,6 +38,7 @@ function RegisterPage({ onNavigate }) {
       const successMessage = data.message || 'Registration successful.';
       setMessage(successMessage);
       showNotification('success', successMessage);
+      setTimeout(() => onNavigate('login'), 1200);
     } catch (error) {
       const errorMessage = error.message || 'Registration failed';
       setMessage(errorMessage);
