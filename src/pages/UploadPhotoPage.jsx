@@ -1,7 +1,6 @@
 import { useState } from "react";
 import Stepper from "../components/Stepper";
-import { showNotification } from "./NotificationContainer"; // 💡 1. Notification function එක Import කරගන්න
-import BrandLogo from "../components/BrandLogo";
+import { showNotification } from "./notifications"; // 💡 1. Notification function එක Import කරගන්න
 
 export default function UploadPhotoPage({ onNext, onBack = () => {}, onNavigate = () => {}, initialPhotoData = null }) {
   const [photo, setPhoto] = useState(initialPhotoData?.photo ?? null);

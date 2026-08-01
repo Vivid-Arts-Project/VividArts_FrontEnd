@@ -1,40 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function NotificationBell() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn] = useState(() => Boolean(localStorage.getItem('token')));
   const [showDropdown, setShowDropdown] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
-      setIsLoggedIn(true);
+    if (!token) return;
 
-      // මුලින්ම Notifications Fetch කිරීම
-      fetchNotifications(token);
-
-      // තත්පර 10කට සැරයක් Auto Check වෙනවා (Live Update එකට)
-      const interval = setInterval(() => {
-        fetchNotifications(token);
-      }, 10000);
-
-      return () => clearInterval(interval);
-    }
-  }, []);
-
-  const fetchNotifications = async (token) => {
-    try {
-      const res = await fetch('http://localhost:3001/api/orders/notifications', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setNotifications(data); // Database එකේ Save වෙලා තියෙන List එකම State එකට සෙට් වෙනවා
+    async function fetchNotifications() {
+      try {
+        const res = await fetch('http://localhost:3001/api/orders/notifications', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setNotifications(data); // Database එකේ Save වෙලා තියෙන List එකම State එකට සෙට් වෙනවා
+        }
+      } catch (err) {
+        console.error("Notifications fetch error:", err);
       }
-    } catch (err) {
-      console.error("Notifications fetch error:", err);
     }
-  };
+
+    // මුලින්ම Notifications Fetch කිරීම
+    fetchNotifications();
+
+    // තත්පර 10කට සැරයක් Auto Check වෙනවා (Live Update එකට)
+    const interval = setInterval(fetchNotifications, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   if (!isLoggedIn) return null;
 

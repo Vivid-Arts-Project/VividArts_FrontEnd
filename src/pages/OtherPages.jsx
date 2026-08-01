@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Badge from '../components/Badge';
 import Icon from '../components/Icon';
 import { getOrders, getCustomers, uploadProof } from '../api/adminApi';
@@ -46,7 +46,7 @@ function RevenueChart() {
 // ══════════════════════════════════════════════════════════════════════════════
 // DASHBOARD PAGE
 // ══════════════════════════════════════════════════════════════════════════════
-export function DashboardPage({ onToast, onNav }) {
+export function DashboardPage({ onNav }) {
   const [orders, setOrders] = useState([]);
   useEffect(() => {
     getOrders().then(r => setOrders(r.data.orders)).catch(() => {});
@@ -279,7 +279,7 @@ export function ProofsPage({ onToast }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // REVISIONS PAGE
 // ══════════════════════════════════════════════════════════════════════════════
-export function RevisionsPage({ onToast, onNav }) {
+export function RevisionsPage({ onNav }) {
   const [orders, setOrders] = useState([]);
   useEffect(() => {
     getOrders().then(r => setOrders(r.data.orders.filter(o => o.status === 'waiting_for_feedback' || o.status === 'revision'))).catch(() => {});

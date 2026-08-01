@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Icon from '../components/Icon';
-import Badge, { STATUS_MAP } from '../components/Badge';
+import Badge from '../components/Badge';
 import { getOrders, updateStatus, uploadProof, sendMessage, setLocation } from '../api/adminApi';
 
 const STAGE_ORDER = ['in_queue','sketching','shading','waiting_for_feedback','revision','finished','shipped'];
@@ -258,7 +258,7 @@ function DetailPanel({ order, onClose, onStatusSaved, onToast }) {
 }
 
 // ── Orders Page ───────────────────────────────────────────────────────────────
-export default function OrdersPage({ search, onToast, navigateTo }) {
+export default function OrdersPage({ search, onToast }) {
   const [orders, setOrders]       = useState([]);
   const [stats, setStats]         = useState({});
   const [loading, setLoading]     = useState(true);
@@ -274,7 +274,10 @@ export default function OrdersPage({ search, onToast, navigateTo }) {
     finally { setLoading(false); }
   }, [onToast]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial data fetch on mount; `load` is also reused by onStatusSaved below
+    load();
+  }, [load]);
 
   const filtered = orders.filter(o => {
     const matchSearch = !search || [o.id, o.customer?.fullName, o.customer?.email].join(' ').toLowerCase().includes(search.toLowerCase());
