@@ -11,11 +11,13 @@ const fallbackOrder = {
   size: { id: 'A3', label: 'A3' },
   frame: { id: 'classic', label: 'Classic' },
   people: 1,
-  basePrice: 3800,
-  framePrice: 800,
+  basePrice: 3500,
+  framePrice: 1800,
   peoplePrice: 0,
-  total: 4600,
-  deposit: 2300,
+  deliveryPrice: 500,
+  urgentPrice: 0,
+  total: 5800,
+  deposit: 2900,
 }
 const currencies = [
   { code: 'LKR', label: 'LKR – Sri Lankan rupee', rate: 1 },
@@ -332,6 +334,12 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
               )}
               {safeOrder.peoplePrice > 0 && (
                 <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Extra subjects</span><span className="font-medium">{displayValue(safeOrder.peoplePrice)}</span></div>
+              )}
+              {safeOrder.deliveryPrice > 0 && (
+                <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Delivery charge</span><span className="font-medium">{displayValue(safeOrder.deliveryPrice)}</span></div>
+              )}
+              {safeOrder.urgentPrice > 0 && (
+                <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Urgent order</span><span className="font-medium">{displayValue(safeOrder.urgentPrice)}</span></div>
               )}
               <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Delivery</span><span className="font-medium">Courier</span></div>
             </div>
