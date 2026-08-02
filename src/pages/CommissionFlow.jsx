@@ -70,7 +70,7 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
         />
         <Route
           path="payment"
-          element={<Payment order={order} onBack={() => navigate('customize')} onComplete={handlePaymentComplete} />}
+          element={<Payment order={order} onBack={() => navigate('customize')} onComplete={handlePaymentComplete} onNavigate={onNavigate} />}
         />
       </Routes>
     </div>

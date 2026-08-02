@@ -1,5 +1,7 @@
 import { useState } from "react";
 import Stepper from "../components/Stepper";
+import CommissionHeader from "../components/CommissionHeader";
+import Icon from "../components/Icon";
 import { showNotification } from "./notifications"; // 💡 1. Notification function එක Import කරගන්න
 
 export default function UploadPhotoPage({ onNext, onBack = () => {}, onNavigate = () => {}, initialPhotoData = null }) {
@@ -53,35 +55,11 @@ export default function UploadPhotoPage({ onNext, onBack = () => {}, onNavigate 
 
   return (
     <div className="min-h-screen bg-[#0d0c1a] pb-16 font-sans text-white">
-      <header className="mx-auto flex max-w-[700px] items-center justify-between px-8 pt-7">
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-bold tracking-[0.2em]">PENCIL PORTRAITS</span>
-          {localStorage.getItem('username') && (
-            <div className="hidden sm:flex items-center gap-2 text-sm text-white/80">
-              <div className="h-7 w-7 rounded-full bg-white/10 flex items-center justify-center text-xs font-semibold">{(localStorage.getItem('username')||'U').slice(0,1).toUpperCase()}</div>
-              <div>{localStorage.getItem('username')}</div>
-            </div>
-          )}
-        </div>
-        <div className="flex gap-2.5">
-          <button
-            type="button"
-            className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0d0c1a]"
-            onClick={onBack}
-          >
-            ← Back
-          </button>
-          <button type="button" onClick={() => onNavigate('profile')} className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0d0c1a]">
-            My Account
-          </button>
-        </div>
-      </header>
-
-      <div className="mx-auto mt-7 max-w-[700px] px-8">
+      <div className="mx-auto max-w-[980px] px-[18px] py-7">
+        <CommissionHeader onBack={onBack} onHome={onBack} />
         <Stepper current={1} />
-      </div>
 
-      <main className="mx-auto mt-7 max-w-[700px] px-8">
+      <main>
         <div className="rounded-[18px] bg-white p-7 text-[#1b1830] shadow-xl">
           <h2 className="text-xl font-bold">Reference Photo</h2>
           <p className="mt-1 text-sm text-[#6b6885]">
@@ -126,7 +104,9 @@ export default function UploadPhotoPage({ onNext, onBack = () => {}, onNavigate 
               />
             ) : (
               <>
-                <span className="mb-1 text-3xl">🖼️</span>
+                <span className="upload-photo-float mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-white shadow-[0_12px_28px_rgba(99,102,241,0.3)]">
+                  <Icon name="upload" size={27} />
+                </span>
                 <strong>Drag &amp; drop your photo here</strong>
                 <span className="text-[12.5px] text-[#6b6885]">
                   JPG, PNG · Max 20MB · Min 1000×1000px
@@ -164,7 +144,12 @@ export default function UploadPhotoPage({ onNext, onBack = () => {}, onNavigate 
           </div>
 
           <div className="mt-5 rounded-xl bg-[#f7f6ff] p-4 sm:p-5">
-            <h3 className="mb-3 text-[15px] font-semibold">📸 Photo Tips</h3>
+            <h3 className="mb-3 flex items-center gap-2.5 text-[15px] font-semibold">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#ece9ff] text-[#5a3fbb]">
+                <Icon name="camera" size={20} />
+              </span>
+              Photo Tips
+            </h3>
             <ul className="flex list-disc flex-col gap-2 pl-5 text-sm text-[#3d3959]">
               <li>Clear, well-lit face</li>
               <li>Min 1000px wide</li>
@@ -184,6 +169,7 @@ export default function UploadPhotoPage({ onNext, onBack = () => {}, onNavigate 
           </button>
         </div>
       </main>
+      </div>
     </div>
   );
 }
