@@ -5,7 +5,7 @@ import Stepper from '../components/Stepper';
 // 💡 1. Notification function එක Import කරගන්න (path එක exact location එකට අනුව)
 import { showNotification } from './notifications';
 import Icon from '../components/Icon';
-import BrandLogo from '../components/BrandLogo';
+import CommissionHeader from '../components/CommissionHeader';
 
 const fallbackOrder = {
   size: { id: 'A3', label: 'A3' },
@@ -15,6 +15,7 @@ const fallbackOrder = {
   framePrice: 1800,
   peoplePrice: 0,
   deliveryPrice: 500,
+  deliveryMethod: 'courier',
   urgentPrice: 0,
   total: 5800,
   deposit: 2900,
@@ -45,7 +46,7 @@ function submitCheckoutForm(actionUrl, fields) {
   form.submit()
 }
 
-export default function Payment({ order, onBack = () => {}, onComplete = () => {} }) {
+export default function Payment({ order, onBack = () => {}, onComplete = () => {}, onNavigate = () => {} }) {
   const safeOrder = order || fallbackOrder
   const [currency] = useState(currencies[0])
   const [isProcessing, setIsProcessing] = useState(false)
@@ -154,6 +155,9 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
           sizeId: safeOrder.sizeId || safeOrder.size?.id,
           frameId: safeOrder.frameId || safeOrder.frame?.id,
           people: safeOrder.people,
+          deliveryMethod: safeOrder.deliveryMethod || 'courier',
+          urgent: safeOrder.urgent === true,
+          urgentDeadline: safeOrder.urgent ? safeOrder.urgentDeadline : null,
           notes: safeOrder.notes || ''
         },
         customer: customerInfo
@@ -181,11 +185,17 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
 
   if (showConfirmation) {
     return (
-      <div className="max-w-[980px] mx-auto p-[18px]">
+      <div className="max-w-[980px] mx-auto px-[18px] py-7">
+        <CommissionHeader onBack={() => setShowConfirmation(false)} onHome={onComplete} />
         <Stepper current={4} />
 
         <div className="bg-white rounded-[18px] border border-black/10 text-[#222] text-center p-6 sm:p-10">
-          <div className="text-[48px] sm:text-[60px] mb-5">✅</div>
+          <div className="payment-success-check" role="img" aria-label="Payment completed successfully">
+            <svg viewBox="0 0 80 80" aria-hidden="true">
+              <circle className="payment-success-check__circle" cx="40" cy="40" r="32" />
+              <path className="payment-success-check__tick" d="M24 41.5l10.5 10.5L57 27.5" />
+            </svg>
+          </div>
           <h2 className="text-xl sm:text-2xl font-medium text-gray-900 mb-2">Payment Successful!</h2>
           <p className="text-[#4b5563]">
             {successMessage}
@@ -196,7 +206,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
           {orderId && successMessage === 'Your PayHere payment has been confirmed.' && (
             <a
               href={api.getInvoiceUrl(orderId)}
-              className="inline-block border-none rounded-full px-6 py-[14px] cursor-pointer transition-colors bg-[#059669] text-white hover:bg-[#047857] mt-[10px]"
+              className="mt-[10px] inline-flex min-w-[230px] items-center justify-center rounded-full border border-[#9fe3c5] bg-gradient-to-br from-[#f4fff9] to-[#eafff5] px-[30px] py-3 font-semibold text-[#087a57] shadow-[0_12px_28px_rgba(5,150,105,0.12)] transition-all hover:-translate-y-0.5 hover:border-[#50c894] hover:shadow-[0_18px_36px_rgba(5,150,105,0.2)]"
             >
               Download Invoice (PDF)
             </a>
@@ -207,7 +217,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
               className="min-w-[190px] rounded-full px-[30px] py-3 cursor-pointer transition-all border border-[#cfc8ff] bg-gradient-to-br from-[#f7f5ff] to-[#edf8ff] text-[#5a3fbb] font-semibold shadow-[0_12px_28px_rgba(91,63,168,0.12)] hover:-translate-y-0.5 hover:border-[#8b7cff] hover:shadow-[0_18px_36px_rgba(91,63,168,0.2)]"
               onClick={() => onComplete()}
             >
-              Go to Dashboard
+              Go to Home Page
             </button>
             <button
               className="min-w-[190px] rounded-full px-[30px] py-3 cursor-pointer transition-all border border-[#cfc8ff] bg-gradient-to-br from-[#f7f5ff] to-[#edf8ff] text-[#5a3fbb] font-semibold shadow-[0_12px_28px_rgba(91,63,168,0.12)] hover:-translate-y-0.5 hover:border-[#8b7cff] hover:shadow-[0_18px_36px_rgba(91,63,168,0.2)] inline-flex items-center justify-center gap-2"
@@ -223,18 +233,8 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
   }
 
   return (
-    <div className="max-w-[980px] mx-auto p-[18px]">
-      <header className="h-[88px] max-[720px]:h-auto bg-white flex items-center justify-between px-14 max-[720px]:px-4 max-[720px]:py-[14px] border-b border-[#e7e2ff] mb-[18px] max-[720px]:flex-wrap">
-        <div className="flex items-center gap-4">
-            <BrandLogo size={54}/>
-            <span className="text-xl font-extrabold text-gray-900 tracking-[-0.5px]">VIVID ARTS</span>
-        </div>
-
-        <nav className="flex gap-6 max-[720px]:hidden">
-            <a href="/" className="text-[#5a3fbb] text-base font-bold bg-[rgba(109,91,255,0.12)] px-[18px] py-[10px] rounded-full transition-colors hover:text-[#3c2ca8] hover:bg-[rgba(109,91,255,0.18)]">Home</a>
-            <a href="#" className="text-[#5a3fbb] text-base font-bold bg-[rgba(109,91,255,0.12)] px-[18px] py-[10px] rounded-full transition-colors hover:text-[#3c2ca8] hover:bg-[rgba(109,91,255,0.18)]">My Orders</a>
-        </nav>
-      </header>
+    <div className="max-w-[980px] mx-auto px-[18px] py-7">
+      <CommissionHeader onBack={onBack} onHome={onComplete} />
 
       <Stepper current={3} />
 
@@ -341,7 +341,10 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
               {safeOrder.urgentPrice > 0 && (
                 <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Urgent order</span><span className="font-medium">{displayValue(safeOrder.urgentPrice)}</span></div>
               )}
-              <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Delivery</span><span className="font-medium">Courier</span></div>
+              {safeOrder.urgent && safeOrder.urgentDeadline && (
+                <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Requested by</span><span className="font-medium">{new Date(`${safeOrder.urgentDeadline}T00:00:00`).toLocaleDateString('en-LK', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
+              )}
+              <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Delivery</span><span className="font-medium">{safeOrder.deliveryMethod === 'pickup' ? 'Pickup' : 'Courier'}</span></div>
             </div>
 
             <div className="flex justify-between items-center mt-[14px] pt-[14px] border-t-[1.5px] border-[rgba(83,74,183,0.18)]">
@@ -370,11 +373,6 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
             <div className="flex justify-between text-xs py-[5px]"><span className="text-[#6b6b80]">Delivery estimate</span><span className="text-[#534ab7] font-medium">7–10 working days</span></div>
           </div>
 
-          <div className="rounded-full p-[1.5px] bg-gradient-to-r from-[#7f6cff] to-[#5cd1ff] w-full mt-[18px]">
-            <button type="button" className="w-full rounded-full px-6 py-[14px] cursor-pointer transition-colors bg-white text-black hover:bg-gray-50" onClick={onBack}>
-              ← Back to details
-            </button>
-          </div>
         </div>
       </main>
     </div>

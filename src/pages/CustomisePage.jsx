@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Stepper from "../components/Stepper";
-import BrandLogo from "../components/BrandLogo";
+import CommissionHeader from "../components/CommissionHeader";
 import { api } from "../api";
 
 const FALLBACK_CATALOG = {
@@ -24,12 +24,25 @@ function fmt(n) {
 }
 
 export default function CustomisePage({ photoData, initialOrder = null, onNext = () => {}, onBack, onNavigate = () => {} }) {
-  const [sizeId, setSizeId] = useState(initialOrder?.sizeId ?? "A3");
-  const [frameId, setFrameId] = useState(initialOrder?.frameId ?? "classic");
+  const [sizeId, setSizeId] = useState(initialOrder?.sizeId ?? "");
+  const [frameId, setFrameId] = useState(initialOrder?.frameId ?? "");
   const [people, setPeople] = useState(initialOrder?.people ?? 1);
   const [notes, setNotes] = useState(initialOrder?.notes ?? "");
+  const [deliveryMethod, setDeliveryMethod] = useState(initialOrder?.deliveryMethod ?? "");
   const [urgent, setUrgent] = useState(initialOrder?.urgent ?? false);
+  const [urgentDeadline, setUrgentDeadline] = useState(initialOrder?.urgentDeadline ?? "");
+  const [urgentDeadlineError, setUrgentDeadlineError] = useState("");
+  const [selectionError, setSelectionError] = useState("");
   const [catalog, setCatalog] = useState(FALLBACK_CATALOG);
+
+  const minimumUrgentDate = useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() + 7);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -45,37 +58,51 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
   }, []);
 
   const sizes = Object.entries(catalog.sizes).map(([id, value]) => ({ id, ...value, dims: SIZE_DIMS[id] }));
-  const size = { id: sizeId, ...catalog.sizes[sizeId], dims: SIZE_DIMS[sizeId] };
+  const size = sizeId ? { id: sizeId, ...catalog.sizes[sizeId], dims: SIZE_DIMS[sizeId] } : null;
   const frames = Object.entries(catalog.frames).map(([id, value]) => ({
     id,
     label: value.label,
-    price: value.prices[sizeId],
-    note: value.prices[sizeId] ? `+ ${fmt(value.prices[sizeId])}` : "Included",
+    price: sizeId ? value.prices[sizeId] : 0,
+    note: sizeId ? (value.prices[sizeId] ? `+ ${fmt(value.prices[sizeId])}` : "Included") : "Select a size first",
   }));
-  const frame = frames.find((item) => item.id === frameId);
-  const extraPersonPrice = size.extraPersonPrice;
+  const frame = frames.find((item) => item.id === frameId) ?? null;
+  const extraPersonPrice = size?.extraPersonPrice ?? 0;
 
   const total = useMemo(
-    () => size.price + frame.price + Math.max(0, people - 1) * extraPersonPrice
-      + catalog.deliveryPrice + (urgent ? catalog.urgentPrice : 0),
-    [size.price, frame.price, people, extraPersonPrice, catalog.deliveryPrice, catalog.urgentPrice, urgent]
+    () => (size?.price ?? 0) + (frame?.price ?? 0) + Math.max(0, people - 1) * extraPersonPrice
+      + (deliveryMethod === "courier" ? catalog.deliveryPrice : 0) + (urgent ? catalog.urgentPrice : 0),
+    [size?.price, frame?.price, people, extraPersonPrice, deliveryMethod, catalog.deliveryPrice, catalog.urgentPrice, urgent]
   );
   const deposit = Math.round(total * 0.5);
 
   function handleContinue() {
+    if (!sizeId || !frameId || !deliveryMethod) {
+      setSelectionError("Please select a portrait size, frame, and delivery option before continuing.");
+      return;
+    }
+
+    setSelectionError("");
+    if (urgent && (!urgentDeadline || urgentDeadline < minimumUrgentDate)) {
+      setUrgentDeadlineError(`Please select a date on or after ${new Date(`${minimumUrgentDate}T00:00:00`).toLocaleDateString("en-LK", { day: "numeric", month: "short", year: "numeric" })}.`);
+      return;
+    }
+
+    setUrgentDeadlineError("");
     onNext({
       sizeId,
       frameId,
       people,
       notes,
+      deliveryMethod,
       urgent,
+      urgentDeadline: urgent ? urgentDeadline : null,
       size,
       frame,
       basePrice: size.price,
       framePrice: frame.price,
       extraPersonPrice,
       peoplePrice: Math.max(0, people - 1) * extraPersonPrice,
-      deliveryPrice: catalog.deliveryPrice,
+      deliveryPrice: deliveryMethod === "courier" ? catalog.deliveryPrice : 0,
       urgentPrice: urgent ? catalog.urgentPrice : 0,
       total,
       deposit,
@@ -84,27 +111,11 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
 
   return (
     <div className="min-h-screen bg-[#0d0c1a] pb-16 font-sans text-white">
-      <header className="mx-auto flex max-w-7xl items-center justify-between px-8 pt-7">
-        <span className="flex items-center gap-3"><BrandLogo size={44}/><span className="text-sm font-bold tracking-[0.2em]">PENCIL PORTRAITS</span></span>
-        <div className="flex gap-2.5">
-          <button
-            type="button"
-            className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0d0c1a]"
-            onClick={onBack}
-          >
-            ← Back
-          </button>
-          <button type="button" onClick={() => onNavigate('profile')} className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0d0c1a]">
-            My Account
-          </button>
-        </div>
-      </header>
-
-      <div className="mx-auto mt-7 max-w-7xl px-8">
+      <div className="mx-auto max-w-[980px] px-[18px] py-7">
+        <CommissionHeader onBack={onBack} onHome={() => onNavigate('landing')} />
         <Stepper current={2} />
-      </div>
 
-      <main className="mx-auto mt-7 grid max-w-7xl gap-6 px-8 lg:grid-cols-[1.5fr_1fr] lg:items-start">
+      <main className="grid gap-5 lg:grid-cols-[1.5fr_1fr] lg:items-start">
         <section className="rounded-[18px] bg-white p-6 text-[#1b1830] shadow-xl sm:p-7">
           <h2 className="text-xl font-bold">Customize Your Portrait</h2>
           <p className="mt-1 text-sm text-[#6b6885]">
@@ -124,6 +135,12 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
             </div>
           )}
 
+          {selectionError && (
+            <div className="mt-4 rounded-xl border border-[#e9a39a] bg-[#fff3f1] px-4 py-3 text-sm font-semibold text-[#b33c2e]">
+              {selectionError}
+            </div>
+          )}
+
           <label className="mt-5 mb-2 block text-[13px] font-semibold uppercase tracking-[0.08em] text-[#6b6885]">
             Size
           </label>
@@ -132,19 +149,28 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
               <button
                 key={s.id}
                 type="button"
-                className={`flex flex-col gap-2 rounded-xl border p-4 text-left transition ${ 
+                className={`group relative flex flex-col gap-2 rounded-2xl border-2 p-4 text-left transition-all duration-300 ${ 
                   sizeId === s.id
-                    ? "border-[#6366f1] bg-[#f5f3ff] "
-                    : "border-[#e7e5f1] bg-white"
+                    ? "border-[#6366f1] bg-gradient-to-br from-[#f5f3ff] to-[#eef5ff] shadow-[0_10px_24px_rgba(99,102,241,0.14)]"
+                    : "border-[#e7e5f1] bg-white hover:-translate-y-0.5 hover:border-[#bbb3ee] hover:shadow-[0_10px_22px_rgba(99,102,241,0.08)]"
                    
                 }`}
-                onClick={() => setSizeId(s.id)}
+                onClick={() => {
+                  setSizeId(s.id);
+                  setFrameId("");
+                  setSelectionError("");
+                }}
               >
-                <span className="flex flex-col gap-1 text-[15px]   font-bold">
-                  {s.label}
-                  <small className="text-sm font-medium text-[#6b6885] ">{s.dims}</small>
+                <span className="flex items-start justify-between gap-3">
+                  <span className="flex flex-col gap-1 text-[15px] font-bold">
+                    {s.label}
+                    <small className="text-sm font-medium text-[#6b6885]">{s.dims}</small>
+                  </span>
+                  <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300 ${sizeId === s.id ? "border-[#6366f1]" : "border-[#c9c6d7] group-hover:border-[#9489df]"}`}>
+                    <span className={`rounded-full bg-[#6366f1] transition-all duration-300 ${sizeId === s.id ? "h-2.5 w-2.5 scale-100 opacity-100" : "h-0 w-0 scale-0 opacity-0"}`} />
+                  </span>
                 </span>
-                <span className={`text-sm ${sizeId === s.id ? "text-[#6366f1]" : "text-[#6b6885]" }`}>
+                <span className={`text-sm font-semibold transition-colors ${sizeId === s.id ? "text-[#5a3fbb]" : "text-[#6b6885]" }`}>
                   from {fmt(s.price)}
                 </span>
               </button>
@@ -159,15 +185,19 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
               <button
                 key={f.id}
                 type="button"
-                className={`flex flex-col items-center gap-1 rounded-xl border p-4 text-center transition ${
+                className={`group relative flex min-h-[96px] flex-col items-center justify-center gap-1 rounded-2xl border-2 p-4 text-center transition-all duration-300 ${
                   frameId === f.id
-                    ? "border-[#6366f1] bg-[#f5f3ff]"
-                    : "border-[#e7e5f1] bg-white"
+                    ? "border-[#6366f1] bg-gradient-to-br from-[#f5f3ff] to-[#eef5ff] shadow-[0_10px_24px_rgba(99,102,241,0.14)]"
+                    : "border-[#e7e5f1] bg-white hover:-translate-y-0.5 hover:border-[#bbb3ee] hover:shadow-[0_10px_22px_rgba(99,102,241,0.08)] disabled:translate-y-0 disabled:cursor-not-allowed disabled:border-[#eceaf3] disabled:bg-[#faf9fc] disabled:opacity-65 disabled:shadow-none"
                 }`}
-                onClick={() => setFrameId(f.id)}
+                onClick={() => { setFrameId(f.id); setSelectionError(""); }}
+                disabled={!sizeId}
               >
+                <span className={`absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all duration-300 ${frameId === f.id ? "border-[#6366f1]" : "border-[#c9c6d7] group-hover:border-[#9489df] group-disabled:border-[#d8d5e1]"}`}>
+                  <span className={`rounded-full bg-[#6366f1] transition-all duration-300 ${frameId === f.id ? "h-2.5 w-2.5 scale-100 opacity-100" : "h-0 w-0 scale-0 opacity-0"}`} />
+                </span>
                 <span className="text-[15px] font-bold">{f.label}</span>
-                <span className={`text-sm ${frameId === f.id ? "text-[#6366f1]" : "text-[#6b6885]"}`}>
+                <span className={`text-sm font-semibold transition-colors ${frameId === f.id ? "text-[#5a3fbb]" : "text-[#6b6885]"}`}>
                   {f.note}
                 </span>
               </button>
@@ -202,10 +232,111 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
             </span>
           </div>
 
-          <label className="mt-5 flex cursor-pointer items-center justify-between rounded-xl border border-[#e7e5f1] bg-[#fafafe] p-4">
-            <span><strong className="block text-sm">Urgent order</strong><span className="text-xs text-[#6b6885]">Add {fmt(catalog.urgentPrice)} for priority handling</span></span>
-            <input type="checkbox" checked={urgent} onChange={(event) => setUrgent(event.target.checked)} className="h-5 w-5 accent-[#6366f1]" />
+          <fieldset className="mt-5">
+            <legend className="mb-2 block text-[13px] font-semibold uppercase tracking-[0.08em] text-[#6b6885]">Delivery option</legend>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className={`group cursor-pointer rounded-2xl border-2 p-4 transition-all ${deliveryMethod === "courier" ? "border-[#6366f1] bg-gradient-to-br from-[#f5f3ff] to-[#eef5ff] shadow-[0_10px_24px_rgba(99,102,241,0.14)]" : "border-[#e7e5f1] bg-white hover:-translate-y-0.5 hover:border-[#bbb3ee]"}`}>
+                <input type="radio" name="delivery-method" value="courier" checked={deliveryMethod === "courier"} onChange={(event) => { setDeliveryMethod(event.target.value); setSelectionError(""); }} className="sr-only" />
+                <span className="flex items-center gap-3">
+                  <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${deliveryMethod === "courier" ? "bg-[#6366f1] text-white" : "bg-[#f1effc] text-[#67607f]"}`}>
+                    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 6h11v10H3z"/><path d="M14 9h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+                  </span>
+                  <span className="min-w-0">
+                    <strong className="block text-sm font-extrabold text-[#29253b]">Courier delivery</strong>
+                    <span className={`mt-1 block text-sm font-bold ${deliveryMethod === "courier" ? "text-[#5a3fbb]" : "text-[#6b6885]"}`}>+ {fmt(catalog.deliveryPrice)}</span>
+                  </span>
+                  <span className={`ml-auto flex h-5 w-5 items-center justify-center rounded-full border-2 ${deliveryMethod === "courier" ? "border-[#6366f1]" : "border-[#c9c6d7]"}`}>
+                    {deliveryMethod === "courier" && <span className="h-2.5 w-2.5 rounded-full bg-[#6366f1]" />}
+                  </span>
+                </span>
+              </label>
+
+              <label className={`group cursor-pointer rounded-2xl border-2 p-4 transition-all ${deliveryMethod === "pickup" ? "border-[#6366f1] bg-gradient-to-br from-[#f5f3ff] to-[#eef5ff] shadow-[0_10px_24px_rgba(99,102,241,0.14)]" : "border-[#e7e5f1] bg-white hover:-translate-y-0.5 hover:border-[#bbb3ee]"}`}>
+                <input type="radio" name="delivery-method" value="pickup" checked={deliveryMethod === "pickup"} onChange={(event) => { setDeliveryMethod(event.target.value); setSelectionError(""); }} className="sr-only" />
+                <span className="flex items-center gap-3">
+                  <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${deliveryMethod === "pickup" ? "bg-[#6366f1] text-white" : "bg-[#f1effc] text-[#67607f]"}`}>
+                    <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 10v10h16V10"/><path d="M3 10l2-6h14l2 6"/><path d="M3 10a3 3 0 006 0 3 3 0 006 0 3 3 0 006 0"/><path d="M9 20v-5h6v5"/></svg>
+                  </span>
+                  <span className="min-w-0">
+                    <strong className="block text-sm font-extrabold text-[#29253b]">Pickup</strong>
+                    <span className={`mt-1 block text-sm font-bold ${deliveryMethod === "pickup" ? "text-[#5a3fbb]" : "text-[#6b6885]"}`}>No cost</span>
+                  </span>
+                  <span className={`ml-auto flex h-5 w-5 items-center justify-center rounded-full border-2 ${deliveryMethod === "pickup" ? "border-[#6366f1]" : "border-[#c9c6d7]"}`}>
+                    {deliveryMethod === "pickup" && <span className="h-2.5 w-2.5 rounded-full bg-[#6366f1]" />}
+                  </span>
+                </span>
+              </label>
+            </div>
+          </fieldset>
+
+          <label className={`group relative mt-5 flex cursor-pointer items-center justify-between gap-4 overflow-hidden rounded-2xl border-2 p-4 transition-all duration-300 sm:p-5 ${
+            urgent
+              ? "border-[#f59e0b] bg-gradient-to-r from-[#fff8e7] to-[#fff1d4] shadow-[0_14px_30px_rgba(245,158,11,0.18)]"
+              : "border-[#f1cc83] bg-gradient-to-r from-[#fffdf7] to-[#fff8e9] shadow-[0_10px_24px_rgba(180,121,22,0.1)] hover:-translate-y-0.5 hover:border-[#f0ad32] hover:shadow-[0_15px_32px_rgba(180,121,22,0.16)]"
+          }`}>
+            <span className="absolute -right-8 -top-10 h-28 w-28 rounded-full bg-[#fbbf24]/10" />
+            <span className="relative flex min-w-0 items-center gap-3.5">
+              <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-colors ${urgent ? "bg-[#f59e0b] text-white" : "bg-[#fff0c4] text-[#c77808]"}`}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M13 2L4.5 13h7L11 22l8.5-11h-7L13 2z" />
+                </svg>
+              </span>
+              <span className="min-w-0">
+                <span className="mb-1 flex flex-wrap items-center gap-2">
+                  <strong className="text-base font-extrabold text-[#2a2117]">Urgent order</strong>
+                  <span className="rounded-full bg-[#f59e0b] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white">Priority</span>
+                </span>
+                <span className="block text-sm font-medium text-[#7a5b28]">
+                  Faster priority handling for <strong className="text-[#b86606]">+ {fmt(catalog.urgentPrice)}</strong>
+                </span>
+              </span>
+            </span>
+            <span className={`relative h-7 w-12 shrink-0 rounded-full border transition-all duration-300 ${urgent ? "border-[#d78708] bg-[#f59e0b]" : "border-[#d6b879] bg-white"}`}>
+              <span className={`absolute top-0.5 h-5 w-5 rounded-full shadow-sm transition-all duration-300 ${urgent ? "left-[25px] bg-white" : "left-0.5 bg-[#caa45e]"}`} />
+            </span>
+            <input
+              type="checkbox"
+              checked={urgent}
+              onChange={(event) => {
+                setUrgent(event.target.checked);
+                setUrgentDeadlineError("");
+              }}
+              className="sr-only"
+            />
           </label>
+
+          {urgent && (
+            <div className="mt-3 overflow-hidden rounded-2xl border-2 border-[#f3cf89] bg-gradient-to-br from-[#fffdf8] via-[#fff9eb] to-[#fff3d8] p-4 shadow-[0_12px_28px_rgba(180,121,22,0.12)] sm:p-5">
+              <div className="flex items-start gap-3.5">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-[#c77808] shadow-[0_7px_18px_rgba(180,121,22,0.14)]">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="17" rx="2" />
+                    <path d="M8 2v4M16 2v4M3 9h18" />
+                  </svg>
+                </span>
+                <div className="min-w-0 flex-1">
+                  <label htmlFor="urgent-deadline" className="block text-sm font-extrabold text-[#2a2117]">
+                    When do you need your portrait?
+                  </label>
+                  <p className="mt-1 text-xs leading-5 text-[#806334]">
+                    Choose your preferred completion date. Urgent portraits require at least 7 days.
+                  </p>
+                  <input
+                    id="urgent-deadline"
+                    type="date"
+                    min={minimumUrgentDate}
+                    value={urgentDeadline}
+                    onChange={(event) => {
+                      setUrgentDeadline(event.target.value);
+                      setUrgentDeadlineError("");
+                    }}
+                    className={`mt-3 w-full rounded-xl border bg-white px-4 py-3 text-sm font-semibold text-[#342819] outline-none transition focus:ring-4 ${urgentDeadlineError ? "border-[#dc5d48] focus:border-[#dc5d48] focus:ring-[#dc5d48]/10" : "border-[#e5bc69] focus:border-[#e49a18] focus:ring-[#f59e0b]/10"}`}
+                  />
+                  {urgentDeadlineError && <p className="mt-2 text-xs font-semibold text-[#c2412d]">{urgentDeadlineError}</p>}
+                </div>
+              </div>
+            </div>
+          )}
 
           <label className="mt-5 mb-2 block text-[13px] font-semibold uppercase tracking-[0.08em] text-[#6b6885]" htmlFor="cp-notes">
             Special Instructions <span className="text-xs font-normal normal-case tracking-normal">(optional)</span>
@@ -226,17 +357,17 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
             <dl className="mt-2">
               <div className="flex justify-between border-b border-[#e7e5f1] py-2.5 text-sm">
                 <dt className="text-[#6b6885]">Size</dt>
-                <dd className="font-semibold">{size.id}</dd>
+                <dd className="font-semibold">{size?.id || "Not selected"}</dd>
               </div>
               <div className="flex justify-between border-b border-[#e7e5f1] py-2.5 text-sm">
                 <dt className="text-[#6b6885]">Base Price</dt>
-                <dd className="font-semibold">{fmt(size.price)}</dd>
+                <dd className="font-semibold">{size ? fmt(size.price) : "—"}</dd>
               </div>
               <div className="flex justify-between border-b border-[#e7e5f1] py-2.5 text-sm">
                 <dt className="text-[#6b6885]">Frame</dt>
                 <dd className="font-semibold">
-                  {frame.label}
-                  {frame.price > 0 ? ` (+${frame.price.toLocaleString("en-LK")})` : ""}
+                  {frame ? frame.label : "Not selected"}
+                  {frame?.price > 0 ? ` (+${frame.price.toLocaleString("en-LK")})` : ""}
                 </dd>
               </div>
               <div className="flex justify-between border-b border-[#e7e5f1] py-2.5 text-sm">
@@ -244,10 +375,11 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
                 <dd className="font-semibold">{people}</dd>
               </div>
               <div className="flex justify-between py-2.5 text-sm">
-                <dt className="text-[#6b6885]">Delivery charge</dt>
-                <dd className="font-semibold">{fmt(catalog.deliveryPrice)}</dd>
+                <dt className="text-[#6b6885]">Delivery</dt>
+                <dd className="font-semibold">{deliveryMethod === "courier" ? `Courier (${fmt(catalog.deliveryPrice)})` : deliveryMethod === "pickup" ? "Pickup (Free)" : "Not selected"}</dd>
               </div>
               {urgent && <div className="flex justify-between border-t border-[#e7e5f1] py-2.5 text-sm"><dt className="text-[#6b6885]">Urgent order</dt><dd className="font-semibold">{fmt(catalog.urgentPrice)}</dd></div>}
+              {urgent && urgentDeadline && <div className="flex justify-between border-t border-[#e7e5f1] py-2.5 text-sm"><dt className="text-[#6b6885]">Requested by</dt><dd className="font-semibold">{new Date(`${urgentDeadline}T00:00:00`).toLocaleDateString("en-LK", { day: "numeric", month: "short", year: "numeric" })}</dd></div>}
             </dl>
 
             <div className="mt-4 rounded-xl bg-[#f5f3ff] p-4 text-center">
@@ -273,6 +405,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
          
         </div>
       </main>
+      </div>
     </div>
   );
 }
