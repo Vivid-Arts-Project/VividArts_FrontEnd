@@ -382,7 +382,7 @@ function PricingTab({ onToast }) {
       <div className="card mb-16">
         <div className="card-head">
           <div className="card-title">💰 Live Price Preview</div>
-          <span style={{ fontSize: 12, color: 'var(--va-text3)' }}>A3 · 1 subject · no frame · pickup · standard</span>
+          <span style={{ fontSize: 12, color: 'var(--va-text3)' }}>A3 · 1 subject · no frame · delivery · standard</span>
         </div>
         <div className="card-body" style={{ padding: '14px 20px' }}>
           {loading || !preview ? (

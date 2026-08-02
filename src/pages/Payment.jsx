@@ -11,11 +11,13 @@ const fallbackOrder = {
   size: { id: 'A3', label: 'A3' },
   frame: { id: 'classic', label: 'Classic' },
   people: 1,
-  basePrice: 3800,
-  framePrice: 800,
+  basePrice: 3500,
+  framePrice: 1800,
   peoplePrice: 0,
-  total: 4600,
-  deposit: 2300,
+  deliveryPrice: 500,
+  urgentPrice: 0,
+  total: 5800,
+  deposit: 2900,
 }
 const currencies = [
   { code: 'LKR', label: 'LKR – Sri Lankan rupee', rate: 1 },
@@ -113,6 +115,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
 
     Promise.resolve()
       .then(() => setIsProcessing(true))
+      .then(() => import.meta.env.DEV ? api.confirmSandboxReturn(returnedOrderId) : undefined)
       .then(() => api.getPaymentStatus(returnedOrderId))
       .then((result) => {
         if (!result.success) {
@@ -190,7 +193,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
           <p className="text-[#4b5563] mt-[10px]">
             Order ID: {orderId || 'Processing...'}
           </p>
-          {orderId && (
+          {orderId && successMessage === 'Your PayHere payment has been confirmed.' && (
             <a
               href={api.getInvoiceUrl(orderId)}
               className="inline-block border-none rounded-full px-6 py-[14px] cursor-pointer transition-colors bg-[#059669] text-white hover:bg-[#047857] mt-[10px]"
@@ -331,6 +334,12 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
               )}
               {safeOrder.peoplePrice > 0 && (
                 <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Extra subjects</span><span className="font-medium">{displayValue(safeOrder.peoplePrice)}</span></div>
+              )}
+              {safeOrder.deliveryPrice > 0 && (
+                <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Delivery charge</span><span className="font-medium">{displayValue(safeOrder.deliveryPrice)}</span></div>
+              )}
+              {safeOrder.urgentPrice > 0 && (
+                <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Urgent order</span><span className="font-medium">{displayValue(safeOrder.urgentPrice)}</span></div>
               )}
               <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Delivery</span><span className="font-medium">Courier</span></div>
             </div>

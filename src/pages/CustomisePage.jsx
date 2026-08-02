@@ -1,19 +1,23 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Stepper from "../components/Stepper";
 import BrandLogo from "../components/BrandLogo";
+import { api } from "../api";
 
-const SIZES = [
-  { id: "A4", label: "A4", dims: "210 × 297 mm", price: 2500 },
-  { id: "A3", label: "A3", dims: "297 × 420 mm", price: 3800 },
-];
+const FALLBACK_CATALOG = {
+  sizes: {
+    A4: { label: "A4", price: 2000, extraPersonPrice: 500 },
+    A3: { label: "A3", price: 3500, extraPersonPrice: 750 },
+  },
+  frames: {
+    none: { label: "No Frame", prices: { A4: 0, A3: 0 } },
+    classic: { label: "Classic", prices: { A4: 1000, A3: 1800 } },
+    premium: { label: "Premium", prices: { A4: 1500, A3: 2400 } },
+  },
+  deliveryPrice: 500,
+  urgentPrice: 500,
+};
 
-const FRAMES = [
-  { id: "none", label: "No Frame", note: "Included", price: 0 },
-  { id: "classic", label: "Classic", note: "+ LKR 800", price: 800 },
-  { id: "premium", label: "Premium", note: "+ LKR 1,500", price: 1500 },
-];
-
-const EXTRA_PERSON = 500;
+const SIZE_DIMS = { A4: "210 × 297 mm", A3: "297 × 420 mm" };
 
 function fmt(n) {
   return `LKR ${n.toLocaleString("en-LK")}`;
@@ -24,13 +28,37 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
   const [frameId, setFrameId] = useState(initialOrder?.frameId ?? "classic");
   const [people, setPeople] = useState(initialOrder?.people ?? 1);
   const [notes, setNotes] = useState(initialOrder?.notes ?? "");
+  const [urgent, setUrgent] = useState(initialOrder?.urgent ?? false);
+  const [catalog, setCatalog] = useState(FALLBACK_CATALOG);
 
-  const size = SIZES.find((s) => s.id === sizeId);
-  const frame = FRAMES.find((f) => f.id === frameId);
+  useEffect(() => {
+    let active = true;
+    const loadLivePrices = () => api.getPrices()
+      .then((data) => { if (active && data.success) setCatalog(data); })
+      .catch((error) => console.error("Failed to load live pricing:", error));
+    loadLivePrices();
+    window.addEventListener("focus", loadLivePrices);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", loadLivePrices);
+    };
+  }, []);
+
+  const sizes = Object.entries(catalog.sizes).map(([id, value]) => ({ id, ...value, dims: SIZE_DIMS[id] }));
+  const size = { id: sizeId, ...catalog.sizes[sizeId], dims: SIZE_DIMS[sizeId] };
+  const frames = Object.entries(catalog.frames).map(([id, value]) => ({
+    id,
+    label: value.label,
+    price: value.prices[sizeId],
+    note: value.prices[sizeId] ? `+ ${fmt(value.prices[sizeId])}` : "Included",
+  }));
+  const frame = frames.find((item) => item.id === frameId);
+  const extraPersonPrice = size.extraPersonPrice;
 
   const total = useMemo(
-    () => size.price + frame.price + Math.max(0, people - 1) * EXTRA_PERSON,
-    [size, frame, people]
+    () => size.price + frame.price + Math.max(0, people - 1) * extraPersonPrice
+      + catalog.deliveryPrice + (urgent ? catalog.urgentPrice : 0),
+    [size.price, frame.price, people, extraPersonPrice, catalog.deliveryPrice, catalog.urgentPrice, urgent]
   );
   const deposit = Math.round(total * 0.5);
 
@@ -40,11 +68,15 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
       frameId,
       people,
       notes,
+      urgent,
       size,
       frame,
       basePrice: size.price,
       framePrice: frame.price,
-      peoplePrice: Math.max(0, people - 1) * EXTRA_PERSON,
+      extraPersonPrice,
+      peoplePrice: Math.max(0, people - 1) * extraPersonPrice,
+      deliveryPrice: catalog.deliveryPrice,
+      urgentPrice: urgent ? catalog.urgentPrice : 0,
       total,
       deposit,
     });
@@ -96,7 +128,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
             Size
           </label>
           <div className="mb-1 grid gap-3 sm:grid-cols-2">
-            {SIZES.map((s) => (
+            {sizes.map((s) => (
               <button
                 key={s.id}
                 type="button"
@@ -123,7 +155,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
             Frame
           </label>
           <div className="mb-1 grid gap-3 md:grid-cols-3">
-            {FRAMES.map((f) => (
+            {frames.map((f) => (
               <button
                 key={f.id}
                 type="button"
@@ -166,9 +198,14 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
               </button>
             </div>
             <span className="text-sm text-[#6b6885]">
-              × {fmt(EXTRA_PERSON)} extra per additional person
+              × {fmt(extraPersonPrice)} extra per additional person
             </span>
           </div>
+
+          <label className="mt-5 flex cursor-pointer items-center justify-between rounded-xl border border-[#e7e5f1] bg-[#fafafe] p-4">
+            <span><strong className="block text-sm">Urgent order</strong><span className="text-xs text-[#6b6885]">Add {fmt(catalog.urgentPrice)} for priority handling</span></span>
+            <input type="checkbox" checked={urgent} onChange={(event) => setUrgent(event.target.checked)} className="h-5 w-5 accent-[#6366f1]" />
+          </label>
 
           <label className="mt-5 mb-2 block text-[13px] font-semibold uppercase tracking-[0.08em] text-[#6b6885]" htmlFor="cp-notes">
             Special Instructions <span className="text-xs font-normal normal-case tracking-normal">(optional)</span>
@@ -207,9 +244,10 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
                 <dd className="font-semibold">{people}</dd>
               </div>
               <div className="flex justify-between py-2.5 text-sm">
-                <dt className="text-[#6b6885]">Delivery</dt>
-                <dd className="font-semibold">7–10 working days</dd>
+                <dt className="text-[#6b6885]">Delivery charge</dt>
+                <dd className="font-semibold">{fmt(catalog.deliveryPrice)}</dd>
               </div>
+              {urgent && <div className="flex justify-between border-t border-[#e7e5f1] py-2.5 text-sm"><dt className="text-[#6b6885]">Urgent order</dt><dd className="font-semibold">{fmt(catalog.urgentPrice)}</dd></div>}
             </dl>
 
             <div className="mt-4 rounded-xl bg-[#f5f3ff] p-4 text-center">
