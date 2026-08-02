@@ -113,6 +113,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
 
     Promise.resolve()
       .then(() => setIsProcessing(true))
+      .then(() => import.meta.env.DEV ? api.confirmSandboxReturn(returnedOrderId) : undefined)
       .then(() => api.getPaymentStatus(returnedOrderId))
       .then((result) => {
         if (!result.success) {
@@ -190,7 +191,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
           <p className="text-[#4b5563] mt-[10px]">
             Order ID: {orderId || 'Processing...'}
           </p>
-          {orderId && (
+          {orderId && successMessage === 'Your PayHere payment has been confirmed.' && (
             <a
               href={api.getInvoiceUrl(orderId)}
               className="inline-block border-none rounded-full px-6 py-[14px] cursor-pointer transition-colors bg-[#059669] text-white hover:bg-[#047857] mt-[10px]"

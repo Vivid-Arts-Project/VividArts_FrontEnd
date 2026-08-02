@@ -55,6 +55,13 @@ export const api = {
     return fetchAPI(`${API_URL}/payments/status/${orderId}`);
   },
 
+  // Local PayHere sandbox fallback; the backend rejects this outside development.
+  confirmSandboxReturn: async (orderId) => {
+    return fetchAPI(`${API_URL}/payments/sandbox-confirm-return/${orderId}`, {
+      method: 'POST',
+    });
+  },
+
   // Invoice PDF download URL (available once payment is completed)
   getInvoiceUrl: (orderId) => `${API_URL}/payments/${orderId}/invoice`,
 

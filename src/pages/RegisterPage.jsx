@@ -41,6 +41,7 @@ function RegisterPage({ onNavigate }) {
       }
       setIsError(false);
       setMessage(data.message);
+      if (data.developmentCode) setOtp(data.developmentCode);
       setStep(2);
     } catch (error) {
       setIsError(true);
