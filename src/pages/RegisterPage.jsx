@@ -13,6 +13,7 @@ function RegisterPage({ onNavigate }) {
   const [step, setStep] = useState(1);
   const [otp, setOtp] = useState('');
   const [verificationToken, setVerificationToken] = useState('');
+  const [developmentCode, setDevelopmentCode] = useState('');
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,8 +41,8 @@ function RegisterPage({ onNavigate }) {
         throw new Error(data.message || 'Unable to send the verification code.');
       }
       setIsError(false);
-      setMessage(data.message);
-      if (data.developmentCode) setOtp(data.developmentCode);
+      setMessage(data.developmentCode ? '' : data.message);
+      setDevelopmentCode(data.developmentCode || '');
       setStep(2);
     } catch (error) {
       setIsError(true);
@@ -65,6 +66,7 @@ function RegisterPage({ onNavigate }) {
       setVerificationToken(data.verificationToken);
       setIsError(false);
       setMessage(data.message);
+      setDevelopmentCode('');
       setStep(3);
     } catch (error) {
       setIsError(true);
@@ -184,6 +186,12 @@ function RegisterPage({ onNavigate }) {
               <label className="block"><span className="mb-1.5 block text-xs font-semibold text-white/70">Email verification code</span><span className={fieldClass}><Icon name="mail" size={18} className="text-[#77738e]"/><input inputMode="numeric" maxLength="6" value={otp} onChange={event => setOtp(event.target.value.replace(/\D/g, ''))} placeholder="Enter 6-digit code" className="h-11 w-full border-none bg-transparent text-sm text-white outline-none placeholder:text-white/25"/></span></label>
               <button type="button" onClick={verifyOtp} disabled={isLoading || otp.length !== 6} className="group flex h-[50px] w-full items-center justify-center gap-2 rounded-xl border-none bg-gradient-to-r from-[#2b8fe0] via-[#7161d8] to-[#7b4fc8] text-sm font-bold text-white disabled:cursor-wait disabled:opacity-70">Verify email</button>
               <button type="button" onClick={() => setStep(1)} className="w-full border-none bg-transparent text-xs font-semibold text-[#9e91ff]">Change email or resend code</button>
+              {developmentCode && (
+                <div className="flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3.5 py-3 text-xs text-emerald-300">
+                  <Icon name="completed" size={17}/>
+                  Development mode: your verification code is <strong className="tracking-[3px]">{developmentCode}</strong>.
+                </div>
+              )}
             </div>}
 
             {step === 3 && <form onSubmit={handleRegister} className="space-y-4">
