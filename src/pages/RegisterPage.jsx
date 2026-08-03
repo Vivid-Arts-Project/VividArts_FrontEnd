@@ -18,6 +18,9 @@ function RegisterPage({ onNavigate }) {
   const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Backend URL with correct port (3001)
+  const API_BASE_URL = 'http://localhost:3001';
+
   const readResponse = async (response) => {
     const raw = await response.text();
     try {
@@ -31,7 +34,7 @@ function RegisterPage({ onNavigate }) {
     setMessage('');
     setIsLoading(true);
     try {
-      const response = await fetch('/api/customers/register/send-otp', {
+      const response = await fetch(`${API_BASE_URL}/api/customers/register/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email }),
@@ -56,7 +59,7 @@ function RegisterPage({ onNavigate }) {
     setMessage('');
     setIsLoading(true);
     try {
-      const response = await fetch('/api/customers/register/verify-otp', {
+      const response = await fetch(`${API_BASE_URL}/api/customers/register/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code: otp }),
@@ -78,11 +81,14 @@ function RegisterPage({ onNavigate }) {
 
   const handleRegister = async (event) => {
     event.preventDefault();
-    if (password !== confirmPassword) return setMessage('Passwords do not match.'), setIsError(true);
+    if (password !== confirmPassword) {
+      setIsError(true);
+      return setMessage('Passwords do not match.');
+    }
     setMessage('');
     setIsLoading(true);
     try {
-      const response = await fetch('/api/customers/register', {
+      const response = await fetch(`${API_BASE_URL}/api/customers/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password, confirmPassword, verificationToken }),
@@ -101,6 +107,7 @@ function RegisterPage({ onNavigate }) {
 
   const passwordsMatch = Boolean(password && confirmPassword && password === confirmPassword);
   const fieldClass = 'group flex items-center gap-3 rounded-xl border border-white/10 bg-white/[.055] px-4 transition focus-within:border-[#7b8cff] focus-within:bg-white/[.08] focus-within:shadow-[0_0_0_4px_rgba(99,102,241,.1)]';
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#090816] font-sans text-white">
       <div className="login-grid absolute inset-0 opacity-30"/>
@@ -165,6 +172,7 @@ function RegisterPage({ onNavigate }) {
               ))}
             </div>
 
+            {/* STEP 1 */}
             {step === 1 && <div className="space-y-4">
               {[
                 { label: 'Username', type: 'text', value: username, setter: setUsername, icon: 'user', placeholder: 'Choose a username', autoComplete: 'username' },
@@ -181,6 +189,7 @@ function RegisterPage({ onNavigate }) {
               <button type="button" onClick={sendOtp} disabled={isLoading || !username.trim() || !email.trim()} className="group flex h-[50px] w-full items-center justify-center gap-2 rounded-xl border-none bg-gradient-to-r from-[#2b8fe0] via-[#7161d8] to-[#7b4fc8] text-sm font-bold text-white disabled:cursor-wait disabled:opacity-70">{isLoading ? <span className="login-spinner"/> : <>Send verification code <Icon name="arrowRight" size={17}/></>}</button>
             </div>}
 
+            {/* STEP 2 */}
             {step === 2 && <div className="space-y-4">
               <p className="text-sm leading-6 text-[#8f8ba8]">We sent a six-digit code to <strong className="text-white">{email}</strong>.</p>
               <label className="block"><span className="mb-1.5 block text-xs font-semibold text-white/70">Email verification code</span><span className={fieldClass}><Icon name="mail" size={18} className="text-[#77738e]"/><input inputMode="numeric" maxLength="6" value={otp} onChange={event => setOtp(event.target.value.replace(/\D/g, ''))} placeholder="Enter 6-digit code" className="h-11 w-full border-none bg-transparent text-sm text-white outline-none placeholder:text-white/25"/></span></label>
@@ -194,6 +203,7 @@ function RegisterPage({ onNavigate }) {
               )}
             </div>}
 
+            {/* STEP 3 */}
             {step === 3 && <form onSubmit={handleRegister} className="space-y-4">
               <p className="text-sm text-emerald-300">Email verified. Create a password for your account.</p>
               {[
@@ -204,12 +214,12 @@ function RegisterPage({ onNavigate }) {
               <button type="submit" disabled={isLoading} className="group flex h-[50px] w-full items-center justify-center gap-2 rounded-xl border-none bg-gradient-to-r from-[#2b8fe0] via-[#7161d8] to-[#7b4fc8] text-sm font-bold text-white disabled:cursor-wait disabled:opacity-70">{isLoading ? <span className="login-spinner"/> : <>Create account <Icon name="arrowRight" size={17}/></>}</button>
             </form>}
 
-              {message && (
-                <div className={`flex items-center gap-2 rounded-xl border px-3.5 py-3 text-xs ${!isError ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300' : 'border-red-400/20 bg-red-400/10 text-red-300'}`}>
-                  <Icon name={!isError ? 'completed' : 'alert'} size={17}/>{message}
-                </div>
-              )}
-
+            {/* Notification Messages */}
+            {message && (
+              <div className={`flex items-center gap-2 rounded-xl border px-3.5 py-3 text-xs mt-4 ${!isError ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300' : 'border-red-400/20 bg-red-400/10 text-red-300'}`}>
+                <Icon name={!isError ? 'completed' : 'alert'} size={17}/>{message}
+              </div>
+            )}
 
             <p className="mt-6 text-center text-xs text-white/45">Already have an account? <button type="button" onClick={() => onNavigate('login')} className="border-none bg-transparent p-0 font-bold text-[#9e91ff] cursor-pointer hover:text-[#bcb3ff] hover:underline">Sign in</button></p>
           </div>
