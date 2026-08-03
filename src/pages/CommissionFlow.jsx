@@ -78,7 +78,7 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
         <Route
           path="payment"
           element={order || isPaymentReturn ? (
-            <Payment order={order} onBack={() => navigate('customize')} onComplete={handlePaymentComplete} onNavigate={onNavigate} />
+            <Payment order={order} onBack={() => navigate('customize')} onComplete={handlePaymentComplete} />
           ) : (
             <Navigate to="/commission/upload" replace />
           )}

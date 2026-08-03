@@ -46,7 +46,7 @@ function submitCheckoutForm(actionUrl, fields) {
   form.submit()
 }
 
-export default function Payment({ order, onBack = () => {}, onComplete = () => {}, onNavigate = () => {} }) {
+export default function Payment({ order, onBack = () => {}, onComplete = () => {} }) {
   const safeOrder = order || fallbackOrder
   const [currency] = useState(currencies[0])
   const [isProcessing, setIsProcessing] = useState(false)
