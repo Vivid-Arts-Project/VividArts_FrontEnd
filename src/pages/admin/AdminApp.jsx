@@ -11,6 +11,7 @@ import {
   ClientsPage, PaymentsPage, InvoicesPage,
 } from '../OtherPages';
 import SettingsPage from '../SettingsPage';
+import GalleryManager from '../GalleryManager';
 
 export default function AdminApp() {
   const [page, setPage]           = useState('orders');
@@ -32,6 +33,7 @@ export default function AdminApp() {
       case 'payments':  return <PaymentsPage  {...props}/>;
       case 'invoices':  return <InvoicesPage  {...props}/>;
       case 'settings':  return <SettingsPage  {...props}/>;
+      case 'gallery':   return <GalleryManager {...props}/>;
       default:          return <OrdersPage    {...props}/>;
     }
   };

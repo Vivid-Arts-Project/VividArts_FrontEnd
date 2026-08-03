@@ -13,6 +13,7 @@ const NAV = [
   { id: 'revisions', icon: 'revisions', label: 'Revisions',     badgeDanger: true  },
   { section: 'People' },
   { id: 'clients',   icon: 'clients', label: 'Clients',       badgeDanger: false },
+  { id: 'gallery',   icon: 'proofs', label: 'Website Images', badgeDanger: false },
   { section: 'Finance' },
   { id: 'payments',  icon: 'payments', label: 'Payments',      badgeDanger: false },
   { id: 'invoices',  icon: 'invoices', label: 'Invoices',      badgeDanger: false },

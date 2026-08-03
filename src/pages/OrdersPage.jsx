@@ -196,6 +196,8 @@ function DetailPanel({ order, onClose, onStatusSaved, onToast }) {
             <option value="sketching">🖊 Sketching</option>
             <option value="shading">✏️ Final Shading</option>
             <option value="waiting_for_feedback">🔍 Proof Sent</option>
+            <option value="revision_requested">Revision Requested</option>
+            <option value="approved">Proof Approved</option>
             <option value="finished">✓ Approved</option>
             <option value="framed">🖼 Framed</option>
             <option value="shipped">📦 Shipped</option>
