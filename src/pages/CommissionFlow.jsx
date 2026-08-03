@@ -24,7 +24,8 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
 
   // If PayHere just redirected back with ?payment=..., land straight on the
   // payment step so it can read the query param and show the confirmation.
-  const defaultStep = new URLSearchParams(window.location.search).has('payment') ? 'payment' : 'upload';
+  const isPaymentReturn = new URLSearchParams(window.location.search).has('payment');
+  const defaultStep = isPaymentReturn ? 'payment' : 'upload';
 
   function handlePhotoNext(data) {
     setPhotoData(data);
@@ -62,7 +63,7 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
         />
         <Route
           path="customize"
-          element={
+          element={photoData ? (
             <CustomisePage
               photoData={photoData}
               initialOrder={order}
@@ -70,11 +71,17 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
               onBack={() => navigate('upload')}
               onNavigate={onNavigate}
              />
-          }
+          ) : (
+            <Navigate to="/commission/upload" replace />
+          )}
         />
         <Route
           path="payment"
-          element={<Payment order={order} onBack={() => navigate('customize')} onComplete={handlePaymentComplete} onNavigate={onNavigate} />}
+          element={order || isPaymentReturn ? (
+            <Payment order={order} onBack={() => navigate('customize')} onComplete={handlePaymentComplete} onNavigate={onNavigate} />
+          ) : (
+            <Navigate to="/commission/upload" replace />
+          )}
         />
       </Routes>
     </div>
