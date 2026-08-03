@@ -1,16 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import Icon from '../components/Icon';
 import Badge from '../components/Badge';
-import { getOrders, updateStatus, uploadProof, sendMessage, setLocation } from '../api/adminApi';
+import { getOrders, updateStatus, sendMessage, setLocation } from '../api/adminApi';
 
-const STAGE_ORDER = ['in_queue','sketching','shading','waiting_for_feedback','revision','finished','shipped'];
-const STAGES = [
-  { key: 'in_queue',             label: 'Order Received'  },
+const STAGE_ORDER = ['in_queue','sketching','waiting_for_feedback','finished','framed','shipped','done'];
+const BASE_STAGES = [
+  { key: 'in_queue',             label: 'Queued'          },
   { key: 'sketching',            label: 'Sketching'       },
-  { key: 'shading',              label: 'Final Shading'   },
-  { key: 'waiting_for_feedback', label: 'Proof Sent'      },
-  { key: 'finished',             label: 'Approved'        },
-  { key: 'shipped',              label: 'Shipped'         },
+  { key: 'waiting_for_feedback', label: 'Waiting for feedback or approval' },
+  { key: 'finished',             label: 'Finished'        },
 ];
 
 const BTN_FILL  = 'bg-grad text-white border-transparent hover:opacity-90';
@@ -24,11 +22,16 @@ const FIELD_INPUT = 'w-full border border-va-border rounded-lg px-3 py-2.5 font-
 function DetailPanel({ order, onClose, onStatusSaved, onToast }) {
   const [status, setStatus]     = useState(order.status);
   const [saving, setSaving]     = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [chatMsg, setChatMsg]   = useState('');
   const [location, setLoc]      = useState(order.artistLocation || '');
 
   const curIdx = STAGE_ORDER.indexOf(order.status);
+  const stages = [
+    ...BASE_STAGES,
+    ...(order.frameType && order.frameType !== 'without_frame' ? [{ key: 'framed', label: 'Framed' }] : []),
+    ...(order.pickupOption === 'courier' ? [{ key: 'shipped', label: 'Shipped' }] : []),
+    { key: 'done', label: 'Done' },
+  ];
 
   const handleStatusSave = async () => {
     setSaving(true);
@@ -38,17 +41,6 @@ function DetailPanel({ order, onClose, onStatusSaved, onToast }) {
       onStatusSaved();
     } catch { onToast('❌ Failed to update status'); }
     finally { setSaving(false); }
-  };
-
-  const handleProofUpload = async (file) => {
-    if (!file) return;
-    setUploading(true);
-    try {
-      await uploadProof(order.id, file);
-      onToast('✓ Proof uploaded and sent to client');
-      onStatusSaved();
-    } catch { onToast('❌ Proof upload failed'); }
-    finally { setUploading(false); }
   };
 
   const handleSendMessage = async () => {
@@ -114,11 +106,11 @@ function DetailPanel({ order, onClose, onStatusSaved, onToast }) {
         <div className="mb-5 pb-5 border-b border-va-border">
           <div className="text-[11px] font-bold text-va-text3 tracking-wide uppercase mb-3">Progress</div>
           <div className="flex flex-col">
-            {STAGES.map((st, i) => {
+            {stages.map((st, i) => {
               const stIdx = STAGE_ORDER.indexOf(st.key);
               const isDone   = stIdx < curIdx;
               const isActive = st.key === order.status || (order.status === 'revision' && st.key === 'waiting_for_feedback');
-              const isLast = i === STAGES.length - 1;
+              const isLast = i === stages.length - 1;
               return (
                 <div
                   key={st.key}
@@ -165,17 +157,7 @@ function DetailPanel({ order, onClose, onStatusSaved, onToast }) {
                 <a href={order.proofImagePath} target="_blank" rel="noreferrer" className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM} flex-1 text-center no-underline`}>Download</a>
               </div>
             </>
-          ) : (
-            <>
-              <div className="text-[11px] font-bold text-va-text3 tracking-wide uppercase mb-3">Proof Upload</div>
-              <label className="block border-[1.5px] border-dashed border-va-border2 rounded-lg px-3.5 py-5 text-center cursor-pointer transition-all bg-va-bg hover:border-va-blue hover:bg-va-info-bg">
-                <input type="file" accept="image/*" className="hidden" onChange={e => handleProofUpload(e.target.files[0])}/>
-                <div className="text-[28px] mb-1.5">{uploading ? '⏳' : '📸'}</div>
-                <div className="text-xs font-semibold text-va-text">{uploading ? 'Uploading to Cloudinary…' : 'Upload watermarked proof'}</div>
-                <div className="text-[11px] text-va-text3 mt-[3px]">JPG · PNG · Max 10 MB</div>
-              </label>
-            </>
-          )}
+          ) : <div className="text-xs text-va-text3">No proof yet. Upload it from the Proofs page.</div>}
         </div>
 
         {/* Customer note */}
@@ -192,15 +174,13 @@ function DetailPanel({ order, onClose, onStatusSaved, onToast }) {
         <div className="mb-5 pb-5 border-b border-va-border">
           <div className="text-[11px] font-bold text-va-text3 tracking-wide uppercase mb-3">Update Status</div>
           <select className="w-full px-3 py-2.5 border border-va-border rounded-lg font-sans text-sm text-va-text bg-va-bg outline-none mb-2" value={status} onChange={e => setStatus(e.target.value)}>
+            {['revision_requested','approved'].includes(status) && <option value={status} disabled>{status === 'revision_requested' ? 'Revision requested by client' : 'Proof approved by client'}</option>}
             <option value="in_queue">⏳ Queued</option>
             <option value="sketching">🖊 Sketching</option>
-            <option value="shading">✏️ Final Shading</option>
-            <option value="waiting_for_feedback">🔍 Proof Sent</option>
-            <option value="revision_requested">Revision Requested</option>
-            <option value="approved">Proof Approved</option>
-            <option value="finished">✓ Approved</option>
-            <option value="framed">🖼 Framed</option>
-            <option value="shipped">📦 Shipped</option>
+            <option value="waiting_for_feedback">Waiting for feedback or approval</option>
+            <option value="finished">Finished</option>
+            {order.frameType && order.frameType !== 'without_frame' && <option value="framed">Framed</option>}
+            {order.pickupOption === 'courier' && <option value="shipped">Shipped</option>}
             <option value="done">✅ Done</option>
           </select>
           <button className={`${BTN_BASE} ${BTN_FILL} w-full py-[9px] text-[13px]`} onClick={handleStatusSave} disabled={saving}>
@@ -287,7 +267,7 @@ export default function OrdersPage({ search, onToast }) {
       filter === 'all' ? true :
       filter === 'sketch' ? o.status === 'sketching' :
       filter === 'proof'  ? o.status === 'waiting_for_feedback' :
-      filter === 'revision' ? o.status === 'revision' :
+      filter === 'revision' ? o.status === 'revision_requested' :
       filter === 'approved' ? o.status === 'finished' : true;
     return matchSearch && matchFilter;
   });
@@ -321,10 +301,10 @@ export default function OrdersPage({ search, onToast }) {
           <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
             <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-success mb-3"><Icon name="revenue"/></div>
             <div className="font-outfit text-[22px] font-extrabold text-va-text">
-              {stats.total ? `LKR ${(stats.total * 3800 / 1000).toFixed(0)}k` : '—'}
+              {`LKR ${Number(stats.totalValue || 0).toLocaleString()}`}
             </div>
-            <div className="text-xs text-va-text3 mt-0.5">Est. Revenue</div>
-            <div className="text-xs font-semibold mt-2 text-va-success">Active orders</div>
+            <div className="text-xs text-va-text3 mt-0.5">Order Value</div>
+            <div className="text-xs font-semibold mt-2 text-va-success">Live total from orders</div>
           </div>
         </div>
 

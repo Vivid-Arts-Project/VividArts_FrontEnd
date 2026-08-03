@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Badge from '../components/Badge';
 import Icon from '../components/Icon';
-import { getOrders, getCustomers, uploadProof } from '../api/adminApi';
+import { getOrders, getCustomers, getPayments, invoiceUrl, uploadProof } from '../api/adminApi';
 
 const CARD       = 'bg-white border border-va-border rounded-va shadow-va overflow-hidden';
 const CARD_HEAD  = 'px-5 py-4 border-b border-va-border flex items-center justify-between';
@@ -24,10 +24,11 @@ const DP_VAL = 'font-semibold text-va-text text-right max-w-[60%]';
 const ORDER_ID_MONO = 'font-mono text-xs font-medium';
 
 // ── Revenue Chart ─────────────────────────────────────────────────────────────
-function RevenueChart() {
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug'];
-  const vals   = [18000,24000,38000,54000,0,0,0,0];
-  const max    = Math.max(...vals);
+function RevenueChart({ orders }) {
+  const months = Array.from({ length: 12 }, (_, index) => new Date(2000, index, 1).toLocaleString(undefined, { month: 'short' }));
+  const currentYear = new Date().getFullYear();
+  const vals = months.map((_, month) => orders.filter(order => { const date = new Date(order.createdAt); return date.getFullYear() === currentYear && date.getMonth() === month; }).reduce((sum, order) => sum + Number(order.amountPaid || 0), 0));
+  const max = Math.max(...vals, 1);
   return (
     <div className="flex items-end gap-1.5 h-[120px] px-1">
       {months.map((m, i) => (
@@ -48,8 +49,10 @@ function RevenueChart() {
 // ══════════════════════════════════════════════════════════════════════════════
 export function DashboardPage({ onNav }) {
   const [orders, setOrders] = useState([]);
+  const [clientCount, setClientCount] = useState(0);
   useEffect(() => {
     getOrders().then(r => setOrders(r.data.orders)).catch(() => {});
+    getCustomers().then(r => setClientCount((r.data.customers || []).length)).catch(() => {});
   }, []);
 
   const counts = {
@@ -71,7 +74,7 @@ export function DashboardPage({ onNav }) {
         </div>
         <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
           <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-purple mb-3"><Icon name="user"/></div>
-          <div className="font-outfit text-[28px] font-extrabold text-va-text">—</div>
+          <div className="font-outfit text-[28px] font-extrabold text-va-text">{clientCount}</div>
           <div className="text-xs text-va-text3 mt-0.5">Total clients</div>
           <div className="text-xs font-semibold mt-2 text-va-success">All time</div>
         </div>
@@ -83,9 +86,9 @@ export function DashboardPage({ onNav }) {
         </div>
         <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
           <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-warn mb-3"><Icon name="rating"/></div>
-          <div className="font-outfit text-[28px] font-extrabold text-va-text">4.9</div>
-          <div className="text-xs text-va-text3 mt-0.5">Avg client rating</div>
-          <div className="text-xs font-semibold mt-2 text-va-success">↑ +0.1 this month</div>
+          <div className="font-outfit text-[22px] font-extrabold text-va-text">LKR {orders.reduce((sum, order) => sum + Number(order.amountPaid || 0), 0).toLocaleString()}</div>
+          <div className="text-xs text-va-text3 mt-0.5">Payments collected</div>
+          <div className="text-xs font-semibold mt-2 text-va-success">Live total</div>
         </div>
       </div>
 
@@ -93,14 +96,13 @@ export function DashboardPage({ onNav }) {
         <div className="flex-1 min-w-0">
           <div className={CARD}>
             <div className={CARD_HEAD}>
-              <div className={CARD_TITLE}>Monthly Revenue — 2025</div>
+              <div className={CARD_TITLE}>Monthly Payments — {new Date().getFullYear()}</div>
               <span className="text-xs text-va-text3">LKR</span>
             </div>
             <div className={CARD_BODY}>
-              <RevenueChart/>
+              <RevenueChart orders={orders}/>
               <div className="flex gap-3.5 mt-3 flex-wrap">
-                <div className="text-xs text-va-text3">Total YTD: <strong className="text-va-text">LKR 2,14,000</strong></div>
-                <div className="text-xs text-va-text3">Best month: <strong className="text-va-purple">April — LKR 54,000</strong></div>
+                <div className="text-xs text-va-text3">Collected YTD: <strong className="text-va-text">LKR {orders.filter(order => new Date(order.createdAt).getFullYear() === new Date().getFullYear()).reduce((sum, order) => sum + Number(order.amountPaid || 0), 0).toLocaleString()}</strong></div>
               </div>
             </div>
           </div>
@@ -161,12 +163,11 @@ export function DashboardPage({ onNav }) {
             <div className={CARD_HEAD}><div className={CARD_TITLE}>Quick Stats</div></div>
             <div className={CARD_BODY}>
               {[
-                ['Avg. completion time', '8.2 days'],
-                ['Avg. order value',     'LKR 5,400'],
-                ['Revision rate',        '28%'],
-                ['Most popular size',    'A3 (64%)'],
-                ['Most popular frame',   'Classic (52%)'],
-                ['Repeat clients',       '41%'],
+                ['Avg. order value', orders.length ? `LKR ${Math.round(orders.reduce((sum, order) => sum + Number(order.totalPrice || 0), 0) / orders.length).toLocaleString()}` : '—'],
+                ['Revision requests', orders.filter(order => order.status === 'revision_requested').length],
+                ['Waiting approval', orders.filter(order => order.status === 'waiting_for_feedback').length],
+                ['Framed orders', orders.filter(order => order.frameType && order.frameType !== 'without_frame').length],
+                ['Courier orders', orders.filter(order => order.pickupOption === 'courier').length],
               ].map(([k,v]) => (
                 <div key={k} className={DP_ROW}><span className={DP_KEY}>{k}</span><span className={DP_VAL}>{v}</span></div>
               ))}
@@ -188,7 +189,7 @@ export function ProofsPage({ onToast }) {
 
   useEffect(() => {
     getOrders().then(r => {
-      const pending = r.data.orders.filter(o => !o.proofImagePath && ['in_queue','sketching','shading'].includes(o.status));
+      const pending = r.data.orders.filter(o => o.status === 'revision_requested' || (!o.proofImagePath && ['in_queue','sketching'].includes(o.status)));
       setOrders(pending);
     }).catch(() => {});
   }, []);
@@ -329,12 +330,30 @@ export function RevisionsPage({ onNav }) {
 export function ClientsPage() {
   const [customers, setCustomers] = useState([]);
   const [search, setSearch]       = useState('');
+  const [selected, setSelected]   = useState(null);
+  const [loadError, setLoadError] = useState('');
   useEffect(() => {
-    getCustomers().then(r => setCustomers(r.data)).catch(() => {});
+    getCustomers().then(r => {
+      const rows = Array.isArray(r.data) ? r.data : (r.data.customers || []);
+      setCustomers(rows.map(customer => ({
+        ...customer,
+        id: customer.id ?? customer.customer_id,
+        fullName: customer.fullName ?? customer.full_name ?? customer.username,
+        phone: customer.phone ?? customer.phone_number,
+        lastOrderAt: customer.lastOrderAt ?? null,
+        orders: customer.orders || [],
+      })));
+      setLoadError('');
+    }).catch(error => {
+      setCustomers([]);
+      setLoadError(error.response?.status === 401
+        ? 'Your admin session has expired. Please sign in again.'
+        : (error.response?.data?.error || 'Clients could not be loaded. Please retry.'));
+    });
   }, []);
 
   const filtered = customers.filter(c =>
-    [c.fullName, c.email, c.phone].join(' ').toLowerCase().includes(search.toLowerCase())
+    [c.username, c.fullName, c.email, c.phone].join(' ').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -347,6 +366,7 @@ export function ClientsPage() {
             <input placeholder="Search clients…" value={search} onChange={e => setSearch(e.target.value)} className="border-none bg-transparent outline-none text-xs font-sans text-va-text w-full"/>
           </div>
         </div>
+        {loadError && <div className="mx-4 mt-4 rounded-lg border border-red-300 bg-va-danger-bg px-3.5 py-2.5 text-xs text-va-danger">{loadError}</div>}
         <table className="w-full border-collapse">
           <thead>
             <tr>
@@ -360,26 +380,35 @@ export function ClientsPage() {
           </thead>
           <tbody>
             {filtered.map(c => (
-              <tr key={c.id} className="cursor-pointer transition-colors [&>td]:px-3.5 [&>td]:py-3 [&>td]:border-b [&>td]:border-va-border [&>td]:text-[13px] [&>td]:align-middle hover:[&>td]:bg-va-bg">
+              <tr key={c.id} onClick={() => setSelected(c)} className="cursor-pointer transition-colors [&>td]:px-3.5 [&>td]:py-3 [&>td]:border-b [&>td]:border-va-border [&>td]:text-[13px] [&>td]:align-middle hover:[&>td]:bg-va-bg">
                 <td>
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-full bg-grad flex items-center justify-center font-bold text-xs text-white shrink-0">{c.fullName?.slice(0,2).toUpperCase()}</div>
-                    <span className="font-semibold">{c.fullName}</span>
+                    <div><div className="font-semibold">{c.username}</div><div className="text-[11px] text-va-text3">{c.fullName}</div></div>
                   </div>
                 </td>
                 <td className="text-va-text3">{c.email}</td>
                 <td className="text-va-text3">{c.phone}</td>
                 <td><strong>{c.orders?.length || 0}</strong></td>
-                <td className="text-va-text3">{c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '—'}</td>
-                <td><button className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM}`}>View history</button></td>
+                <td className="text-va-text3">{c.lastOrderAt ? new Date(c.lastOrderAt).toLocaleDateString() : '—'}</td>
+                <td><button className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM}`}>View details</button></td>
               </tr>
             ))}
-            {filtered.length === 0 && (
+            {!loadError && filtered.length === 0 && (
               <tr><td colSpan={6} className="text-center py-8 text-va-text3">No clients found.</td></tr>
             )}
           </tbody>
         </table>
       </div>
+      {selected && (
+        <div className={`${CARD} mt-4`}>
+          <div className={CARD_HEAD}><div className={CARD_TITLE}>Client details — {selected.username}</div><button className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM}`} onClick={() => setSelected(null)}>Close</button></div>
+          <div className={`${CARD_BODY} grid grid-cols-2 gap-x-8`}>
+            <div><div className={DP_ROW}><span className={DP_KEY}>Full name</span><span className={DP_VAL}>{selected.fullName}</span></div><div className={DP_ROW}><span className={DP_KEY}>Email</span><span className={DP_VAL}>{selected.email}</span></div><div className={DP_ROW}><span className={DP_KEY}>Phone</span><span className={DP_VAL}>{selected.phone || '—'}</span></div><div className={DP_ROW}><span className={DP_KEY}>Address</span><span className={DP_VAL}>{selected.address || '—'}</span></div></div>
+            <div><div className="text-xs font-bold mb-2">Order history ({selected.orders?.length || 0})</div>{selected.orders?.map(order => <div key={order.id} className="flex justify-between items-center gap-2 text-xs py-2 border-b border-va-border"><span>#{order.id.slice(0,8)}</span><span>{order.currency} {Number(order.totalPrice).toLocaleString()}</span><Badge status={order.status}/></div>)}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -389,31 +418,39 @@ export function ClientsPage() {
 // ══════════════════════════════════════════════════════════════════════════════
 export function PaymentsPage() {
   const [orders, setOrders] = useState([]);
-  useEffect(() => { getOrders().then(r => setOrders(r.data.orders)).catch(() => {}); }, []);
+  useEffect(() => {
+    const load = () => getOrders().then(r => setOrders(r.data.orders)).catch(() => {});
+    load();
+    const timer = setInterval(load, 10000);
+    return () => clearInterval(timer);
+  }, []);
+  const now = new Date();
+  const collectedThisMonth = orders.filter(o => { const date = new Date(o.updatedAt); return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear(); }).reduce((sum, o) => sum + Number(o.amountPaid || 0), 0);
+  const pendingBalance = orders.reduce((sum, o) => sum + Math.max(0, Number(o.totalPrice || 0) - Number(o.amountPaid || 0)), 0);
 
   return (
     <div className="py-[22px] px-6 flex-1">
       <div className="grid grid-cols-4 gap-3.5 mb-4">
         <div className="bg-grad border border-transparent rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
           <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center text-white mb-3"><Icon name="payments"/></div>
-          <div className="font-outfit text-[28px] font-extrabold text-white">LKR —</div>
+          <div className="font-outfit text-[28px] font-extrabold text-white">LKR {collectedThisMonth.toLocaleString()}</div>
           <div className="text-xs text-white/60 mt-0.5">Collected this month</div>
         </div>
         <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
           <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-warn mb-3"><Icon name="pending"/></div>
-          <div className="font-outfit text-[28px] font-extrabold text-va-text">LKR —</div>
+          <div className="font-outfit text-[28px] font-extrabold text-va-text">LKR {pendingBalance.toLocaleString()}</div>
           <div className="text-xs text-va-text3 mt-0.5">Balance pending</div>
           <div className="text-xs font-semibold mt-2 text-va-warn">Half-paid orders</div>
         </div>
         <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
           <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-success mb-3"><Icon name="bank"/></div>
-          <div className="font-outfit text-[28px] font-extrabold text-va-text">{orders.filter(o => o.paymentType === 'full').length}</div>
-          <div className="text-xs text-va-text3 mt-0.5">Fully paid</div>
+          <div className="font-outfit text-[28px] font-extrabold text-va-text">{orders.filter(o => Number(o.amountPaid) >= Number(o.totalPrice) && Number(o.totalPrice) > 0).length}</div>
+          <div className="text-xs text-va-text3 mt-0.5">Fully paid orders</div>
         </div>
         <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
           <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-purple mb-3"><Icon name="advance"/></div>
-          <div className="font-outfit text-[28px] font-extrabold text-va-text">{orders.filter(o => o.paymentType === 'advance').length}</div>
-          <div className="text-xs text-va-text3 mt-0.5">Advance paid</div>
+          <div className="font-outfit text-[28px] font-extrabold text-va-text">{orders.filter(o => Number(o.amountPaid) > 0 && Number(o.amountPaid) < Number(o.totalPrice)).length}</div>
+          <div className="text-xs text-va-text3 mt-0.5">Advance paid orders</div>
         </div>
       </div>
       <div className={CARD}>
@@ -443,8 +480,8 @@ export function PaymentsPage() {
                   <td className={paid < total ? 'text-va-warn' : 'text-va-success'}>
                     {o.currency} {(total - paid).toLocaleString()}
                   </td>
-                  <td><span className="text-xs bg-va-bg2 px-2 py-[3px] rounded font-semibold">{o.paymentType}</span></td>
-                  <td><Badge status={o.status}/></td>
+                  <td><span className="text-xs bg-va-bg2 px-2 py-[3px] rounded font-semibold">Advance</span></td>
+                  <td><Badge status={paid <= 0 ? 'pending' : paid >= total ? 'completed' : 'advance'}/></td>
                 </tr>
               );
             })}
@@ -459,29 +496,34 @@ export function PaymentsPage() {
 // INVOICES PAGE
 // ══════════════════════════════════════════════════════════════════════════════
 export function InvoicesPage() {
-  const [orders, setOrders] = useState([]);
-  useEffect(() => { getOrders().then(r => setOrders(r.data.orders)).catch(() => {}); }, []);
+  const [payments, setPayments] = useState([]);
+  useEffect(() => {
+    const load = () => getPayments().then(r => setPayments((r.data.payments || []).filter(p => p.status === 'completed'))).catch(() => {});
+    load();
+    const timer = setInterval(load, 10000);
+    return () => clearInterval(timer);
+  }, []);
   return (
     <div className="py-[22px] px-6 flex-1">
       <div className={CARD}>
         <div className={CARD_HEAD}>
           <div className={CARD_TITLE}>Invoices</div>
-          <button className={`${BTN_BASE} ${BTN_GHOST} text-xs px-3 py-1.5`}>Export all</button>
+          <span className="text-xs text-va-text3">Completed advance payments</span>
         </div>
         <div className={CARD_BODY}>
-          {orders.map(o => (
-            <div key={o.id} className="flex items-center justify-between py-3 border-b border-va-border last:border-b-0">
+          {payments.map(payment => (
+            <div key={payment.paymentId} className="flex items-center justify-between py-3 border-b border-va-border last:border-b-0">
               <div>
-                <div className="text-[13px] font-semibold">INV-2025-{o.id?.slice(0,8).toUpperCase()}</div>
-                <div className="text-xs text-va-text3 mt-0.5">{o.customer?.fullName} · {new Date(o.createdAt).toLocaleDateString()}</div>
+                <div className="text-[13px] font-semibold">{payment.payhereOrderId}</div>
+                <div className="text-xs text-va-text3 mt-0.5">{payment.order?.customer?.fullName || 'Client'} · {new Date(payment.updatedAt).toLocaleDateString()}</div>
               </div>
               <div className="text-right">
-                <div className="text-[13px] font-bold">{o.currency} {parseFloat(o.totalPrice||0).toLocaleString()}</div>
-                <button className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM} mt-1`}>Download PDF</button>
+                <div className="text-[13px] font-bold">{payment.currency} {Number(payment.amount || 0).toLocaleString()}</div>
+                <a href={invoiceUrl(payment.payhereOrderId)} target="_blank" rel="noreferrer" className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM} mt-1 inline-block no-underline`}>View / Download PDF</a>
               </div>
             </div>
           ))}
-          {orders.length === 0 && <div className="text-center text-va-text3 py-8">No invoices yet.</div>}
+          {payments.length === 0 && <div className="text-center text-va-text3 py-8">No completed-payment invoices yet.</div>}
         </div>
       </div>
     </div>

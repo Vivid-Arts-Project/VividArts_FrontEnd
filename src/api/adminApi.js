@@ -17,7 +17,9 @@ export const uploadProof = (id, file) => {
 };
 
 // ── Customers (for Clients page) ──────────────────────────────────────────────
-export const getCustomers = () => api.get('/customers');
+export const getCustomers = () => api.get('/admin/customers');
+export const getPayments  = () => api.get('/payments');
+export const invoiceUrl   = (payhereOrderId) => `${api.defaults.baseURL}/payments/${encodeURIComponent(payhereOrderId)}/invoice`;
 
 // Admin profile and settings
 export const getProfile          = ()     => api.get('/admin/me');
