@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import NotificationBell from './NotificationBell';
 import Icon from '../components/Icon';
 import BrandLogo from '../components/BrandLogo';
+import { clearCommissionDraft } from '../commissionDraft';
 
 const stats = [
   { value: "200+", label: "Portraits delivered" },
@@ -54,6 +55,10 @@ export default function LandingPage({ onNavigate = () => {} }) {
   const [isSignedIn, setIsSignedIn] = useState(Boolean(localStorage.getItem('token')));
   const [displayName, setDisplayName] = useState(localStorage.getItem('username') || '');
 
+  useEffect(() => {
+    clearCommissionDraft();
+  }, []);
+
   const handleCommission = () => {
     if (localStorage.getItem('token')) {
       onNavigate('commission');
@@ -74,6 +79,27 @@ export default function LandingPage({ onNavigate = () => {} }) {
     };
   }, []);
 
+  useEffect(() => {
+    const revealItems = Array.from(document.querySelectorAll('[data-home-reveal]'));
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion || !('IntersectionObserver' in window)) {
+      revealItems.forEach((item) => item.classList.add('is-visible'));
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      });
+    }, { threshold: 0.16, rootMargin: '0px 0px -45px 0px' });
+
+    revealItems.forEach((item) => observer.observe(item));
+    return () => observer.disconnect();
+  }, []);
+
   const handleLogout = () => {
     try { localStorage.removeItem('token'); } catch { /* localStorage unavailable */ }
     setIsSignedIn(false);
@@ -88,16 +114,24 @@ export default function LandingPage({ onNavigate = () => {} }) {
 
   return (
     <div id="home" className="min-h-screen bg-[#0a0916] font-sans text-[#f5f4fb]">
-      <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0a0916]/85 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 sm:px-8 lg:px-8">
-          <span className="text-sm font-bold tracking-[0.2em]">PENCIL PORTRAITS</span>
+      <header className="sticky top-0 z-10 border-b border-[#7164c9]/25 bg-gradient-to-r from-[#090815]/95 via-[#111026]/95 to-[#17102d]/95 shadow-[0_12px_38px_rgba(3,2,15,0.32)] backdrop-blur-xl">
+        <div className="mx-auto flex min-h-[82px] max-w-7xl items-center justify-between gap-4 px-6 py-4 sm:px-8 lg:px-8">
+          <a href="#home" className="group flex shrink-0 items-center gap-3" aria-label="Vivid Arts home">
+            <span className="flex h-13 w-14 items-center justify-center rounded-2xl border border-[#b9afff]/30 bg-white shadow-[0_10px_28px_rgba(93,78,210,0.3)] transition duration-300 group-hover:-translate-y-0.5 group-hover:shadow-[0_14px_34px_rgba(111,87,230,0.4)]">
+              <BrandLogo size={48} />
+            </span>
+            <span className="hidden sm:block">
+              <span className="block text-[17px] font-black tracking-[0.12em] text-white">VIVID ARTS</span>
+              <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.26em] text-[#aaa3c9]">Pencil portraits</span>
+            </span>
+          </a>
           {isSignedIn && (
             <div className="hidden md:flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center text-sm font-semibold">{(displayName || 'U').slice(0,1).toUpperCase()}</div>
-              <div className="text-sm font-medium text-white/90">{displayName}</div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/10 text-[15px] font-semibold">{(displayName || 'U').slice(0,1).toUpperCase()}</div>
+              <div className="text-[15px] font-semibold text-white/90">{displayName}</div>
             </div>
           )}
-          <nav className="hidden gap-8 text-sm text-[#a9a6c4] md:flex">
+          <nav className="hidden gap-6 text-[15px] font-medium text-[#b8b4cc] md:flex lg:gap-8">
             <a className="transition hover:text-white" href="#home">
               Home
             </a>
@@ -118,7 +152,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
 
             {!isSignedIn ? (
               <button
-                className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
+                className="rounded-full border border-white/15 bg-white/[0.07] px-5 py-2.5 text-[15px] font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.25)] transition hover:-translate-y-0.5 hover:border-[#a78bfa]/50 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
                 onClick={() => onNavigate('login')}
               >
                 Sign In
@@ -126,13 +160,13 @@ export default function LandingPage({ onNavigate = () => {} }) {
             ) : (
               <>
                 <button
-                  className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
+                  className="rounded-full border border-white/15 bg-white/[0.07] px-5 py-2.5 text-[15px] font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.25)] transition hover:-translate-y-0.5 hover:border-[#a78bfa]/50 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
                   onClick={() => onNavigate('profile')}
                 >
                   My Account
                 </button>
                 <button
-                  className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
+                  className="rounded-full border border-white/15 bg-white/[0.07] px-5 py-2.5 text-[15px] font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.25)] transition hover:-translate-y-0.5 hover:border-[#a78bfa]/50 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
                   onClick={handleLogout}
                 >
                   Logout
@@ -140,7 +174,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
               </>
             )}
             <button
-              className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
+              className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-5 py-2.5 text-[15px] font-bold text-white shadow-[0_10px_28px_rgba(99,102,241,0.38)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(126,87,225,0.48)] focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
               onClick={handleCommission}
             >
               Commission a Portrait
@@ -152,22 +186,22 @@ export default function LandingPage({ onNavigate = () => {} }) {
       <main className="flex flex-col">
         <section className="order-1 mx-auto grid max-w-7xl gap-14 px-6 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-8 lg:py-20">
           <div>
-            <span className="mb-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#a78bfa]">
+            <span data-home-reveal className="home-text-reveal mb-4 inline-flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.2em] text-[#a78bfa]">
               <Icon name="pencil" size={16}/> Handcrafted Pencil Portraits
             </span>
-            <h1 className="mb-5 text-4xl font-bold leading-tight tracking-[-0.02em] sm:text-5xl lg:text-[52px]">
+            <h1 data-home-reveal className="home-text-reveal mb-5 text-4xl font-bold leading-tight tracking-[-0.02em] sm:text-5xl lg:text-[52px]" style={{ '--reveal-delay': '90ms' }}>
               Your memories,
               <br />
               <span className="bg-gradient-to-r from-[#93c5fd] to-[#a78bfa] bg-clip-text text-transparent">
                 drawn by hand.
               </span>
             </h1>
-            <p className="mb-8 max-w-[460px] text-base leading-7 text-[#a9a6c4]">
+            <p data-home-reveal className="home-text-reveal mb-8 max-w-[460px] text-base leading-7 text-[#a9a6c4]" style={{ '--reveal-delay': '170ms' }}>
               Commission a bespoke pencil portrait from a skilled Sri Lankan
               artist. Upload a photo, choose your size, and receive a stunning
               hand-drawn artwork — delivered to your door.
             </p>
-            <div className="mb-11 flex flex-wrap gap-3.5">
+            <div data-home-reveal className="home-text-reveal mb-11 flex flex-wrap gap-3.5" style={{ '--reveal-delay': '240ms' }}>
               <button
                 className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-6 py-3.5 text-sm font-semibold text-white shadow-[0_8px_24px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
                 onClick={handleCommission}
@@ -234,10 +268,10 @@ export default function LandingPage({ onNavigate = () => {} }) {
         </section>
 
         <section className="order-4 mx-auto w-full max-w-7xl px-6 py-20 text-center sm:px-8" id="how-it-works">
-          <span className="mb-4 block text-xs font-semibold uppercase tracking-[0.2em] text-[#a78bfa]">
+          <span data-home-reveal className="home-text-reveal mb-4 block text-xs font-semibold uppercase tracking-[0.2em] text-[#a78bfa]">
             Simple Process
           </span>
-          <h2 className="mb-14 text-3xl font-bold sm:text-[34px]">How it works</h2>
+          <h2 data-home-reveal className="home-text-reveal mb-14 text-3xl font-bold sm:text-[34px]" style={{ '--reveal-delay': '90ms' }}>How it works</h2>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             {steps.map((s) => (
               <div
@@ -280,15 +314,15 @@ export default function LandingPage({ onNavigate = () => {} }) {
             </div>
 
             <div>
-              <span className="mb-4 block text-xs font-semibold uppercase tracking-[.2em] text-[#a78bfa]">About Vivid Arts</span>
-              <h2 className="max-w-[650px] font-outfit text-3xl font-bold leading-tight tracking-[-.025em] text-white sm:text-[42px]">
+              <span data-home-reveal className="home-text-reveal mb-4 block text-[13px] font-semibold uppercase tracking-[.2em] text-[#a78bfa]">About Vivid Arts</span>
+              <h2 data-home-reveal className="home-text-reveal max-w-[650px] font-outfit text-3xl font-bold leading-tight tracking-[-.025em] text-white sm:text-[42px]" style={{ '--reveal-delay': '80ms' }}>
                 More than a portrait—
                 <span className="block bg-gradient-to-r from-[#93c5fd] to-[#a78bfa] bg-clip-text text-transparent">a memory made permanent.</span>
               </h2>
-              <p className="mt-6 max-w-[620px] text-[15px] leading-7 text-[#a9a6c4]">
+              <p data-home-reveal className="home-text-reveal mt-6 max-w-[620px] text-[15px] leading-7 text-[#a9a6c4]" style={{ '--reveal-delay': '150ms' }}>
                 Vivid Arts is an independent Sri Lankan portrait studio dedicated to transforming meaningful photographs into carefully handcrafted pencil artwork. Every portrait is drawn with patience, precision, and respect for the story behind the image.
               </p>
-              <p className="mt-4 max-w-[620px] text-[15px] leading-7 text-[#77738f]">
+              <p data-home-reveal className="home-text-reveal mt-4 max-w-[620px] text-[15px] leading-7 text-[#a9a6c4]" style={{ '--reveal-delay': '210ms' }}>
                 From the first reference photo to the final framed piece, you stay part of the creative process through secure proof reviews, clear progress updates, and thoughtful revisions.
               </p>
 

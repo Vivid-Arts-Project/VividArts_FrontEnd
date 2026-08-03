@@ -162,6 +162,13 @@ const paths = {
       <path d="M4 15v5h16v-5"/>
     </>
   ),
+  camera: (
+    <>
+      <path d="M4 7h4l1.5-2h5L16 7h4a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/>
+      <circle cx="12" cy="13" r="4"/>
+      <path d="M18 10h.01"/>
+    </>
+  ),
   pending: (
     <>
       <circle cx="12" cy="12" r="9"/>

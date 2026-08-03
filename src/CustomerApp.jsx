@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import './App.css';
 import LandingPage from './pages/LandingPage';
@@ -21,17 +20,6 @@ const PATHS = {
 function CustomerApp() {
   const navigate = useNavigate();
   const navigateTo = (target = 'landing') => navigate(PATHS[target] ?? '/');
-
-  useEffect(() => {
-    // Browsers do not distinguish closing a window from refreshing it, so both
-    // clear the local session. Internal React navigation is not affected.
-    const clearSessionOnUnload = () => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('username');
-    };
-    window.addEventListener('beforeunload', clearSessionOnUnload);
-    return () => window.removeEventListener('beforeunload', clearSessionOnUnload);
-  }, []);
 
   return (
     <div>
