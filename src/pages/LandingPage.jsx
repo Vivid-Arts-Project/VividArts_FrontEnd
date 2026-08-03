@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import NotificationBell from './NotificationBell';
 import Icon from '../components/Icon';
 import BrandLogo from '../components/BrandLogo';
+import { clearCommissionDraft } from '../commissionDraft';
 
 const stats = [
   { value: "200+", label: "Portraits delivered" },
@@ -53,6 +54,10 @@ export default function LandingPage({ onNavigate = () => {} }) {
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(Boolean(localStorage.getItem('token')));
   const [displayName, setDisplayName] = useState(localStorage.getItem('username') || '');
+
+  useEffect(() => {
+    clearCommissionDraft();
+  }, []);
 
   const handleCommission = () => {
     if (localStorage.getItem('token')) {
