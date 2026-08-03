@@ -9,12 +9,19 @@ import Icon from '../components/Icon';
 const fallbackOrder = {
   size: { id: 'A3', label: 'A3' },
   frame: { id: 'classic', label: 'Classic' },
+  subject: { id: 'one', label: '1 subject' },
+  pickup: { id: 'courier', label: 'Courier delivery' },
   people: 1,
+  isUrgent: false,
+  deadlineDays: 7,
   basePrice: 3800,
   framePrice: 800,
+  subjectPrice: 0,
+  pickupPrice: 650,
   peoplePrice: 0,
-  total: 4600,
-  deposit: 2300,
+  urgencyPrice: 0,
+  total: 5250,
+  deposit: 2625,
 }
 const currencies = [
   { code: 'LKR', label: 'LKR – Sri Lankan rupee', rate: 1 },
@@ -121,8 +128,14 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
         order: {
           sizeId: safeOrder.sizeId || safeOrder.size?.id,
           frameId: safeOrder.frameId || safeOrder.frame?.id,
+          subjectId: safeOrder.subjectId || safeOrder.subject?.id,
+          pickupId: safeOrder.pickupId || safeOrder.pickup?.id,
           people: safeOrder.people,
-          notes: safeOrder.notes || ''
+          isUrgent: Boolean(safeOrder.isUrgent),
+          deadlineDays: safeOrder.deadlineDays || 7,
+          notes: safeOrder.notes || '',
+          total: safeOrder.total,
+          deposit: safeOrder.deposit
         },
         customer: {
           firstName: 'Vivid',

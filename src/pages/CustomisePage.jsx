@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import Stepper from "../components/Stepper";
+import { showNotification } from "./NotificationContainer";
 
 const SIZES = [
   { id: "A4", label: "A4", dims: "210 × 297 mm", price: 2500 },
@@ -12,7 +13,21 @@ const FRAMES = [
   { id: "premium", label: "Premium", note: "+ LKR 1,500", price: 1500 },
 ];
 
+const SUBJECT_OPTIONS = [
+  { id: "one", label: "1 subject", note: "Single portrait", price: 0 },
+  { id: "two", label: "2 subjects", note: "+ LKR 1,200", price: 1200 },
+  { id: "more", label: "More than 2", note: "+ LKR 2,200", price: 2200 },
+];
+
+const PICKUP_OPTIONS = [
+  { id: "courier", label: "Courier delivery", note: "+ LKR 650", price: 650 },
+  { id: "pickup", label: "Pickup", note: "Included", price: 0 },
+];
+
 const EXTRA_PERSON = 500;
+const URGENT_BASE_PRICE = 2500;
+const URGENT_EXTRA_PER_DAY = 400;
+const MIN_DEADLINE_DAYS = 7;
 
 function fmt(n) {
   return `LKR ${n.toLocaleString("en-LK")}`;
@@ -21,29 +36,60 @@ function fmt(n) {
 export default function CustomisePage({ photoData, initialOrder = null, onNext = () => {}, onBack }) {
   const [sizeId, setSizeId] = useState(initialOrder?.sizeId ?? "A3");
   const [frameId, setFrameId] = useState(initialOrder?.frameId ?? "classic");
+  const [subjectId, setSubjectId] = useState(initialOrder?.subjectId ?? "one");
+  const [pickupId, setPickupId] = useState(initialOrder?.pickupId ?? "courier");
   const [people, setPeople] = useState(initialOrder?.people ?? 1);
+  const [isUrgent, setIsUrgent] = useState(initialOrder?.isUrgent ?? false);
+  const [deadlineDays, setDeadlineDays] = useState(initialOrder?.deadlineDays ?? MIN_DEADLINE_DAYS);
   const [notes, setNotes] = useState(initialOrder?.notes ?? "");
+  const [error, setError] = useState("");
 
   const size = SIZES.find((s) => s.id === sizeId);
   const frame = FRAMES.find((f) => f.id === frameId);
+  const subject = SUBJECT_OPTIONS.find((item) => item.id === subjectId);
+  const pickup = PICKUP_OPTIONS.find((item) => item.id === pickupId);
 
+  const urgentSurcharge = useMemo(() => {
+    if (!isUrgent) return 0;
+    return URGENT_BASE_PRICE + Math.max(0, deadlineDays - MIN_DEADLINE_DAYS) * URGENT_EXTRA_PER_DAY;
+  }, [deadlineDays, isUrgent]);
+
+  const peoplePrice = Math.max(0, people - 1) * EXTRA_PERSON;
   const total = useMemo(
-    () => size.price + frame.price + Math.max(0, people - 1) * EXTRA_PERSON,
-    [size, frame, people]
+    () => size.price + frame.price + subject.price + pickup.price + peoplePrice + urgentSurcharge,
+    [frame.price, peoplePrice, pickup.price, size.price, subject.price, urgentSurcharge]
   );
   const deposit = Math.round(total * 0.5);
+  const hasReferencePhoto = Boolean(photoData?.previewUrl || photoData?.photo);
 
   function handleContinue() {
+    if (!hasReferencePhoto) {
+      const message = "Please upload at least one high-resolution reference photo before continuing.";
+      setError(message);
+      showNotification("error", message);
+      return;
+    }
+
+    setError("");
     onNext({
       sizeId,
       frameId,
+      subjectId,
+      pickupId,
       people,
+      isUrgent,
+      deadlineDays,
       notes,
       size,
       frame,
+      subject,
+      pickup,
       basePrice: size.price,
       framePrice: frame.price,
-      peoplePrice: Math.max(0, people - 1) * EXTRA_PERSON,
+      subjectPrice: subject.price,
+      pickupPrice: pickup.price,
+      peoplePrice,
+      urgencyPrice: urgentSurcharge,
       total,
       deposit,
     });
@@ -78,7 +124,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
             Price updates in real-time as you choose
           </p>
 
-          {photoData?.previewUrl && (
+          {hasReferencePhoto ? (
             <div className="mt-5 flex items-center gap-3 rounded-xl bg-[#f7f6ff] p-3">
               <img
                 src={photoData.previewUrl}
@@ -86,8 +132,12 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
                 className="h-[52px] w-[52px] rounded-lg object-cover"
               />
               <span className="text-sm font-semibold text-[#6366f1]">
-                Reference photo uploaded ✓
+                High-resolution reference photo uploaded ✓
               </span>
+            </div>
+          ) : (
+            <div className="mt-5 rounded-xl border border-[#e7e5f1] bg-[#fafafe] p-3 text-sm text-[#6b6885]">
+              Upload at least one clear reference photo before you continue.
             </div>
           )}
 
@@ -99,19 +149,18 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
               <button
                 key={s.id}
                 type="button"
-                className={`flex flex-col gap-2 rounded-xl border p-4 text-left transition ${ 
+                className={`flex flex-col gap-2 rounded-xl border p-4 text-left transition ${
                   sizeId === s.id
-                    ? "border-[#6366f1] bg-[#f5f3ff] "
+                    ? "border-[#6366f1] bg-[#f5f3ff]"
                     : "border-[#e7e5f1] bg-white"
-                   
                 }`}
                 onClick={() => setSizeId(s.id)}
               >
-                <span className="flex flex-col gap-1 text-[15px]   font-bold">
+                <span className="flex flex-col gap-1 text-[15px] font-bold">
                   {s.label}
-                  <small className="text-sm font-medium text-[#6b6885] ">{s.dims}</small>
+                  <small className="text-sm font-medium text-[#6b6885]">{s.dims}</small>
                 </span>
-                <span className={`text-sm ${sizeId === s.id ? "text-[#6366f1]" : "text-[#6b6885]" }`}>
+                <span className={`text-sm ${sizeId === s.id ? "text-[#6366f1]" : "text-[#6b6885]"}`}>
                   from {fmt(s.price)}
                 </span>
               </button>
@@ -139,6 +188,91 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
                 </span>
               </button>
             ))}
+          </div>
+
+          <label className="mt-5 mb-2 block text-[13px] font-semibold uppercase tracking-[0.08em] text-[#6b6885]">
+            Subjects to draw
+          </label>
+          <div className="mb-1 grid gap-3 md:grid-cols-3">
+            {SUBJECT_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={`flex flex-col items-center gap-1 rounded-xl border p-4 text-center transition ${
+                  subjectId === option.id
+                    ? "border-[#6366f1] bg-[#f5f3ff]"
+                    : "border-[#e7e5f1] bg-white"
+                }`}
+                onClick={() => setSubjectId(option.id)}
+              >
+                <span className="text-[15px] font-bold">{option.label}</span>
+                <span className={`text-sm ${subjectId === option.id ? "text-[#6366f1]" : "text-[#6b6885]"}`}>
+                  {option.note}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <label className="mt-5 mb-2 block text-[13px] font-semibold uppercase tracking-[0.08em] text-[#6b6885]">
+            Pickup option
+          </label>
+          <div className="mb-1 grid gap-3 md:grid-cols-2">
+            {PICKUP_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                className={`flex flex-col items-center gap-1 rounded-xl border p-4 text-center transition ${
+                  pickupId === option.id
+                    ? "border-[#6366f1] bg-[#f5f3ff]"
+                    : "border-[#e7e5f1] bg-white"
+                }`}
+                onClick={() => setPickupId(option.id)}
+              >
+                <span className="text-[15px] font-bold">{option.label}</span>
+                <span className={`text-sm ${pickupId === option.id ? "text-[#6366f1]" : "text-[#6b6885]"}`}>
+                  {option.note}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-5 rounded-xl border border-[#e7e5f1] bg-[#fafafe] p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-[15px] font-bold">Urgent order</h3>
+                <p className="text-sm text-[#6b6885]">Fast-track delivery with added rush pricing.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsUrgent((value) => !value)}
+                className={`rounded-full px-3.5 py-2 text-sm font-semibold transition ${
+                  isUrgent
+                    ? "bg-[#6366f1] text-white"
+                    : "border border-[#e7e5f1] bg-white text-[#6b6885]"
+                }`}
+              >
+                {isUrgent ? "Urgent On" : "Urgent"}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-[#6b6885]">
+              Minimum deadline is 7 days. Adds {fmt(URGENT_BASE_PRICE)} + {fmt(URGENT_EXTRA_PER_DAY)} per extra day.
+            </p>
+            {isUrgent && (
+              <div className="mt-3 rounded-lg border border-[#e7e5f1] bg-white p-3">
+                <label className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.08em] text-[#6b6885]">
+                  Delivery deadline
+                </label>
+                <select
+                  value={deadlineDays}
+                  onChange={(event) => setDeadlineDays(Number(event.target.value))}
+                  className="w-full rounded-lg border border-[#e7e5f1] bg-[#fafafe] px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#6366f1]"
+                >
+                  <option value={7}>7 days (minimum)</option>
+                  <option value={10}>10 days</option>
+                  <option value={14}>14 days</option>
+                </select>
+              </div>
+            )}
           </div>
 
           <label className="mt-5 mb-2 block text-[13px] font-semibold uppercase tracking-[0.08em] text-[#6b6885]">
@@ -202,12 +336,26 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
                 </dd>
               </div>
               <div className="flex justify-between border-b border-[#e7e5f1] py-2.5 text-sm">
+                <dt className="text-[#6b6885]">Subjects</dt>
+                <dd className="font-semibold">{subject.label}</dd>
+              </div>
+              <div className="flex justify-between border-b border-[#e7e5f1] py-2.5 text-sm">
+                <dt className="text-[#6b6885]">Pickup</dt>
+                <dd className="font-semibold">{pickup.label}</dd>
+              </div>
+              <div className="flex justify-between border-b border-[#e7e5f1] py-2.5 text-sm">
                 <dt className="text-[#6b6885]">People</dt>
                 <dd className="font-semibold">{people}</dd>
               </div>
+              {isUrgent && (
+                <div className="flex justify-between border-b border-[#e7e5f1] py-2.5 text-sm">
+                  <dt className="text-[#6b6885]">Urgent</dt>
+                  <dd className="font-semibold">{deadlineDays} days</dd>
+                </div>
+              )}
               <div className="flex justify-between py-2.5 text-sm">
                 <dt className="text-[#6b6885]">Delivery</dt>
-                <dd className="font-semibold">7–10 working days</dd>
+                <dd className="font-semibold">{isUrgent ? `${deadlineDays} days` : "7–10 working days"}</dd>
               </div>
             </dl>
 
@@ -221,17 +369,17 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
               </span>
             </div>
 
+            {error && <p className="mt-3 text-sm font-medium text-[#e54d4d]">{error}</p>}
+
             <button
               type="button"
               onClick={handleContinue}
               className="mt-4 w-full rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-white"
               style={{ color: "#ffffff" }}
             >
-              Continue to payment →
+              Confirm order & pay →
             </button>
           </section>
-
-         
         </div>
       </main>
     </div>
