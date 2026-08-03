@@ -81,6 +81,19 @@ function ProfilePage({ onNavigate }) {
     onNavigate('login');
   };
 
+  const reviewProof = async (order, action) => {
+    const note = action === 'revision' ? window.prompt('Describe the changes you need:') : '';
+    if (action === 'revision' && !note?.trim()) return;
+    try {
+      const response = await fetch(`/api/orders/${order.id}/proof-review`, { method: 'POST', headers: {
+        'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}`,
+      }, body: JSON.stringify({ action, note }) });
+      const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Review failed');
+      setOrders(current => current.map(item => item.id === order.id ? { ...item, status: data.status } : item));
+      setMessage(data.message);
+    } catch (error) { setMessage(error.message); }
+  };
+
   if (!user) {
     return <p style={{ textAlign: 'center', marginTop: '40px' }}>Loading your profile...</p>;
   }
@@ -166,10 +179,17 @@ function ProfilePage({ onNavigate }) {
               orders.map((order) => (
                 <div key={order._id || order.id} style={{ marginBottom: 12, padding: 12, borderRadius: 10, background: '#0c0b16' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <strong>Order #{order._id?.slice(-6) || 'N/A'}</strong>
+                    <strong>Order #{(order.id || order._id || '').slice(-8) || 'N/A'}</strong>
                     <span style={{ color: '#a78bfa' }}>{order.status}</span>
                   </div>
                   <OrderTracker currentStatus={order.status} />
+                  {order.proofImagePath && <div style={{ marginTop: 12 }}>
+                    <img src={order.proofImagePath} alt="Portrait proof" style={{ width: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 10, background: '#151326' }}/>
+                    {order.status === 'waiting_for_feedback' && <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                      <button onClick={() => reviewProof(order, 'approve')} style={{ padding: '9px 14px', border: 0, borderRadius: 8, background: '#278b5d', color: '#fff' }}>Approve proof</button>
+                      <button onClick={() => reviewProof(order, 'revision')} style={{ padding: '9px 14px', border: '1px solid #665d91', borderRadius: 8, background: 'transparent', color: '#fff' }}>Request changes</button>
+                    </div>}
+                  </div>}
                 </div>
               ))
             )}

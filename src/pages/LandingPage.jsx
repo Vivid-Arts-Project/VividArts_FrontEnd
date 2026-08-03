@@ -51,12 +51,14 @@ const gallery = [
 ];
 
 export default function LandingPage({ onNavigate = () => {} }) {
+  const [websiteImages, setWebsiteImages] = useState([]);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(Boolean(localStorage.getItem('token')));
   const [displayName, setDisplayName] = useState(localStorage.getItem('username') || '');
 
   useEffect(() => {
     clearCommissionDraft();
+    fetch('http://localhost:3001/api/content/gallery').then(r => r.ok ? r.json() : []).then(setWebsiteImages).catch(() => {});
   }, []);
 
   const handleCommission = () => {
@@ -229,6 +231,12 @@ export default function LandingPage({ onNavigate = () => {} }) {
           </div>
 
           <div id="gallery" className="grid gap-4 scroll-mt-24">
+            {websiteImages.length > 0 ? <div className="grid gap-4 sm:grid-cols-2">
+              {websiteImages.map((image, index) => <figure key={image.id} className={`${index === 0 ? 'sm:col-span-2' : ''} group relative min-h-[180px] overflow-hidden rounded-[18px] border border-white/10`}>
+                <img src={image.imageUrl} alt={image.altText || image.title} className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"/>
+                <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-5 pt-12"><strong>{image.title}</strong>{image.subtitle && <span className="ml-2 text-sm text-white/65">{image.subtitle}</span>}</figcaption>
+              </figure>)}
+            </div> : <>
             <div className="flex min-h-[280px] flex-col justify-between rounded-[20px] bg-gradient-to-br from-[#d4a574] to-[#8a6c4a] p-6 font-semibold text-[#1c1206]">
               <span className="text-sm leading-relaxed">
                 Family
@@ -253,6 +261,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
                 </div>
               ))}
             </div>
+            </>}
           </div>
         </section>
 

@@ -17,7 +17,9 @@ export const uploadProof = (id, file) => {
 };
 
 // ── Customers (for Clients page) ──────────────────────────────────────────────
-export const getCustomers = () => api.get('/customers');
+export const getCustomers = () => api.get('/admin/customers');
+export const getPayments  = () => api.get('/payments');
+export const invoiceUrl   = (payhereOrderId) => `${api.defaults.baseURL}/payments/${encodeURIComponent(payhereOrderId)}/invoice`;
 
 // Admin profile and settings
 export const getProfile          = ()     => api.get('/admin/me');
@@ -30,3 +32,8 @@ export const changePassword      = (data) => api.patch('/admin/password', data);
 export const getPricing     = ()         => api.get('/admin/pricing');
 export const updatePriceRow = (id, data) => api.patch(`/admin/pricing/${id}`, data);
 export const calculatePrice = (options)  => api.post('/admin/pricing/calculate', options);
+
+export const getGalleryImages = () => api.get('/content/admin/gallery');
+export const saveGalleryImage = (id, data) => api.patch(`/content/admin/gallery/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
+export const addGalleryImage = (data) => api.post('/content/admin/gallery', data, { headers: { 'Content-Type': 'multipart/form-data' } });
+export const removeGalleryImage = (id) => api.delete(`/content/admin/gallery/${id}`);
