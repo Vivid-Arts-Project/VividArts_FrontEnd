@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Icon from './Icon';
@@ -55,11 +55,13 @@ export default function Sidebar({ page, onNav, stats }) {
   return (
     <nav className="w-[230px] bg-grad-dark flex flex-col h-screen shrink-0 fixed top-0 left-0 z-[200] border-r border-white/[0.04]">
       {/* Logo — uses real businessName from DB */}
-      <div className="px-5 pt-[22px] pb-[18px] border-b border-white/[0.06] flex items-center gap-2.5">
-        <BrandLogo size={38}/>
-        <div>
-          <div className="font-outfit text-base font-extrabold text-white tracking-[-0.3px]">{businessName}</div>
-          <span className="text-[10px] font-semibold text-white/30 bg-white/[0.07] rounded block mt-[3px] px-[7px] py-0.5 tracking-wide uppercase">Admin Panel</span>
+      <div className="px-4 pt-5 pb-[18px] border-b border-white/[0.06] flex items-center gap-3">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white shadow-[0_8px_24px_rgba(69,52,160,0.3)]">
+          <BrandLogo size={40}/>
+        </span>
+        <div className="min-w-0">
+          <div className="font-outfit text-[18px] leading-tight font-extrabold text-white tracking-[-0.2px] drop-shadow-sm">{businessName}</div>
+          <span className="mt-1 inline-flex rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white/70">Admin Panel</span>
         </div>
       </div>
 
@@ -107,7 +109,10 @@ export default function Sidebar({ page, onNav, stats }) {
           disabled={loggingOut}
           className="mt-2 w-full px-3 py-2 bg-white/[0.06] border border-white/10 rounded-lg text-white/60 text-xs font-semibold cursor-pointer text-left transition-colors hover:bg-red-500/15 hover:border-red-400/25 hover:text-red-200 disabled:cursor-wait disabled:opacity-60"
         >
-          ⇠ Sign out
+          <span className="flex items-center gap-1.5">
+            <Icon name="arrowLeft" size={14}/>
+            {loggingOut ? 'Signing out…' : 'Sign out'}
+          </span>
         </button>
       </div>
     </nav>

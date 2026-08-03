@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Icon from '../components/Icon';
 import Badge from '../components/Badge';
+import { STATUS_MAP } from '../components/statusConfig';
 import { getOrders, updateStatus, sendMessage, setLocation } from '../api/adminApi';
 
 const STAGE_ORDER = ['in_queue','sketching','waiting_for_feedback','finished','framed','shipped','done'];
@@ -24,6 +25,7 @@ function DetailPanel({ order, onClose, onStatusSaved, onToast }) {
   const [saving, setSaving]     = useState(false);
   const [chatMsg, setChatMsg]   = useState('');
   const [location, setLoc]      = useState(order.artistLocation || '');
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
 
   const curIdx = STAGE_ORDER.indexOf(order.status);
   const stages = [
@@ -37,9 +39,9 @@ function DetailPanel({ order, onClose, onStatusSaved, onToast }) {
     setSaving(true);
     try {
       await updateStatus(order.id, status);
-      onToast('✓ Status updated — client notified');
+      onToast('Status updated — client notified');
       onStatusSaved();
-    } catch { onToast('❌ Failed to update status'); }
+    } catch { onToast('Failed to update status'); }
     finally { setSaving(false); }
   };
 
@@ -48,16 +50,16 @@ function DetailPanel({ order, onClose, onStatusSaved, onToast }) {
     try {
       await sendMessage(order.id, chatMsg.trim());
       setChatMsg('');
-      onToast('✓ Message sent');
+      onToast('Message sent');
       onStatusSaved();
-    } catch { onToast('❌ Failed to send message'); }
+    } catch { onToast('Failed to send message'); }
   };
 
   const handleSaveLocation = async () => {
     try {
       await setLocation(order.id, location);
-      onToast('✓ Location saved');
-    } catch { onToast('❌ Failed to save location'); }
+      onToast('Location saved');
+    } catch { onToast('Failed to save location'); }
   };
 
   const messages = order.messages || [];
@@ -89,15 +91,17 @@ function DetailPanel({ order, onClose, onStatusSaved, onToast }) {
           {order.isUrgent && (
             <div className="flex justify-between items-start mb-2 text-xs">
               <span className="text-va-text3">Deadline</span>
-              <span className="font-semibold text-right max-w-[60%] text-va-danger">
-                🔥 {order.urgentDeadline ? new Date(order.urgentDeadline).toLocaleDateString() : 'Urgent'}
+              <span className="inline-flex items-center justify-end gap-1 font-semibold text-right max-w-[60%] text-va-danger">
+                <Icon name="alert" size={13}/>
+                {order.urgentDeadline ? new Date(order.urgentDeadline).toLocaleDateString() : 'Urgent'}
               </span>
             </div>
           )}
           <div className="flex justify-between items-start mb-2 text-xs">
             <span className="text-va-text3">Payment</span>
-            <span className="font-semibold text-right max-w-[60%] text-va-success">
-              {order.paymentType === 'full' ? '✓ Fully paid' : '✓ Deposit paid'}
+            <span className="inline-flex items-center justify-end gap-1 font-semibold text-right max-w-[60%] text-va-success">
+              <Icon name="completed" size={13}/>
+              {order.paymentType === 'full' ? 'Fully paid' : 'Deposit paid'}
             </span>
           </div>
         </div>
@@ -117,7 +121,7 @@ function DetailPanel({ order, onClose, onStatusSaved, onToast }) {
                   className={`flex gap-2.5 relative ${!isLast ? `after:content-[''] after:absolute after:left-[10px] after:top-6 after:w-[1.5px] after:h-[calc(100%-6px)] ${isDone ? 'after:bg-va-success' : 'after:bg-va-border'}` : ''}`}
                 >
                   <div className={`w-[22px] h-[22px] rounded-full shrink-0 flex items-center justify-center text-[11px] z-[1] ${isDone ? 'bg-va-success text-white' : isActive ? 'bg-grad text-white' : 'bg-va-bg2 border-[1.5px] border-va-border text-va-text3'}`}>
-                    {isDone ? '✓' : i + 1}
+                    {isDone ? <Icon name="completed" size={13}/> : i + 1}
                   </div>
                   <div className="pt-0.5 pb-[18px]">
                     <div className={`text-xs font-semibold ${!isDone && !isActive ? 'text-va-text3 font-normal' : 'text-va-text'}`}>{st.label}</div>
@@ -173,16 +177,43 @@ function DetailPanel({ order, onClose, onStatusSaved, onToast }) {
         {/* Update Status */}
         <div className="mb-5 pb-5 border-b border-va-border">
           <div className="text-[11px] font-bold text-va-text3 tracking-wide uppercase mb-3">Update Status</div>
-          <select className="w-full px-3 py-2.5 border border-va-border rounded-lg font-sans text-sm text-va-text bg-va-bg outline-none mb-2" value={status} onChange={e => setStatus(e.target.value)}>
-            {['revision_requested','approved'].includes(status) && <option value={status} disabled>{status === 'revision_requested' ? 'Revision requested by client' : 'Proof approved by client'}</option>}
-            <option value="in_queue">⏳ Queued</option>
-            <option value="sketching">🖊 Sketching</option>
-            <option value="waiting_for_feedback">Waiting for feedback or approval</option>
-            <option value="finished">Finished</option>
-            {order.frameType && order.frameType !== 'without_frame' && <option value="framed">Framed</option>}
-            {order.pickupOption === 'courier' && <option value="shipped">Shipped</option>}
-            <option value="done">✅ Done</option>
-          </select>
+          <div className="relative mb-2">
+            <button
+              type="button"
+              className="flex w-full items-center justify-between rounded-lg border border-va-border bg-va-bg px-3 py-2.5 text-left text-sm text-va-text transition-colors hover:border-va-border2"
+              aria-expanded={statusMenuOpen}
+              onClick={() => setStatusMenuOpen(open => !open)}
+            >
+              <span className="flex items-center gap-2 font-semibold">
+                <Icon name={STATUS_MAP[status]?.icon || 'pending'} size={16}/>
+                {STATUS_MAP[status]?.label || (status === 'revision_requested' ? 'Revision requested by client' : 'Proof approved by client')}
+              </span>
+              <span className={`text-va-text3 transition-transform ${statusMenuOpen ? 'rotate-90' : ''}`}>›</span>
+            </button>
+            {statusMenuOpen && (
+              <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 overflow-hidden rounded-lg border border-va-border bg-white p-1.5 shadow-[0_12px_30px_rgba(27,22,62,0.16)]">
+                {[
+                  ['in_queue', 'Queued'],
+                  ['sketching', 'Sketching'],
+                  ['waiting_for_feedback', 'Waiting for feedback or approval'],
+                  ['finished', 'Finished'],
+                  ...(order.frameType && order.frameType !== 'without_frame' ? [['framed', 'Framed']] : []),
+                  ...(order.pickupOption === 'courier' ? [['shipped', 'Shipped']] : []),
+                  ['done', 'Done'],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs transition-colors ${status === value ? 'bg-[#F0EBFA] font-bold text-va-purple' : 'text-va-text2 hover:bg-va-bg'}`}
+                    onClick={() => { setStatus(value); setStatusMenuOpen(false); }}
+                  >
+                    <Icon name={STATUS_MAP[value]?.icon || 'pending'} size={15}/>
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button className={`${BTN_BASE} ${BTN_FILL} w-full py-[9px] text-[13px]`} onClick={handleStatusSave} disabled={saving}>
             {saving ? 'Saving…' : 'Save status update'}
           </button>
@@ -252,7 +283,7 @@ export default function OrdersPage({ search, onToast }) {
       const res = await getOrders();
       setOrders(res.data.orders);
       setStats(res.data.stats);
-    } catch { onToast('❌ Failed to load orders'); }
+    } catch { onToast('Failed to load orders'); }
     finally { setLoading(false); }
   }, [onToast]);
 
@@ -284,7 +315,11 @@ export default function OrdersPage({ search, onToast }) {
             <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center text-white mb-3"><Icon name="orders"/></div>
             <div className="font-outfit text-[28px] font-extrabold text-white">{stats.total ?? '—'}</div>
             <div className="text-xs text-white/60 mt-0.5">Active Orders</div>
-            <div className="text-xs font-semibold mt-2 text-white/70">{stats.urgentActive ? `⚠ ${stats.urgentActive} urgent` : 'This month'}</div>
+            <div className="text-xs font-semibold mt-2 text-white/70">
+              {stats.urgentActive
+                ? <span className="inline-flex items-center gap-1"><Icon name="alert" size={13}/>{stats.urgentActive} urgent</span>
+                : 'This month'}
+            </div>
           </div>
           <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
             <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-warn mb-3"><Icon name="approval"/></div>
@@ -352,7 +387,7 @@ export default function OrdersPage({ search, onToast }) {
                       <td>
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-full bg-grad flex items-center justify-center font-bold text-[11px] text-white shrink-0">
-                            {o.customer?.fullName?.slice(0,2).toUpperCase() || '??'}
+                            {o.customer?.fullName ? o.customer.fullName.slice(0,2).toUpperCase() : <Icon name="user" size={14}/>}
                           </div>
                           <span className="font-medium">{o.customer?.fullName}</span>
                         </div>
@@ -360,7 +395,7 @@ export default function OrdersPage({ search, onToast }) {
                       <td className="text-va-text3">{o.paperSize} · {o.subjectCount?.replace(/_/g,' ')}</td>
                       <td><strong>{o.currency} {parseFloat(o.totalPrice || 0).toLocaleString()}</strong></td>
                       <td>{o.isUrgent
-                        ? <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-[3px] rounded-full whitespace-nowrap bg-va-danger-bg text-va-danger">🔥 Urgent</span>
+                        ? <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-[3px] rounded-full whitespace-nowrap bg-va-danger-bg text-va-danger"><Icon name="alert" size={13}/>Urgent</span>
                         : <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-[3px] rounded-full whitespace-nowrap bg-[#F0F0F8] text-[#555]">Normal</span>}
                       </td>
                       <td><Badge status={o.status}/></td>
