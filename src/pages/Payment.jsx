@@ -156,11 +156,17 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
           frameId: safeOrder.frameId || safeOrder.frame?.id,
           people: safeOrder.people,
           deliveryMethod: safeOrder.deliveryMethod || 'courier',
+          deliveryAddress: safeOrder.deliveryMethod === 'courier' ? safeOrder.deliveryAddress : null,
           urgent: safeOrder.urgent === true,
           urgentDeadline: safeOrder.urgent ? safeOrder.urgentDeadline : null,
           notes: safeOrder.notes || ''
         },
-        customer: customerInfo
+        customer: {
+          ...customerInfo,
+          address: safeOrder.deliveryMethod === 'courier' && safeOrder.deliveryAddress
+            ? safeOrder.deliveryAddress
+            : customerInfo.address,
+        }
       });
 
       if (!result.success || !result.checkoutUrl || !result.checkoutFields) {
@@ -345,6 +351,9 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
                 <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Requested by</span><span className="font-medium">{new Date(`${safeOrder.urgentDeadline}T00:00:00`).toLocaleDateString('en-LK', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
               )}
               <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Delivery</span><span className="font-medium">{safeOrder.deliveryMethod === 'pickup' ? 'Pickup' : 'Courier'}</span></div>
+              {safeOrder.deliveryMethod === 'courier' && safeOrder.deliveryAddress && (
+                <div className="flex justify-between gap-4 py-2 border-b border-black/[0.06] text-[13px]"><span className="shrink-0 text-[#6b6b80]">Address</span><span className="text-right font-medium">{safeOrder.deliveryAddress}</span></div>
+              )}
             </div>
 
             <div className="flex justify-between items-center mt-[14px] pt-[14px] border-t-[1.5px] border-[rgba(83,74,183,0.18)]">

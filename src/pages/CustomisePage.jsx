@@ -29,6 +29,8 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
   const [people, setPeople] = useState(initialOrder?.people ?? 1);
   const [notes, setNotes] = useState(initialOrder?.notes ?? "");
   const [deliveryMethod, setDeliveryMethod] = useState(initialOrder?.deliveryMethod ?? "");
+  const [deliveryAddress, setDeliveryAddress] = useState(initialOrder?.deliveryAddress ?? "");
+  const [deliveryAddressError, setDeliveryAddressError] = useState("");
   const [urgent, setUrgent] = useState(initialOrder?.urgent ?? false);
   const [urgentDeadline, setUrgentDeadline] = useState(initialOrder?.urgentDeadline ?? "");
   const [urgentDeadlineError, setUrgentDeadlineError] = useState("");
@@ -82,18 +84,25 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
     }
 
     setSelectionError("");
+    if (deliveryMethod === "courier" && !deliveryAddress.trim()) {
+      setDeliveryAddressError("Please enter the address where we should deliver your portrait.");
+      return;
+    }
+
     if (urgent && (!urgentDeadline || urgentDeadline < minimumUrgentDate)) {
       setUrgentDeadlineError(`Please select a date on or after ${new Date(`${minimumUrgentDate}T00:00:00`).toLocaleDateString("en-LK", { day: "numeric", month: "short", year: "numeric" })}.`);
       return;
     }
 
     setUrgentDeadlineError("");
+    setDeliveryAddressError("");
     onNext({
       sizeId,
       frameId,
       people,
       notes,
       deliveryMethod,
+      deliveryAddress: deliveryMethod === "courier" ? deliveryAddress.trim() : null,
       urgent,
       urgentDeadline: urgent ? urgentDeadline : null,
       size,
@@ -252,7 +261,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
               </label>
 
               <label className={`group cursor-pointer rounded-2xl border-2 p-4 transition-all ${deliveryMethod === "pickup" ? "border-[#6366f1] bg-gradient-to-br from-[#f5f3ff] to-[#eef5ff] shadow-[0_10px_24px_rgba(99,102,241,0.14)]" : "border-[#e7e5f1] bg-white hover:-translate-y-0.5 hover:border-[#bbb3ee]"}`}>
-                <input type="radio" name="delivery-method" value="pickup" checked={deliveryMethod === "pickup"} onChange={(event) => { setDeliveryMethod(event.target.value); setSelectionError(""); }} className="sr-only" />
+                <input type="radio" name="delivery-method" value="pickup" checked={deliveryMethod === "pickup"} onChange={(event) => { setDeliveryMethod(event.target.value); setDeliveryAddressError(""); setSelectionError(""); }} className="sr-only" />
                 <span className="flex items-center gap-3">
                   <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${deliveryMethod === "pickup" ? "bg-[#6366f1] text-white" : "bg-[#f1effc] text-[#67607f]"}`}>
                     <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 10v10h16V10"/><path d="M3 10l2-6h14l2 6"/><path d="M3 10a3 3 0 006 0 3 3 0 006 0 3 3 0 006 0"/><path d="M9 20v-5h6v5"/></svg>
@@ -268,6 +277,29 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
               </label>
             </div>
           </fieldset>
+
+          {deliveryMethod === "courier" && (
+            <div className="mt-3 rounded-2xl border-2 border-[#d9d3ff] bg-gradient-to-br from-[#faf9ff] to-[#f0f5ff] p-4 shadow-[0_10px_24px_rgba(99,102,241,0.1)] sm:p-5">
+              <div className="flex items-start gap-3.5">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#6366f1] text-white shadow-[0_8px_20px_rgba(99,102,241,0.25)]">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1116 0z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                </span>
+                <div className="min-w-0 flex-1">
+                  <label htmlFor="delivery-address" className="block text-sm font-extrabold text-[#29253b]">Delivery address</label>
+                  <p className="mt-1 text-xs leading-5 text-[#6b6885]">Enter the complete address where your finished portrait should be delivered.</p>
+                  <textarea
+                    id="delivery-address"
+                    rows={3}
+                    value={deliveryAddress}
+                    onChange={(event) => { setDeliveryAddress(event.target.value); setDeliveryAddressError(""); }}
+                    placeholder="House number, street, city, postal code"
+                    className={`mt-3 w-full resize-y rounded-xl border bg-white px-4 py-3 text-sm font-medium text-[#29253b] outline-none transition focus:ring-4 ${deliveryAddressError ? "border-[#dc5d48] focus:border-[#dc5d48] focus:ring-[#dc5d48]/10" : "border-[#cfc8ff] focus:border-[#6366f1] focus:ring-[#6366f1]/10"}`}
+                  />
+                  {deliveryAddressError && <p className="mt-2 text-xs font-semibold text-[#c2412d]">{deliveryAddressError}</p>}
+                </div>
+              </div>
+            </div>
+          )}
 
           <label className={`group relative mt-5 flex cursor-pointer items-center justify-between gap-4 overflow-hidden rounded-2xl border-2 p-4 transition-all duration-300 sm:p-5 ${
             urgent

@@ -3,6 +3,7 @@ import { useState } from "react";
 import UploadPhotoPage from "./UploadPhotoPage";
 import CustomisePage from "./CustomisePage";
 import Payment from "./Payment";
+import { clearCommissionDraft, getCommissionDraft, setCommissionOrder, setCommissionPhoto } from "../commissionDraft";
 
 /**
  * CommissionFlow
@@ -18,8 +19,8 @@ import Payment from "./Payment";
  */
 export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {} }) {
   const navigate = useNavigate();
-  const [photoData, setPhotoData] = useState(null);
-  const [order, setOrder] = useState(null);
+  const [photoData, setPhotoData] = useState(() => getCommissionDraft().photoData);
+  const [order, setOrder] = useState(() => getCommissionDraft().order);
 
   // If PayHere just redirected back with ?payment=..., land straight on the
   // payment step so it can read the query param and show the confirmation.
@@ -27,17 +28,20 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
 
   function handlePhotoNext(data) {
     setPhotoData(data);
+    setCommissionPhoto(data);
     navigate('customize');
   }
 
   function handleCustomiseNext(orderData) {
     setOrder(orderData);
+    setCommissionOrder(orderData);
     navigate('payment');
   }
 
   function handlePaymentComplete() {
     setPhotoData(null);
     setOrder(null);
+    clearCommissionDraft();
     onBack();
   }
 
