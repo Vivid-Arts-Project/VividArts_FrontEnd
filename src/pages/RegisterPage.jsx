@@ -106,6 +106,15 @@ function RegisterPage({ onNavigate }) {
   };
 
   const passwordsMatch = Boolean(password && confirmPassword && password === confirmPassword);
+  const passwordCharacterGroups = [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/]
+    .filter(pattern => pattern.test(password)).length;
+  const passwordStrength = !password
+    ? 0
+    : password.length >= 10 && passwordCharacterGroups >= 3
+      ? 3
+      : password.length >= 8 && passwordCharacterGroups >= 2
+        ? 2
+        : 1;
   const fieldClass = 'group flex items-center gap-3 rounded-xl border border-white/10 bg-white/[.055] px-4 transition focus-within:border-[#7b8cff] focus-within:bg-white/[.08] focus-within:shadow-[0_0_0_4px_rgba(99,102,241,.1)]';
 
   return (
@@ -209,7 +218,32 @@ function RegisterPage({ onNavigate }) {
               {[
                 { label: 'Password', value: password, setter: setPassword, visible: showPassword, toggle: setShowPassword, autoComplete: 'new-password' },
                 { label: 'Confirm password', value: confirmPassword, setter: setConfirmPassword, visible: showConfirmPassword, toggle: setShowConfirmPassword, autoComplete: 'new-password' },
-              ].map(field => <label className="block" key={field.label}><span className="mb-1.5 block text-xs font-semibold text-white/70">{field.label}</span><span className={fieldClass}><Icon name="lock" size={18} className="text-[#77738e]"/><input type={field.visible ? 'text' : 'password'} value={field.value} onChange={event => field.setter(event.target.value)} required autoComplete={field.autoComplete} placeholder={field.label} className="h-11 min-w-0 flex-1 border-none bg-transparent text-sm text-white outline-none placeholder:text-white/25"/><button type="button" onClick={() => field.toggle(previous => !previous)} className="flex h-8 w-8 items-center justify-center rounded-lg border-none bg-transparent text-[#77738e]" aria-label={field.visible ? `Hide ${field.label.toLowerCase()}` : `Show ${field.label.toLowerCase()}`}><Icon name={field.visible ? 'eyeOff' : 'eye'} size={18}/></button></span></label>)}
+              ].map(field => (
+                <div key={field.label}>
+                  <label className="block">
+                    <span className="mb-1.5 block text-xs font-semibold text-white/70">{field.label}</span>
+                    <span className={fieldClass}>
+                      <Icon name="lock" size={18} className="text-[#77738e]"/>
+                      <input type={field.visible ? 'text' : 'password'} value={field.value} onChange={event => field.setter(event.target.value)} required autoComplete={field.autoComplete} placeholder={field.label} className="h-11 min-w-0 flex-1 border-none bg-transparent text-sm text-white outline-none placeholder:text-white/25"/>
+                      <button type="button" onClick={() => field.toggle(previous => !previous)} className="flex h-8 w-8 items-center justify-center rounded-lg border-none bg-transparent text-[#77738e]" aria-label={field.visible ? `Hide ${field.label.toLowerCase()}` : `Show ${field.label.toLowerCase()}`}><Icon name={field.visible ? 'eyeOff' : 'eye'} size={18}/></button>
+                    </span>
+                  </label>
+                  {field.label === 'Password' && password && (
+                    <div
+                      className="password-strength-enter mt-2 grid grid-cols-3 gap-2"
+                      role="meter"
+                      aria-label="Password strength"
+                      aria-valuemin="0"
+                      aria-valuemax="3"
+                      aria-valuenow={passwordStrength}
+                    >
+                      <span className={`h-1.5 rounded-full transition-all duration-300 ${passwordStrength >= 1 ? 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,.35)]' : 'bg-white/10'}`}/>
+                      <span className={`h-1.5 rounded-full transition-all duration-300 ${passwordStrength >= 2 ? 'bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,.35)]' : 'bg-white/10'}`}/>
+                      <span className={`h-1.5 rounded-full transition-all duration-300 ${passwordStrength >= 3 ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.35)]' : 'bg-white/10'}`}/>
+                    </div>
+                  )}
+                </div>
+              ))}
               {confirmPassword && <div className={`register-match-message ${passwordsMatch ? 'text-emerald-300' : 'text-red-300'}`}><Icon name={passwordsMatch ? 'completed' : 'alert'} size={16}/>{passwordsMatch ? 'Passwords match' : 'Passwords do not match'}</div>}
               <button type="submit" disabled={isLoading} className="group flex h-[50px] w-full items-center justify-center gap-2 rounded-xl border-none bg-gradient-to-r from-[#2b8fe0] via-[#7161d8] to-[#7b4fc8] text-sm font-bold text-white disabled:cursor-wait disabled:opacity-70">{isLoading ? <span className="login-spinner"/> : <>Create account <Icon name="arrowRight" size={17}/></>}</button>
             </form>}
