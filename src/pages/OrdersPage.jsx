@@ -65,13 +65,13 @@ function DetailPanel({ order, onClose, onStatusSaved, onToast }) {
   const messages = order.messages || [];
 
   return (
-    <div className="w-[300px] shrink-0 bg-white border-l border-va-border flex flex-col h-[calc(100vh-60px)] sticky top-[60px] overflow-y-auto">
+    <div className="fixed inset-y-0 right-0 z-[180] flex h-[100dvh] w-full max-w-[360px] shrink-0 flex-col overflow-y-auto border-l border-va-border bg-white shadow-[-16px_0_40px_rgba(30,24,72,0.16)] sm:top-[60px] sm:h-[calc(100vh-60px)]">
       <div className="px-[18px] py-4 border-b border-va-border flex items-center justify-between sticky top-0 z-10 bg-white">
         <div>
           <div className="font-outfit text-[13px] font-bold">Order #{order.id?.slice(0,8)}</div>
           <div className="mt-1"><Badge status={order.status}/></div>
         </div>
-        <button className="text-lg text-va-text3 cursor-pointer leading-none px-1.5 py-0.5 rounded border-none bg-transparent hover:bg-va-bg2 hover:text-va-text" onClick={onClose}>×</button>
+        <button type="button" aria-label="Close order details" className="text-lg text-va-text3 cursor-pointer leading-none px-1.5 py-0.5 rounded border-none bg-transparent hover:bg-va-bg2 hover:text-va-text" onClick={onClose}>×</button>
       </div>
 
       <div className="px-[18px] py-4 flex-1">
@@ -306,11 +306,11 @@ export default function OrdersPage({ search, onToast }) {
   const selectedOrder = orders.find(o => o.id === selectedId);
 
   return (
-    <div className="flex flex-1 overflow-hidden">
-      <div className="flex-1 overflow-y-auto py-[22px] px-6">
+    <div className="flex min-w-0 flex-1">
+      <div className="min-w-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-[22px]">
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-3.5 mb-4">
+        <div className="mb-4 grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
           <div className="bg-grad border border-transparent rounded-va px-5 py-[18px] shadow-va relative overflow-hidden after:content-[''] after:absolute after:-top-5 after:-right-5 after:w-20 after:h-20 after:rounded-full after:bg-white/[0.04]">
             <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center text-white mb-3"><Icon name="orders"/></div>
             <div className="font-outfit text-[28px] font-extrabold text-white">{stats.total ?? '—'}</div>
@@ -361,7 +361,7 @@ export default function OrdersPage({ search, onToast }) {
             {loading ? (
               <div className="text-center py-10 text-va-text3">Loading orders…</div>
             ) : (
-              <table className="w-full border-collapse">
+              <table className="min-w-[760px] w-full border-collapse">
                 <thead>
                   <tr>
                     <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Order ID</th>
@@ -415,12 +415,10 @@ export default function OrdersPage({ search, onToast }) {
 
       {/* Detail panel */}
       {selectedOrder && (
-        <DetailPanel
-          order={selectedOrder}
-          onClose={() => setSelectedId(null)}
-          onStatusSaved={load}
-          onToast={onToast}
-        />
+        <>
+          <button type="button" aria-label="Close order details" className="fixed inset-0 z-[170] bg-[#12102a]/35 sm:hidden" onClick={() => setSelectedId(null)}/>
+          <DetailPanel order={selectedOrder} onClose={() => setSelectedId(null)} onStatusSaved={load} onToast={onToast}/>
+        </>
       )}
     </div>
   );

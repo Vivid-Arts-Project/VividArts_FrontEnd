@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function BrandLogo({ size = 48, full = false, className = '' }) {
   const height = size * (full ? 0.65 : 0.52);
 

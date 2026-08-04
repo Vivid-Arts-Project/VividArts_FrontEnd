@@ -6,7 +6,7 @@ import { NotificationContainer } from './pages/NotificationContainer';
 import CustomerApp from './CustomerApp';
 
 // Admin side
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext.jsx';
 import PrivateRoute from './components/PrivateRoute';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminRegister from './pages/admin/AdminRegister';

@@ -55,10 +55,11 @@ export default function LandingPage({ onNavigate = () => {} }) {
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(Boolean(localStorage.getItem('token')));
   const [displayName, setDisplayName] = useState(localStorage.getItem('username') || '');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     clearCommissionDraft();
-    fetch('http://localhost:3001/api/content/gallery').then(r => r.ok ? r.json() : []).then(setWebsiteImages).catch(() => {});
+    fetch('/api/content/gallery').then(r => r.ok ? r.json() : []).then(setWebsiteImages).catch(() => {});
   }, []);
 
   const handleCommission = () => {
@@ -105,6 +106,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
   const handleLogout = () => {
     try { localStorage.removeItem('token'); } catch { /* localStorage unavailable */ }
     setIsSignedIn(false);
+    setMobileMenuOpen(false);
     // Optionally navigate to landing/home
     onNavigate('landing');
   };
@@ -117,7 +119,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
   return (
     <div id="home" className="min-h-screen bg-[#0a0916] font-sans text-[#f5f4fb]">
       <header className="sticky top-0 z-10 border-b border-[#7164c9]/25 bg-gradient-to-r from-[#090815]/95 via-[#111026]/95 to-[#17102d]/95 shadow-[0_12px_38px_rgba(3,2,15,0.32)] backdrop-blur-xl">
-        <div className="mx-auto flex min-h-[82px] max-w-7xl items-center justify-between gap-4 px-6 py-4 sm:px-8 lg:px-8">
+        <div className="mx-auto flex min-h-[74px] max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:min-h-[82px] sm:px-8 sm:py-4 lg:px-8">
           <a href="#home" className="group flex shrink-0 items-center gap-3" aria-label="Vivid Arts home">
             <span className="flex h-13 w-14 items-center justify-center rounded-2xl border border-[#b9afff]/30 bg-white shadow-[0_10px_28px_rgba(93,78,210,0.3)] transition duration-300 group-hover:-translate-y-0.5 group-hover:shadow-[0_14px_34px_rgba(111,87,230,0.4)]">
               <BrandLogo size={48} />
@@ -148,41 +150,57 @@ export default function LandingPage({ onNavigate = () => {} }) {
             </a>
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             {/* Notification Bell Icon එක */}
             <NotificationBell />
 
-            {!isSignedIn ? (
-              <button
-                className="rounded-full border border-white/15 bg-white/[0.07] px-5 py-2.5 text-[15px] font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.25)] transition hover:-translate-y-0.5 hover:border-[#a78bfa]/50 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
-                onClick={() => onNavigate('login')}
-              >
-                Sign In
-              </button>
-            ) : (
-              <>
+            <div className="hidden items-center gap-3 md:flex">
+              {!isSignedIn ? (
                 <button
                   className="rounded-full border border-white/15 bg-white/[0.07] px-5 py-2.5 text-[15px] font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.25)] transition hover:-translate-y-0.5 hover:border-[#a78bfa]/50 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
-                  onClick={() => onNavigate('profile')}
+                  onClick={() => onNavigate('login')}
                 >
-                  My Account
+                  Sign In
                 </button>
-                <button
-                  className="rounded-full border border-white/15 bg-white/[0.07] px-5 py-2.5 text-[15px] font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.25)] transition hover:-translate-y-0.5 hover:border-[#a78bfa]/50 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
-                  onClick={handleLogout}
-                >
-                  Logout
-                </button>
-              </>
-            )}
+              ) : (
+                <>
+                  <button className="rounded-full border border-white/15 bg-white/[0.07] px-5 py-2.5 text-[15px] font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.25)] transition hover:-translate-y-0.5 hover:border-[#a78bfa]/50 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]" onClick={() => onNavigate('profile')}>My Account</button>
+                  <button className="rounded-full border border-white/15 bg-white/[0.07] px-5 py-2.5 text-[15px] font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.25)] transition hover:-translate-y-0.5 hover:border-[#a78bfa]/50 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]" onClick={handleLogout}>Logout</button>
+                </>
+              )}
+              <button className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-5 py-2.5 text-[15px] font-bold text-white shadow-[0_10px_28px_rgba(99,102,241,0.38)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(126,87,225,0.48)] focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]" onClick={handleCommission}>Commission a Portrait</button>
+            </div>
             <button
-              className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-5 py-2.5 text-[15px] font-bold text-white shadow-[0_10px_28px_rgba(99,102,241,0.38)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(126,87,225,0.48)] focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
-              onClick={handleCommission}
+              type="button"
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
+              className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-white/[.07] text-white md:hidden"
+              onClick={() => setMobileMenuOpen(open => !open)}
             >
-              Commission a Portrait
+              <Icon name={mobileMenuOpen ? 'close' : 'menu'} size={21}/>
             </button>
           </div>
         </div>
+        {mobileMenuOpen && (
+          <div className="border-t border-white/10 bg-[#0d0b1f]/98 px-4 pb-5 pt-3 shadow-[0_18px_35px_rgba(0,0,0,.28)] md:hidden">
+            <nav className="grid grid-cols-2 gap-2 text-sm font-semibold text-[#d4d0e5]">
+              {[['Home', '#home'], ['About', '#about'], ['How It Works', '#how-it-works'], ['Gallery', '#gallery']].map(([label, href]) => (
+                <a key={href} href={href} className="rounded-xl border border-white/10 bg-white/[.045] px-4 py-3 text-center" onClick={() => setMobileMenuOpen(false)}>{label}</a>
+              ))}
+            </nav>
+            <div className="mt-3 grid gap-2">
+              {!isSignedIn ? (
+                <button className="rounded-xl border border-white/15 bg-white/[.07] px-4 py-3 text-sm font-bold" onClick={() => { setMobileMenuOpen(false); onNavigate('login'); }}>Sign In</button>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <button className="rounded-xl border border-white/15 bg-white/[.07] px-4 py-3 text-sm font-bold" onClick={() => { setMobileMenuOpen(false); onNavigate('profile'); }}>My Account</button>
+                  <button className="rounded-xl border border-white/15 bg-white/[.07] px-4 py-3 text-sm font-bold" onClick={handleLogout}>Logout</button>
+                </div>
+              )}
+              <button className="rounded-xl bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-4 py-3 text-sm font-extrabold text-white" onClick={() => { setMobileMenuOpen(false); handleCommission(); }}>Commission a Portrait</button>
+            </div>
+          </div>
+        )}
       </header>
 
       <main className="flex flex-col">

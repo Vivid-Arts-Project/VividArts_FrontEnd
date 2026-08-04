@@ -30,13 +30,13 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
   function handlePhotoNext(data) {
     setPhotoData(data);
     setCommissionPhoto(data);
-    navigate('customize');
+    navigate('/commission/customize');
   }
 
   function handleCustomiseNext(orderData) {
     setOrder(orderData);
     setCommissionOrder(orderData);
-    navigate('payment');
+    navigate('/commission/payment');
   }
 
   function handlePaymentComplete() {
@@ -68,7 +68,7 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
               photoData={photoData}
               initialOrder={order}
               onNext={handleCustomiseNext}
-              onBack={() => navigate('upload')}
+              onBack={() => navigate('/commission/upload')}
               onNavigate={onNavigate}
              />
           ) : (
@@ -78,7 +78,7 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
         <Route
           path="payment"
           element={order || isPaymentReturn ? (
-            <Payment order={order} onBack={() => navigate('customize')} onComplete={handlePaymentComplete} />
+            <Payment order={order} onBack={() => navigate('/commission/customize')} onComplete={handlePaymentComplete} />
           ) : (
             <Navigate to="/commission/upload" replace />
           )}

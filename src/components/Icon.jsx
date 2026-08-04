@@ -1,5 +1,3 @@
-import React from 'react';
-
 const paths = {
   orders: (
     <>
@@ -196,6 +194,16 @@ const paths = {
     <>
       <path d="m9 18 6-6-6-6"/>
       <path d="M5 12h10"/>
+    </>
+  ),
+  menu: (
+    <>
+      <path d="M4 7h16M4 12h16M4 17h16"/>
+    </>
+  ),
+  close: (
+    <>
+      <path d="m6 6 12 12M18 6 6 18"/>
     </>
   ),
   rating: <path d="m12 2.5 2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.32l-5.8 3.05 1.11-6.47-4.7-4.58 6.49-.94Z"/>,

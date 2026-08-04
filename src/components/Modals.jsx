@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const BTN_BASE   = 'rounded-md text-xs font-semibold cursor-pointer border font-sans transition-all px-3 py-1.5';
 const BTN_FILL   = 'bg-grad text-white border-transparent hover:opacity-90';
@@ -9,8 +9,8 @@ const FIELD       = 'mb-4';
 const FIELD_LABEL = 'text-xs font-semibold text-va-text block mb-1.5';
 const FIELD_INPUT = 'w-full border border-va-border rounded-lg px-3 py-2.5 font-sans text-sm text-va-text bg-va-bg outline-none transition-colors focus:border-va-blue focus:bg-white focus:shadow-[0_0_0_3px_rgba(43,143,224,0.1)]';
 
-const MODAL_OVERLAY = 'fixed inset-0 bg-[rgba(18,16,42,0.5)] flex items-center justify-center z-[1000]';
-const MODAL         = 'bg-white rounded-va w-[440px] max-w-[90vw] shadow-va-md overflow-hidden';
+const MODAL_OVERLAY = 'fixed inset-0 bg-[rgba(18,16,42,0.5)] flex items-center justify-center z-[1000] p-3 sm:p-4';
+const MODAL         = 'bg-white rounded-va w-[440px] max-w-full max-h-[calc(100dvh-1.5rem)] shadow-va-md overflow-y-auto sm:max-h-[calc(100dvh-2rem)]';
 const MODAL_HEAD    = 'px-[22px] py-[18px] border-b border-va-border flex items-center justify-between';
 const MODAL_TITLE   = 'font-outfit text-[15px] font-bold text-va-text';
 const MODAL_CLOSE   = 'text-xl text-va-text3 cursor-pointer leading-none px-1.5 py-0.5 rounded border-none bg-transparent hover:bg-va-bg2';
@@ -26,7 +26,7 @@ export function CancelModal({ order, onClose, onConfirm }) {
       <div className={MODAL}>
         <div className={MODAL_HEAD}>
           <div className={MODAL_TITLE}>Cancel Order</div>
-          <button className={MODAL_CLOSE} onClick={onClose}>×</button>
+          <button type="button" aria-label="Close modal" className={MODAL_CLOSE} onClick={onClose}>×</button>
         </div>
         <div className={MODAL_BODY}>
           <div className="rounded-lg px-3.5 py-2.5 text-sm flex gap-2 items-start mb-3.5 bg-va-warn-bg border border-orange-300 text-va-warn">⚠️ This action cannot be undone.</div>
@@ -73,7 +73,7 @@ export function NewOrderModal({ onClose, onSubmit }) {
           <button className={MODAL_CLOSE} onClick={onClose}>×</button>
         </div>
         <div className={MODAL_BODY}>
-          <div className="grid grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div className={FIELD}>
               <label className={FIELD_LABEL}>Client Name</label>
               <input className={FIELD_INPUT} placeholder="Full name" value={form.fullName} onChange={e => set('fullName', e.target.value)}/>
@@ -87,7 +87,7 @@ export function NewOrderModal({ onClose, onSubmit }) {
             <label className={FIELD_LABEL}>Email</label>
             <input className={FIELD_INPUT} placeholder="client@email.com" value={form.email} onChange={e => set('email', e.target.value)}/>
           </div>
-          <div className="grid grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div className={FIELD}>
               <label className={FIELD_LABEL}>Paper Size</label>
               <select className={FIELD_INPUT} value={form.paperSize} onChange={e => set('paperSize', e.target.value)}>

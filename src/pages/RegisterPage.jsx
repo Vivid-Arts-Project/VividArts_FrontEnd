@@ -18,9 +18,6 @@ function RegisterPage({ onNavigate }) {
   const [isError, setIsError] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Backend URL with correct port (3001)
-  const API_BASE_URL = 'http://localhost:3001';
-
   const readResponse = async (response) => {
     const raw = await response.text();
     try {
@@ -34,7 +31,7 @@ function RegisterPage({ onNavigate }) {
     setMessage('');
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/customers/register/send-otp`, {
+      const response = await fetch('/api/customers/register/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email }),
@@ -59,7 +56,7 @@ function RegisterPage({ onNavigate }) {
     setMessage('');
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/customers/register/verify-otp`, {
+      const response = await fetch('/api/customers/register/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code: otp }),
@@ -88,7 +85,7 @@ function RegisterPage({ onNavigate }) {
     setMessage('');
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/customers/register`, {
+      const response = await fetch('/api/customers/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password, confirmPassword, verificationToken }),

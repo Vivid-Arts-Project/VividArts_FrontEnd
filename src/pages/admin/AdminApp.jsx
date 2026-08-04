@@ -19,6 +19,7 @@ export default function AdminApp() {
   const [toast, setToast]         = useState(null);
   const [showNewOrder, setShow]   = useState(false);
   const [stats, setStats]         = useState(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const showToast = useCallback((msg) => setToast(msg), []);
 
@@ -39,16 +40,24 @@ export default function AdminApp() {
   };
 
   return (
-    <div className="va-admin flex min-h-screen overflow-hidden">
-      <Sidebar page={page} onNav={setPage} stats={stats}/>
-      <div className="ml-[230px] flex-1 flex flex-col min-h-screen overflow-x-hidden">
+    <div className="va-admin flex min-h-screen overflow-x-hidden">
+      <Sidebar
+        page={page}
+        onNav={setPage}
+        stats={stats}
+        isOpen={mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
+      />
+      {mobileNavOpen && <button type="button" aria-label="Close navigation" className="fixed inset-0 z-[190] bg-[#0c0a20]/55 backdrop-blur-[2px] md:hidden" onClick={() => setMobileNavOpen(false)}/>}
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col overflow-x-hidden md:ml-[230px]">
         <Topbar
           page={page}
           search={search}
           onSearch={setSearch}
           onNewOrder={() => setShow(true)}
+          onMenu={() => setMobileNavOpen(true)}
         />
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex min-w-0 flex-1 overflow-auto">
           {renderPage()}
         </div>
       </div>
