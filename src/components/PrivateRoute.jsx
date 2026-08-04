@@ -1,6 +1,5 @@
-import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 
 // Wrap any admin page with this component.
 // If the user is not logged in they get redirected to /admin/login.

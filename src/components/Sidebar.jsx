@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { useNavigate } from 'react-router-dom';
 import Icon from './Icon';
 import BrandLogo from './BrandLogo';
@@ -21,7 +21,7 @@ const NAV = [
   { id: 'settings',  icon: 'settings', label: 'Settings',      badgeDanger: false },
 ];
 
-export default function Sidebar({ page, onNav, stats }) {
+export default function Sidebar({ page, onNav, stats, isOpen = false, onClose = () => {} }) {
   const { admin, logout } = useAuth();
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -53,7 +53,7 @@ export default function Sidebar({ page, onNav, stats }) {
   const businessName = admin?.businessName || 'Vivid Arts';
 
   return (
-    <nav className="w-[230px] bg-grad-dark flex flex-col h-screen shrink-0 fixed top-0 left-0 z-[200] border-r border-white/[0.04]">
+    <nav className={`fixed left-0 top-0 z-[200] flex h-screen w-[min(86vw,230px)] shrink-0 flex-col border-r border-white/[0.04] bg-grad-dark transition-transform duration-300 md:w-[230px] md:translate-x-0 ${isOpen ? 'translate-x-0 shadow-[18px_0_50px_rgba(10,8,30,.35)]' : '-translate-x-full'}`}>
       {/* Logo — uses real businessName from DB */}
       <div className="px-4 pt-5 pb-[18px] border-b border-white/[0.06] flex items-center gap-3">
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white shadow-[0_8px_24px_rgba(69,52,160,0.3)]">
@@ -63,6 +63,9 @@ export default function Sidebar({ page, onNav, stats }) {
           <div className="font-outfit text-[18px] leading-tight font-extrabold text-white tracking-[-0.2px] drop-shadow-sm">{businessName}</div>
           <span className="mt-1 inline-flex rounded-full border border-white/10 bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white/70">Admin Panel</span>
         </div>
+        <button type="button" aria-label="Close navigation" className="ml-auto flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[.06] text-white/70 md:hidden" onClick={onClose}>
+          <Icon name="close" size={20}/>
+        </button>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto pb-2">
@@ -78,7 +81,7 @@ export default function Sidebar({ page, onNav, stats }) {
           <button
             key={item.id}
             className={`flex items-center gap-2.5 py-2.5 px-3 rounded-lg mx-2 my-[1px] cursor-pointer transition-all duration-[180ms] text-[13px] font-medium select-none border-none w-[calc(100%-16px)] text-left ${active ? 'bg-grad text-white font-semibold' : 'bg-transparent text-white/45 hover:bg-white/[0.07] hover:text-white/85'}`}
-            onClick={() => onNav(item.id)}
+            onClick={() => { onNav(item.id); onClose(); }}
           >
             <span className="w-[18px] flex items-center justify-center shrink-0">
               <Icon name={item.icon} size={18}/>
@@ -94,7 +97,7 @@ export default function Sidebar({ page, onNav, stats }) {
 
       {/* User section — shows real name and role from DB */}
       <div className="shrink-0 px-3 py-3.5 border-t border-white/[0.06] bg-[#12102A]">
-        <div className="flex items-center gap-2.5 cursor-pointer rounded-lg p-1.5 transition-colors hover:bg-white/[0.06]" onClick={() => onNav('settings')}>
+        <div className="flex items-center gap-2.5 cursor-pointer rounded-lg p-1.5 transition-colors hover:bg-white/[0.06]" onClick={() => { onNav('settings'); onClose(); }}>
           <div className="w-9 h-9 rounded-full bg-grad flex items-center justify-center font-bold text-[13px] text-white shrink-0">{initials}</div>
           <div className="flex-1 min-w-0">
             <div className="text-xs text-white/70 font-medium overflow-hidden text-ellipsis whitespace-nowrap">

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import Icon from './Icon';
 
 export default function Toast({ message, onDone }) {
@@ -8,11 +8,11 @@ export default function Toast({ message, onDone }) {
   }, [onDone]);
 
   if (!message) return null;
-  const isError = /^[❌✕]/.test(message);
+  const isError = /^(?:❌|✕|failed\b|unable\b|error\b)/i.test(message.trim());
   const cleanMessage = message.replace(/^[✓✅❌✕]\s*/, '');
 
   return (
-    <div className={`fixed bottom-5 right-5 min-w-[290px] max-w-[380px] bg-white border rounded-xl overflow-hidden z-[9999] shadow-[0_16px_40px_rgba(30,24,72,0.18)] animate-toast ${isError ? 'border-red-200' : 'border-emerald-200'}`}>
+    <div className={`fixed bottom-3 left-3 right-3 min-w-0 max-w-none bg-white border rounded-xl overflow-hidden z-[9999] shadow-[0_16px_40px_rgba(30,24,72,0.18)] animate-toast sm:bottom-5 sm:left-auto sm:right-5 sm:min-w-[290px] sm:max-w-[380px] ${isError ? 'border-red-200' : 'border-emerald-200'}`}>
       <div className="flex items-center gap-3 px-4 py-3.5">
         <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${isError ? 'bg-va-danger-bg text-va-danger' : 'bg-va-success-bg text-va-success'}`}>
           <Icon name={isError ? 'alert' : 'completed'} size={20}/>

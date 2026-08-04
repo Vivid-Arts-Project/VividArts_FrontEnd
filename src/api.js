@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3001/api';
+const API_URL = '/api';
 
 // Helper function for API calls with error handling
 const fetchAPI = async (url, options = {}) => {
@@ -77,34 +77,6 @@ export const api = {
     return fetchAPI(`${API_URL}/payments`);
   },
 
-  // ==================== CUSTOMER ENDPOINTS ====================
-
-  // Create customer
-  createCustomer: async (customerData) => {
-    return fetchAPI(`${API_URL}/customers`, {
-      method: 'POST',
-      body: JSON.stringify(customerData),
-    });
-  },
-
-  // Get customer by ID
-  getCustomer: async (customerId) => {
-    return fetchAPI(`${API_URL}/customers/${customerId}`);
-  },
-
-  // Update customer
-  updateCustomer: async (customerId, data) => {
-    return fetchAPI(`${API_URL}/customers/${customerId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-
-  // Get all customers
-  getAllCustomers: async () => {
-    return fetchAPI(`${API_URL}/customers`);
-  },
-
   // Get the currently authenticated customer's profile
   getProfile: async (token) => {
     return fetchAPI(`${API_URL}/customers/profile`, {
@@ -117,7 +89,7 @@ export const api = {
   // Check if server is running
   healthCheck: async () => {
     try {
-      const response = await fetch('http://localhost:3001/');
+      const response = await fetch(`${API_URL}/health`);
       return response.ok;
     } catch (error) {
       console.error('Server is not running:', error);

@@ -1,11 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../api/axios';
+import { AuthContext } from './useAuth';
 
 // This context holds the logged-in admin's data and makes it available
 // to every component in the app — Sidebar, Topbar, Settings page, etc.
 // Any component can call useAuth() to get { admin, loading, login, logout }.
-
-const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [admin, setAdmin]     = useState(null);   // null = not logged in
@@ -53,8 +52,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  return useContext(AuthContext);
 }

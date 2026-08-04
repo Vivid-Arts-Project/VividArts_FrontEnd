@@ -64,7 +64,7 @@ export function DashboardPage({ onNav }) {
   };
 
   return (
-    <div className="py-[22px] px-6 flex-1">
+    <div className="flex-1 px-3 py-4 sm:px-6 sm:py-[22px]">
       <div className="grid grid-cols-4 gap-3.5 mb-4">
         <div className="bg-grad border border-transparent rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
           <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center text-white mb-3"><Icon name="orders"/></div>
@@ -207,7 +207,7 @@ export function ProofsPage({ onToast }) {
   };
 
   return (
-    <div className="py-[22px] px-6 flex-1">
+    <div className="flex-1 px-3 py-4 sm:px-6 sm:py-[22px]">
       <div className="rounded-lg px-3.5 py-2.5 text-sm flex gap-2 items-start mb-4 bg-va-info-bg border border-blue-300 text-va-info">
         <Icon name="orders" size={18} className="shrink-0"/> {orders.length} orders are waiting for a proof upload. Upload a watermarked image to send to the client for review.
       </div>
@@ -287,7 +287,7 @@ export function RevisionsPage({ onNav }) {
   }, []);
 
   return (
-    <div className="py-[22px] px-6 flex-1">
+    <div className="flex-1 px-3 py-4 sm:px-6 sm:py-[22px]">
       <div className="rounded-lg px-3.5 py-2.5 text-sm flex gap-2 items-start mb-4 bg-va-warn-bg border border-orange-300 text-va-warn">
         <Icon name="alert" size={18} className="shrink-0"/> {orders.length} revision requests are waiting for your response. Upload updated proofs to continue.
       </div>
@@ -357,7 +357,7 @@ export function ClientsPage() {
   );
 
   return (
-    <div className="py-[22px] px-6 flex-1">
+    <div className="flex-1 px-3 py-4 sm:px-6 sm:py-[22px]">
       <div className={CARD}>
         <div className={CARD_HEAD}>
           <div className={CARD_TITLE}>All Clients</div>
@@ -429,7 +429,7 @@ export function PaymentsPage() {
   const pendingBalance = orders.reduce((sum, o) => sum + Math.max(0, Number(o.totalPrice || 0) - Number(o.amountPaid || 0)), 0);
 
   return (
-    <div className="py-[22px] px-6 flex-1">
+    <div className="flex-1 px-3 py-4 sm:px-6 sm:py-[22px]">
       <div className="grid grid-cols-4 gap-3.5 mb-4">
         <div className="bg-grad border border-transparent rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
           <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center text-white mb-3"><Icon name="payments"/></div>
@@ -504,7 +504,7 @@ export function InvoicesPage() {
     return () => clearInterval(timer);
   }, []);
   return (
-    <div className="py-[22px] px-6 flex-1">
+    <div className="flex-1 px-3 py-4 sm:px-6 sm:py-[22px]">
       <div className={CARD}>
         <div className={CARD_HEAD}>
           <div className={CARD_TITLE}>Invoices</div>
@@ -536,7 +536,7 @@ export function InvoicesPage() {
 export function SettingsPage({ onToast }) {
   const [tab, setTab] = useState('profile');
   return (
-    <div className="py-[22px] px-6 flex-1 max-w-[700px]">
+    <div className="flex-1 max-w-[700px] px-3 py-4 sm:px-6 sm:py-[22px]">
       <div className="flex border-b border-va-border mb-6">
         {['profile','business','notifications','security'].map(t => (
           <button

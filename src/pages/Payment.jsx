@@ -212,7 +212,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
           {orderId && successMessage === 'Your PayHere payment has been confirmed.' && (
             <a
               href={api.getInvoiceUrl(orderId)}
-              className="mt-[10px] inline-flex min-w-[230px] items-center justify-center rounded-full border border-[#9fe3c5] bg-gradient-to-br from-[#f4fff9] to-[#eafff5] px-[30px] py-3 font-semibold text-[#087a57] shadow-[0_12px_28px_rgba(5,150,105,0.12)] transition-all hover:-translate-y-0.5 hover:border-[#50c894] hover:shadow-[0_18px_36px_rgba(5,150,105,0.2)]"
+              className="mt-[10px] inline-flex w-full min-w-0 items-center justify-center rounded-full border border-[#9fe3c5] bg-gradient-to-br from-[#f4fff9] to-[#eafff5] px-5 py-3 font-semibold text-[#087a57] shadow-[0_12px_28px_rgba(5,150,105,0.12)] transition-all hover:-translate-y-0.5 hover:border-[#50c894] hover:shadow-[0_18px_36px_rgba(5,150,105,0.2)] sm:w-auto sm:min-w-[230px] sm:px-[30px]"
             >
               Download Invoice (PDF)
             </a>
@@ -220,13 +220,13 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
           <br />
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <button
-              className="min-w-[190px] rounded-full px-[30px] py-3 cursor-pointer transition-all border border-[#cfc8ff] bg-gradient-to-br from-[#f7f5ff] to-[#edf8ff] text-[#5a3fbb] font-semibold shadow-[0_12px_28px_rgba(91,63,168,0.12)] hover:-translate-y-0.5 hover:border-[#8b7cff] hover:shadow-[0_18px_36px_rgba(91,63,168,0.2)]"
+              className="w-full min-w-0 rounded-full px-5 py-3 cursor-pointer transition-all border border-[#cfc8ff] bg-gradient-to-br from-[#f7f5ff] to-[#edf8ff] text-[#5a3fbb] font-semibold shadow-[0_12px_28px_rgba(91,63,168,0.12)] hover:-translate-y-0.5 hover:border-[#8b7cff] hover:shadow-[0_18px_36px_rgba(91,63,168,0.2)] sm:w-auto sm:min-w-[190px] sm:px-[30px]"
               onClick={() => onComplete()}
             >
               Go to Home Page
             </button>
             <button
-              className="min-w-[190px] rounded-full px-[30px] py-3 cursor-pointer transition-all border border-[#cfc8ff] bg-gradient-to-br from-[#f7f5ff] to-[#edf8ff] text-[#5a3fbb] font-semibold shadow-[0_12px_28px_rgba(91,63,168,0.12)] hover:-translate-y-0.5 hover:border-[#8b7cff] hover:shadow-[0_18px_36px_rgba(91,63,168,0.2)] inline-flex items-center justify-center gap-2"
+              className="inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-full border border-[#cfc8ff] bg-gradient-to-br from-[#f7f5ff] to-[#edf8ff] px-5 py-3 font-semibold text-[#5a3fbb] shadow-[0_12px_28px_rgba(91,63,168,0.12)] transition-all hover:-translate-y-0.5 hover:border-[#8b7cff] hover:shadow-[0_18px_36px_rgba(91,63,168,0.2)] sm:w-auto sm:min-w-[190px] sm:px-[30px]"
               onClick={() => setShowConfirmation(false)}
             >
               <Icon name="arrowLeft" size={18}/>
@@ -246,7 +246,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
 
       <main className="grid grid-cols-[1fr_340px] max-[720px]:grid-cols-1 gap-5 items-start">
         <div>
-          <div className="bg-white rounded-[18px] border border-black/10 p-6 mb-4 text-[#222]">
+          <div className="mb-4 rounded-[18px] border border-black/10 bg-white p-4 text-[#222] sm:p-6">
             <div className="text-sm font-semibold text-[#1a1a2e] mb-[18px] flex items-center flex-wrap gap-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#7f77dd] shrink-0"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
               Payment method
@@ -271,7 +271,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
             <div>
               <div className="relative overflow-hidden bg-[#1b1546] rounded-[18px] px-6 py-[22px] mb-[22px] before:content-[''] before:absolute before:-top-10 before:-right-10 before:w-[130px] before:h-[130px] before:rounded-full before:bg-[rgba(127,119,221,0.18)] after:content-[''] after:absolute after:-bottom-[50px] after:left-0 after:w-[110px] after:h-[110px] after:rounded-full after:bg-[rgba(127,119,221,0.1)]">
                 <div className="w-[34px] h-[26px] rounded-md bg-[#ef9f27] mb-5"></div>
-                <div className="font-mono text-base tracking-[3px] text-white font-medium mb-4">Secure PayHere checkout</div>
+                <div className="mb-4 font-mono text-sm font-medium tracking-[2px] text-white sm:text-base sm:tracking-[3px]">Secure PayHere checkout</div>
                 <div className="flex flex-wrap justify-between items-end gap-x-4 gap-y-3">
                   <div className="shrink-0">
                     <div className="text-[10px] text-white/65 uppercase tracking-[1px] mb-[3px] whitespace-nowrap">Provider</div>
@@ -316,7 +316,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
         </div>
 
         <div className="sticky top-5 max-[720px]:static">
-          <div className="bg-white rounded-[18px] border border-black/10 p-6 mb-4 text-[#222]">
+          <div className="mb-4 rounded-[18px] border border-black/10 bg-white p-4 text-[#222] sm:p-6">
             <div className="text-sm font-semibold text-[#1a1a2e] mb-[18px] flex items-center gap-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#7f77dd] shrink-0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               Order summary
@@ -372,7 +372,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-[18px] border border-black/10 p-6 mb-4 text-[#222]">
+          <div className="mb-4 rounded-[18px] border border-black/10 bg-white p-4 text-[#222] sm:p-6">
             <div className="text-sm font-semibold text-[#1a1a2e] flex items-center gap-2 mb-3">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#7f77dd] shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               Estimated timeline

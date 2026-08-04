@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useState } from 'react';
+import { useAuth } from '../context/useAuth';
 import Icon from './Icon';
 
 const PAGE_META = {
@@ -13,7 +13,7 @@ const PAGE_META = {
   settings:  { title: 'Settings',           bread: 'Settings'  },
 };
 
-export default function Topbar({ page, onNewOrder, search, onSearch }) {
+export default function Topbar({ page, onNewOrder, search, onSearch, onMenu }) {
   const { admin } = useAuth();
   const [showNotif, setShowNotif] = useState(false);
   const meta = PAGE_META[page] || { title: page, bread: page };
@@ -23,13 +23,18 @@ export default function Topbar({ page, onNewOrder, search, onSearch }) {
 
   return (
     <>
-      <header className="h-[60px] bg-white border-b border-va-border flex items-center px-6 justify-between sticky top-0 z-[100] shadow-[0_1px_0_var(--va-border)]">
-        <div>
-          <div className="font-outfit text-[17px] font-bold text-va-text">{meta.title}</div>
-          <div className="text-xs text-va-text3">{businessName} / <span className="text-va-purple font-semibold">{meta.bread}</span></div>
+      <header className="sticky top-0 z-[100] flex min-h-[60px] items-center justify-between gap-2 border-b border-va-border bg-white px-3 py-2 shadow-[0_1px_0_var(--va-border)] sm:px-6">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <button type="button" aria-label="Open navigation" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-va-border bg-va-bg text-va-purple md:hidden" onClick={onMenu}>
+            <Icon name="menu" size={20}/>
+          </button>
+          <div className="min-w-0">
+            <div className="truncate font-outfit text-[15px] font-bold text-va-text sm:text-[17px]">{meta.title}</div>
+            <div className="truncate text-[10px] text-va-text3 sm:text-xs">{businessName} / <span className="text-va-purple font-semibold">{meta.bread}</span></div>
+          </div>
         </div>
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-2 border border-va-border rounded-lg px-3 py-[7px] bg-va-bg text-[13px] text-va-text3 w-[200px] transition-colors focus-within:border-va-blue focus-within:bg-white">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+          <div className="hidden items-center gap-2 rounded-lg border border-va-border bg-va-bg px-3 py-[7px] text-[13px] text-va-text3 transition-colors focus-within:border-va-blue focus-within:bg-white sm:flex sm:w-[180px] lg:w-[220px]">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <circle cx="6" cy="6" r="4.5" stroke="var(--va-text3)" strokeWidth="1.2"/>
               <path d="M9.5 9.5L12 12" stroke="var(--va-text3)" strokeWidth="1.4" strokeLinecap="round"/>
@@ -51,16 +56,17 @@ export default function Topbar({ page, onNewOrder, search, onSearch }) {
             <span className="absolute top-[6px] right-[6px] w-2 h-2 bg-va-danger rounded-full border-2 border-white"/>
           </button>
           <button
-            className="px-4 py-2 bg-grad text-white border-none rounded-lg text-[13px] font-semibold cursor-pointer font-sans transition-all flex items-center gap-1.5 hover:opacity-90 hover:-translate-y-px hover:shadow-[0_4px_14px_rgba(91,63,168,0.3)]"
+            aria-label="Create new order"
+            className="flex h-9 items-center gap-1.5 rounded-lg border-none bg-grad px-3 text-[13px] font-semibold text-white transition-all hover:-translate-y-px hover:opacity-90 hover:shadow-[0_4px_14px_rgba(91,63,168,0.3)] sm:h-auto sm:px-4 sm:py-2"
             onClick={onNewOrder}
           >
-            + New Order
+            <span aria-hidden="true">+</span><span className="hidden sm:inline">New Order</span>
           </button>
         </div>
       </header>
 
       {showNotif && (
-        <div className="fixed top-[68px] right-4 w-[330px] bg-white border border-va-border rounded-xl shadow-[0_18px_50px_rgba(30,24,72,0.18)] z-[300] overflow-hidden notification-pop">
+        <div className="notification-pop fixed left-3 right-3 top-[68px] z-[300] overflow-hidden rounded-xl border border-va-border bg-white shadow-[0_18px_50px_rgba(30,24,72,0.18)] sm:left-auto sm:right-4 sm:w-[330px]">
           <div className="absolute -top-1.5 right-[77px] w-3 h-3 rotate-45 bg-white border-l border-t border-va-border"/>
           <div className="px-4 py-3.5 border-b border-va-border flex items-center justify-between bg-gradient-to-r from-[#f5f9ff] to-[#f6f1ff]">
             <div className="flex items-center gap-2">

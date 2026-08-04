@@ -4,7 +4,7 @@ import CommissionHeader from "../components/CommissionHeader";
 import Icon from "../components/Icon";
 import { showNotification } from "./notifications"; // 💡 1. Notification function එක Import කරගන්න
 
-export default function UploadPhotoPage({ onNext, onBack = () => {}, onNavigate = () => {}, initialPhotoData = null }) {
+export default function UploadPhotoPage({ onNext, onBack = () => {}, initialPhotoData = null }) {
   const [photo, setPhoto] = useState(initialPhotoData?.photo ?? null);
   const [preview, setPreview] = useState("original");
   const [previewUrl, setPreviewUrl] = useState(initialPhotoData?.previewUrl ?? null);
@@ -67,7 +67,7 @@ export default function UploadPhotoPage({ onNext, onBack = () => {}, onNavigate 
           </p>
 
           <label
-            className={`mt-5 flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-dashed p-12 text-center transition ${
+            className={`mt-5 flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border border-dashed p-6 text-center transition sm:p-12 ${
               isDragging
                 ? "border-[#6366f1] bg-[#f3f2ff]"
                 : "border-[#c9c6e0] bg-[#fafafe]"
