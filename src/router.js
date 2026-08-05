@@ -46,6 +46,14 @@ export function isTrustedNavigation() {
   return window.history.state?.vividArtsNavigation === NAVIGATION_SESSION_ID;
 }
 
+export function trustCurrentNavigation(path = window.location.pathname) {
+  window.history.replaceState(
+    { ...(window.history.state || {}), vividArtsNavigation: NAVIGATION_SESSION_ID },
+    document.title,
+    path,
+  );
+}
+
 export function useLocation() {
   return useSyncExternalStore(subscribe, getLocation, () => '/');
 }
