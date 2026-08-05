@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import NotificationBell from './NotificationBell';
 import Icon from '../components/Icon';
 import BrandLogo from '../components/BrandLogo';
+import { clearCustomerSession, CUSTOMER_AUTH_EVENT, getCustomerToken, getCustomerUsername } from '../authSession';
 import { clearCommissionDraft } from '../commissionDraft';
 
 const stats = [
@@ -53,8 +54,8 @@ const gallery = [
 export default function LandingPage({ onNavigate = () => {} }) {
   const [websiteImages, setWebsiteImages] = useState([]);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
-  const [isSignedIn, setIsSignedIn] = useState(Boolean(localStorage.getItem('token')));
-  const [displayName, setDisplayName] = useState(localStorage.getItem('username') || '');
+  const [isSignedIn, setIsSignedIn] = useState(Boolean(getCustomerToken()));
+  const [displayName, setDisplayName] = useState(getCustomerUsername);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -63,7 +64,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
   }, []);
 
   const handleCommission = () => {
-    if (localStorage.getItem('token')) {
+    if (getCustomerToken()) {
       onNavigate('commission');
       return;
     }
@@ -71,14 +72,14 @@ export default function LandingPage({ onNavigate = () => {} }) {
   };
 
   useEffect(() => {
-    const onStorage = () => setIsSignedIn(Boolean(localStorage.getItem('token')));
-    const onStorageName = () => setDisplayName(localStorage.getItem('username') || '');
-    window.addEventListener('storage', onStorage);
-    window.addEventListener('storage', onStorageName);
+    const syncAuthentication = () => {
+      setIsSignedIn(Boolean(getCustomerToken()));
+      setDisplayName(getCustomerUsername());
+    };
+    window.addEventListener(CUSTOMER_AUTH_EVENT, syncAuthentication);
 
     return () => {
-      window.removeEventListener('storage', onStorage);
-      window.removeEventListener('storage', onStorageName);
+      window.removeEventListener(CUSTOMER_AUTH_EVENT, syncAuthentication);
     };
   }, []);
 
@@ -104,7 +105,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
   }, []);
 
   const handleLogout = () => {
-    try { localStorage.removeItem('token'); } catch { /* localStorage unavailable */ }
+    clearCustomerSession();
     setIsSignedIn(false);
     setMobileMenuOpen(false);
     // Optionally navigate to landing/home
@@ -151,9 +152,6 @@ export default function LandingPage({ onNavigate = () => {} }) {
           </nav>
 
           <div className="flex items-center gap-2 md:gap-3">
-            {/* Notification Bell Icon එක */}
-            <NotificationBell />
-
             <div className="hidden items-center gap-3 md:flex">
               {!isSignedIn ? (
                 <button
@@ -170,6 +168,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
               )}
               <button className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-5 py-2.5 text-[15px] font-bold text-white shadow-[0_10px_28px_rgba(99,102,241,0.38)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(126,87,225,0.48)] focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]" onClick={handleCommission}>Commission a Portrait</button>
             </div>
+            <NotificationBell />
             <button
               type="button"
               aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}

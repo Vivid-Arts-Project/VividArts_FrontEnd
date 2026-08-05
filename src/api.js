@@ -1,9 +1,11 @@
+import { getCustomerToken } from './authSession';
+
 const API_URL = '/api';
 
 // Helper function for API calls with error handling
 const fetchAPI = async (url, options = {}) => {
   try {
-    const token = localStorage.getItem('token');
+    const token = getCustomerToken();
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
@@ -54,22 +56,37 @@ export const api = {
 
   // Get payment status
   getPaymentStatus: async (orderId) => {
-    return fetchAPI(`${API_URL}/payments/status/${orderId}`);
+    return fetchAPI(`${API_URL}/payments/status/${encodeURIComponent(orderId)}`);
   },
 
   // Local PayHere sandbox fallback; the backend rejects this outside development.
   confirmSandboxReturn: async (orderId) => {
-    return fetchAPI(`${API_URL}/payments/sandbox-confirm-return/${orderId}`, {
+    return fetchAPI(`${API_URL}/payments/sandbox-confirm-return/${encodeURIComponent(orderId)}`, {
       method: 'POST',
     });
   },
 
   // Invoice PDF download URL (available once payment is completed)
-  getInvoiceUrl: (orderId) => `${API_URL}/payments/${orderId}/invoice`,
+  downloadInvoice: async (orderId) => {
+    const token = getCustomerToken();
+    const response = await fetch(`${API_URL}/payments/${encodeURIComponent(orderId)}/invoice`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!response.ok) {
+      const contentType = response.headers.get('content-type') || '';
+      const error = contentType.includes('application/json') ? await response.json() : null;
+      throw new Error(error?.error || `Unable to download invoice (${response.status})`);
+    }
+    return response.blob();
+  },
 
   // Get prices
   getPrices: async () => {
     return fetchAPI(`${API_URL}/payments/prices`);
+  },
+
+  getQueuePosition: async () => {
+    return fetchAPI(`${API_URL}/payments/queue-position`);
   },
 
   // Get all payments

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Icon from '../components/Icon';
 import { showNotification } from './notifications';
-import BrandLogo from '../components/BrandLogo';
+import RoundBrandLogo from '../components/RoundBrandLogo';
 
 function RegisterPage({ onNavigate }) {
   const [username, setUsername] = useState('');
@@ -122,9 +122,9 @@ function RegisterPage({ onNavigate }) {
       <div className="login-orb login-orb-three"/>
 
       <header className="relative z-20 mx-auto flex max-w-7xl items-center justify-between px-6 py-6 sm:px-8">
-        <button type="button" onClick={() => onNavigate('landing')} className="flex items-center gap-3 border-none bg-transparent text-white cursor-pointer">
-          <BrandLogo size={48}/>
-          <span className="text-left"><strong className="block font-outfit text-base tracking-wide">VIVID ARTS</strong><span className="block text-[10px] tracking-[.18em] text-white/40">PENCIL PORTRAITS</span></span>
+        <button type="button" onClick={() => onNavigate('landing')} className="flex items-center gap-3.5 border-none bg-transparent text-white cursor-pointer">
+          <RoundBrandLogo size={58}/>
+          <span className="text-left"><strong className="block font-outfit text-lg font-extrabold tracking-[.08em] text-white sm:text-xl">VIVID ARTS</strong><span className="mt-0.5 block text-[10px] font-semibold tracking-[.2em] text-white/60 sm:text-[11px]">PENCIL PORTRAITS</span></span>
         </button>
         <button type="button" onClick={() => onNavigate('landing')} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.06] px-4 py-2 text-xs font-semibold text-white/80 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/10 hover:text-white">
           <Icon name="arrowLeft" size={16}/> Back to home
