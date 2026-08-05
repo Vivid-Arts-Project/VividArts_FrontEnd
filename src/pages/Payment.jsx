@@ -6,7 +6,8 @@ import Stepper from '../components/Stepper';
 import { showNotification } from './notifications';
 import Icon from '../components/Icon';
 import CommissionHeader from '../components/CommissionHeader';
-import { getCustomerToken } from '../authSession';
+import { getCustomerToken, preparePaymentReturnSession } from '../authSession';
+import { trustCurrentNavigation } from '../router';
 
 const fallbackOrder = {
   size: { id: 'A3', label: 'A3' },
@@ -119,7 +120,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
     if (returnedPaymentStatus === 'cancelled') {
       // Clear the query params synchronously so React StrictMode's second
       // dev-mode effect invocation doesn't see them and fire this again.
-      window.history.replaceState({}, document.title, window.location.pathname);
+      trustCurrentNavigation();
       // 💡 2. Payment cancel වුණොත් Warning/Error Toast එකක් පෙන්නන්න
       showNotification('warning', 'Payment was cancelled. You can try again.');
       return;
@@ -131,7 +132,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
 
     // Clear the query params synchronously (see comment above) before any
     // async work, so a StrictMode double-invoke can't show this twice.
-    window.history.replaceState({}, document.title, window.location.pathname);
+    trustCurrentNavigation();
 
     const confirmPayment = async () => {
       await Promise.resolve();
@@ -232,6 +233,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
       }
 
       setOrderId(result.orderId);
+      preparePaymentReturnSession(result.orderId);
       submitCheckoutForm(result.checkoutUrl, result.checkoutFields);
     } catch (err) {
       const errText = err.message || 'Payment failed. Please try again.';
