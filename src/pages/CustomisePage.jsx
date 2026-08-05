@@ -20,7 +20,45 @@ const FALLBACK_CATALOG = {
 const SIZE_DIMS = { A4: "210 × 297 mm", A3: "297 × 420 mm" };
 
 function fmt(n) {
-  return `LKR ${n.toLocaleString("en-LK")}`;
+  return `LKR ${Number(n ?? 0).toLocaleString("en-LK")}`;
+}
+
+// Support both the current catalog shape and the legacy API response still
+// returned by some deployed backends. Invalid/missing price fields must never
+// prevent the customization page from rendering.
+function normaliseCatalog(data) {
+  if (!data?.sizes || !data?.frames) return FALLBACK_CATALOG;
+
+  const extraPersonPrice = data.extraPersonPrice ?? FALLBACK_CATALOG.sizes.A4.extraPersonPrice;
+  const sizes = Object.fromEntries(Object.entries(FALLBACK_CATALOG.sizes).map(([id, fallback]) => [
+    id,
+    {
+      ...fallback,
+      ...(data.sizes[id] ?? {}),
+      extraPersonPrice: data.sizes[id]?.extraPersonPrice ?? extraPersonPrice,
+    },
+  ]));
+  const frames = Object.fromEntries(Object.entries(FALLBACK_CATALOG.frames).map(([id, fallback]) => {
+    const source = data.frames[id] ?? {};
+    const flatPrice = source.price;
+    return [id, {
+      ...fallback,
+      ...source,
+      prices: source.prices ?? {
+        A4: flatPrice ?? fallback.prices.A4,
+        A3: flatPrice ?? fallback.prices.A3,
+      },
+    }];
+  }));
+
+  return {
+    ...FALLBACK_CATALOG,
+    ...data,
+    sizes,
+    frames,
+    deliveryPrice: data.deliveryPrice ?? FALLBACK_CATALOG.deliveryPrice,
+    urgentPrice: data.urgentPrice ?? FALLBACK_CATALOG.urgentPrice,
+  };
 }
 
 export default function CustomisePage({ photoData, initialOrder = null, onNext = () => {}, onBack, onNavigate = () => {} }) {
@@ -49,7 +87,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
   useEffect(() => {
     let active = true;
     const loadLivePrices = () => api.getPrices()
-      .then((data) => { if (active && data.success) setCatalog(data); })
+      .then((data) => { if (active && data.success) setCatalog(normaliseCatalog(data)); })
       .catch((error) => console.error("Failed to load live pricing:", error));
     loadLivePrices();
     window.addEventListener("focus", loadLivePrices);

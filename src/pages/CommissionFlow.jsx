@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import UploadPhotoPage from "./UploadPhotoPage";
 import CustomisePage from "./CustomisePage";
@@ -19,6 +19,7 @@ import { clearCommissionDraft, getCommissionDraft, setCommissionOrder, setCommis
  */
 export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {} }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [photoData, setPhotoData] = useState(() => getCommissionDraft().photoData);
   const [order, setOrder] = useState(() => getCommissionDraft().order);
 
@@ -30,7 +31,10 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
   function handlePhotoNext(data) {
     setPhotoData(data);
     setCommissionPhoto(data);
-    navigate('/commission/customize');
+    // Keep the uploaded photo on the target history entry as well as in the
+    // draft. This prevents the customize route guard from redirecting while
+    // React is applying the state update during navigation.
+    navigate('/commission/customize', { state: { photoData: data } });
   }
 
   function handleCustomiseNext(orderData) {
@@ -45,6 +49,8 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
     clearCommissionDraft();
     onBack();
   }
+
+  const activePhotoData = photoData ?? location.state?.photoData ?? getCommissionDraft().photoData;
 
   return (
     <div className="min-h-screen bg-[#0d0c1a] text-white">
@@ -63,9 +69,9 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
         />
         <Route
           path="customize"
-          element={photoData ? (
+          element={activePhotoData ? (
             <CustomisePage
-              photoData={photoData}
+              photoData={activePhotoData}
               initialOrder={order}
               onNext={handleCustomiseNext}
               onBack={() => navigate('/commission/upload')}
