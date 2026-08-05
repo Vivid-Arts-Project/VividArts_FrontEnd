@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from '../../router';
+import { Link } from '../../RouterComponents';
 import { useAuth } from '../../context/useAuth';
-import BrandLogo from '../../components/BrandLogo';
+import RoundBrandLogo from '../../components/RoundBrandLogo';
 import Icon from '../../components/Icon';
 
 export default function AdminLogin() {
@@ -37,9 +38,9 @@ export default function AdminLogin() {
       <div className="login-orb login-orb-three"/>
 
       <header className="relative z-20 mx-auto flex max-w-7xl items-center justify-between px-6 py-6 sm:px-8">
-        <div className="flex items-center gap-3">
-          <BrandLogo size={52}/>
-          <div><strong className="block font-outfit text-base tracking-wide">VIVID ARTS</strong><span className="block text-[10px] tracking-[.18em] text-white/40">ADMIN WORKSPACE</span></div>
+        <div className="flex items-center gap-3.5">
+          <RoundBrandLogo size={58}/>
+          <div><strong className="block font-outfit text-lg font-extrabold tracking-[.08em] text-white sm:text-xl">VIVID ARTS</strong><span className="mt-0.5 block text-[10px] font-semibold tracking-[.2em] text-white/60 sm:text-[11px]">ADMIN WORKSPACE</span></div>
         </div>
         <Link to="/" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.06] px-4 py-2 text-xs font-semibold text-white/75 no-underline backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/10 hover:text-white">
           <Icon name="arrowLeft" size={16}/> Customer site
@@ -73,7 +74,7 @@ export default function AdminLogin() {
           <div className="rounded-[23px] border border-white/[.08] bg-[#111025]/92 px-7 py-9 sm:px-9">
             <div className="mb-8 flex items-start justify-between">
               <div><span className="text-[10px] font-bold uppercase tracking-[.18em] text-[#9f91ff]">Administrator access</span><h1 className="mt-2 font-outfit text-3xl font-bold tracking-[-.02em]">Welcome back</h1><p className="mt-2 text-sm text-white/40">Sign in to manage Vivid Arts.</p></div>
-              <BrandLogo size={54}/>
+              <RoundBrandLogo size={54}/>
             </div>
 
             {error && <div className="mb-5 flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-3.5 py-3 text-xs text-red-300"><Icon name="alert" size={17}/>{error}</div>}

@@ -6,6 +6,7 @@ import Stepper from '../components/Stepper';
 import { showNotification } from './notifications';
 import Icon from '../components/Icon';
 import CommissionHeader from '../components/CommissionHeader';
+import { getCustomerToken } from '../authSession';
 
 const fallbackOrder = {
   size: { id: 'A3', label: 'A3' },
@@ -51,12 +52,19 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
   const [currency] = useState(currencies[0])
   const [isProcessing, setIsProcessing] = useState(false)
   const [orderId, setOrderId] = useState(null);
+  const [paymentReturn] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return { status: params.get('payment'), orderId: params.get('order_id') };
+  });
   const [error, setError] = useState(() =>
-    new URLSearchParams(window.location.search).get('payment') === 'cancelled'
+    paymentReturn.status === 'cancelled'
       ? 'Payment was cancelled. You can try again when you are ready.'
       : null
   );
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState('pending');
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [queuePosition, setQueuePosition] = useState(null);
   const [successMessage, setSuccessMessage] = useState('Your deposit has been received.');
   const [customerInfo, setCustomerInfo] = useState({
     firstName: '', lastName: '', email: '', phone: '',
@@ -75,7 +83,17 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    api.getQueuePosition()
+      .then((data) => {
+        if (data.success && Number.isInteger(data.queuePosition)) {
+          setQueuePosition(data.queuePosition);
+        }
+      })
+      .catch((err) => console.error('Failed to load queue position:', err));
+  }, []);
+
+  useEffect(() => {
+    const token = getCustomerToken();
     if (!token) return;
 
     api.getProfile(token)
@@ -95,11 +113,10 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
   }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const returnedOrderId = params.get('order_id');
-    const paymentStatus = params.get('payment');
+    const returnedOrderId = paymentReturn.orderId;
+    const returnedPaymentStatus = paymentReturn.status;
 
-    if (paymentStatus === 'cancelled') {
+    if (returnedPaymentStatus === 'cancelled') {
       // Clear the query params synchronously so React StrictMode's second
       // dev-mode effect invocation doesn't see them and fire this again.
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -108,41 +125,82 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
       return;
     }
 
-    if (paymentStatus !== 'success' || !returnedOrderId) return;
+    if (returnedPaymentStatus !== 'success' || !returnedOrderId) return;
+
+    let cancelled = false;
 
     // Clear the query params synchronously (see comment above) before any
     // async work, so a StrictMode double-invoke can't show this twice.
     window.history.replaceState({}, document.title, window.location.pathname);
 
-    Promise.resolve()
-      .then(() => setIsProcessing(true))
-      .then(() => import.meta.env.DEV ? api.confirmSandboxReturn(returnedOrderId) : undefined)
-      .then(() => api.getPaymentStatus(returnedOrderId))
-      .then((result) => {
-        if (!result.success) {
-          throw new Error(result.error || 'Unable to read payment status');
+    const confirmPayment = async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setOrderId(returnedOrderId);
+      setPaymentStatus('pending');
+      setSuccessMessage('Confirming your PayHere payment…');
+      setShowConfirmation(true);
+      setIsProcessing(true);
+      try {
+        if (import.meta.env.DEV) await api.confirmSandboxReturn(returnedOrderId);
+
+        for (let attempt = 0; attempt < 16 && !cancelled; attempt += 1) {
+          const result = await api.getPaymentStatus(returnedOrderId);
+          if (!result.success) throw new Error(result.error || 'Unable to read payment status');
+
+          const currentStatus = result.payment.status;
+          setOrderId(result.payment.orderId);
+          setPaymentStatus(currentStatus);
+
+          if (currentStatus === 'completed') {
+            const message = 'Your PayHere payment has been confirmed.';
+            setSuccessMessage(message);
+            showNotification('payment_success', message);
+            return;
+          }
+
+          if (currentStatus === 'failed') {
+            throw new Error('PayHere reported that this payment was unsuccessful.');
+          }
+
+          setSuccessMessage('Your payment was submitted. Waiting for PayHere confirmation…');
+          await new Promise((resolve) => window.setTimeout(resolve, 2000));
         }
 
-        setOrderId(result.payment.orderId);
-        
-        const msg = result.payment.status === 'completed'
-          ? 'Your PayHere payment has been confirmed.'
-          : 'Your PayHere payment was submitted. We will confirm it as soon as PayHere sends the notification.';
-        
-        setSuccessMessage(msg);
-        setShowConfirmation(true);
-
-        // 💡 3. Payment එක සාර්ථක වුණාම Auto Payment Success Toast එක පෙන්නන්න
-        showNotification('payment_success', msg);
-      })
-      .catch((err) => {
+        if (!cancelled) setSuccessMessage('PayHere is still confirming your payment. Keep this page open or return shortly.');
+      } catch (err) {
+        if (cancelled) return;
         const errText = err.message || 'Unable to check payment status. Please contact support.';
         setError(errText);
-        // 💡 4. Error එකක් ආවොත් Error Toast එක පෙන්නන්න
         showNotification('error', errText);
-      })
-      .finally(() => setIsProcessing(false));
-  }, []);
+      } finally {
+        if (!cancelled) setIsProcessing(false);
+      }
+    };
+
+    confirmPayment();
+    return () => { cancelled = true; };
+  }, [paymentReturn.orderId, paymentReturn.status]);
+
+  const handleInvoiceDownload = async () => {
+    if (!orderId || paymentStatus !== 'completed' || isDownloading) return;
+    setIsDownloading(true);
+    try {
+      const invoice = await api.downloadInvoice(orderId);
+      const downloadUrl = URL.createObjectURL(invoice);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `invoice-${orderId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    } catch (err) {
+      showNotification('error', err.message || 'Unable to download the invoice.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const handlePay = async () => {
     setIsProcessing(true);
@@ -202,20 +260,24 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
               <path className="payment-success-check__tick" d="M24 41.5l10.5 10.5L57 27.5" />
             </svg>
           </div>
-          <h2 className="text-xl sm:text-2xl font-medium text-gray-900 mb-2">Payment Successful!</h2>
+          <h2 className="text-xl sm:text-2xl font-medium text-gray-900 mb-2">
+            {paymentStatus === 'completed' ? 'Payment Successful!' : 'Payment Submitted'}
+          </h2>
           <p className="text-[#4b5563]">
             {successMessage}
           </p>
           <p className="text-[#4b5563] mt-[10px]">
             Order ID: {orderId || 'Processing...'}
           </p>
-          {orderId && successMessage === 'Your PayHere payment has been confirmed.' && (
-            <a
-              href={api.getInvoiceUrl(orderId)}
+          {orderId && paymentStatus === 'completed' && (
+            <button
+              type="button"
+              onClick={handleInvoiceDownload}
+              disabled={isDownloading}
               className="mt-[10px] inline-flex w-full min-w-0 items-center justify-center rounded-full border border-[#9fe3c5] bg-gradient-to-br from-[#f4fff9] to-[#eafff5] px-5 py-3 font-semibold text-[#087a57] shadow-[0_12px_28px_rgba(5,150,105,0.12)] transition-all hover:-translate-y-0.5 hover:border-[#50c894] hover:shadow-[0_18px_36px_rgba(5,150,105,0.2)] sm:w-auto sm:min-w-[230px] sm:px-[30px]"
             >
-              Download Invoice (PDF)
-            </a>
+              {isDownloading ? 'Preparing invoice…' : 'Download Invoice (PDF)'}
+            </button>
           )}
           <br />
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
@@ -377,7 +439,7 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#7f77dd] shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               Estimated timeline
             </div>
-            <div className="flex justify-between text-xs py-[5px]"><span className="text-[#6b6b80]">Queue position</span><span className="text-[#534ab7] font-medium">#3</span></div>
+            <div className="flex justify-between text-xs py-[5px]"><span className="text-[#6b6b80]">Queue position</span><span className="text-[#534ab7] font-medium">{queuePosition ? `#${queuePosition}` : 'Loading…'}</span></div>
             <div className="flex justify-between text-xs py-[5px]"><span className="text-[#6b6b80]">Sketching starts</span><span className="text-[#534ab7] font-medium">~3 days</span></div>
             <div className="flex justify-between text-xs py-[5px]"><span className="text-[#6b6b80]">Delivery estimate</span><span className="text-[#534ab7] font-medium">7–10 working days</span></div>
           </div>
