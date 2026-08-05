@@ -19,8 +19,46 @@ const FALLBACK_CATALOG = {
 
 const SIZE_DIMS = { A4: "210 × 297 mm", A3: "297 × 420 mm" };
 
-function fmt(n) {
-  return `LKR ${n.toLocaleString("en-LK")}`;
+function asPrice(value, fallback = 0) {
+  const price = Number(value);
+  return Number.isFinite(price) && price >= 0 ? price : fallback;
+}
+
+function fmt(value) {
+  return `LKR ${asPrice(value).toLocaleString("en-LK")}`;
+}
+
+function normalizeCatalog(data) {
+  const sizes = Object.fromEntries(Object.entries(FALLBACK_CATALOG.sizes).map(([id, fallback]) => {
+    const live = data?.sizes?.[id] ?? {};
+    return [id, {
+      ...fallback,
+      ...live,
+      price: asPrice(live.price, fallback.price),
+      extraPersonPrice: asPrice(live.extraPersonPrice, fallback.extraPersonPrice),
+    }];
+  }));
+
+  const frames = Object.fromEntries(Object.entries(FALLBACK_CATALOG.frames).map(([id, fallback]) => {
+    const live = data?.frames?.[id] ?? {};
+    return [id, {
+      ...fallback,
+      ...live,
+      prices: Object.fromEntries(Object.keys(FALLBACK_CATALOG.sizes).map((sizeId) => [
+        sizeId,
+        asPrice(live.prices?.[sizeId], fallback.prices[sizeId]),
+      ])),
+    }];
+  }));
+
+  return {
+    ...FALLBACK_CATALOG,
+    ...data,
+    sizes,
+    frames,
+    deliveryPrice: asPrice(data?.deliveryPrice, FALLBACK_CATALOG.deliveryPrice),
+    urgentPrice: asPrice(data?.urgentPrice, FALLBACK_CATALOG.urgentPrice),
+  };
 }
 
 export default function CustomisePage({ photoData, initialOrder = null, onNext = () => {}, onBack, onNavigate = () => {} }) {
@@ -51,7 +89,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
   useEffect(() => {
     let active = true;
     const loadLivePrices = () => api.getPrices()
-      .then((data) => { if (active && data.success) setCatalog(data); })
+      .then((data) => { if (active && data.success) setCatalog(normalizeCatalog(data)); })
       .catch((error) => console.error("Failed to load live pricing:", error));
     loadLivePrices();
     window.addEventListener("focus", loadLivePrices);
@@ -415,7 +453,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
                 <dt className="text-[#6b6885]">Frame</dt>
                 <dd className="font-semibold">
                   {frame ? frame.label : "Not selected"}
-                  {frame?.price > 0 ? ` (+${frame.price.toLocaleString("en-LK")})` : ""}
+                  {frame?.price > 0 ? ` (+${asPrice(frame.price).toLocaleString("en-LK")})` : ""}
                 </dd>
               </div>
               <div className="flex justify-between border-b border-[#e7e5f1] py-2.5 text-sm">
