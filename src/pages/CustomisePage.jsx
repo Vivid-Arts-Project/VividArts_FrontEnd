@@ -19,35 +19,35 @@ const FALLBACK_CATALOG = {
 
 const SIZE_DIMS = { A4: "210 × 297 mm", A3: "297 × 420 mm" };
 
-function fmt(n) {
-  return `LKR ${Number(n ?? 0).toLocaleString("en-LK")}`;
+function asPrice(value, fallback = 0) {
+  const price = Number(value);
+  return Number.isFinite(price) && price >= 0 ? price : fallback;
 }
 
-// Support both the current catalog shape and the legacy API response still
-// returned by some deployed backends. Invalid/missing price fields must never
-// prevent the customization page from rendering.
-function normaliseCatalog(data) {
-  if (!data?.sizes || !data?.frames) return FALLBACK_CATALOG;
+function fmt(value) {
+  return `LKR ${asPrice(value).toLocaleString("en-LK")}`;
+}
 
-  const extraPersonPrice = data.extraPersonPrice ?? FALLBACK_CATALOG.sizes.A4.extraPersonPrice;
-  const sizes = Object.fromEntries(Object.entries(FALLBACK_CATALOG.sizes).map(([id, fallback]) => [
-    id,
-    {
-      ...fallback,
-      ...(data.sizes[id] ?? {}),
-      extraPersonPrice: data.sizes[id]?.extraPersonPrice ?? extraPersonPrice,
-    },
-  ]));
-  const frames = Object.fromEntries(Object.entries(FALLBACK_CATALOG.frames).map(([id, fallback]) => {
-    const source = data.frames[id] ?? {};
-    const flatPrice = source.price;
+function normalizeCatalog(data) {
+  const sizes = Object.fromEntries(Object.entries(FALLBACK_CATALOG.sizes).map(([id, fallback]) => {
+    const live = data?.sizes?.[id] ?? {};
     return [id, {
       ...fallback,
-      ...source,
-      prices: source.prices ?? {
-        A4: flatPrice ?? fallback.prices.A4,
-        A3: flatPrice ?? fallback.prices.A3,
-      },
+      ...live,
+      price: asPrice(live.price, fallback.price),
+      extraPersonPrice: asPrice(live.extraPersonPrice, fallback.extraPersonPrice),
+    }];
+  }));
+
+  const frames = Object.fromEntries(Object.entries(FALLBACK_CATALOG.frames).map(([id, fallback]) => {
+    const live = data?.frames?.[id] ?? {};
+    return [id, {
+      ...fallback,
+      ...live,
+      prices: Object.fromEntries(Object.keys(FALLBACK_CATALOG.sizes).map((sizeId) => [
+        sizeId,
+        asPrice(live.prices?.[sizeId], fallback.prices[sizeId]),
+      ])),
     }];
   }));
 
@@ -56,8 +56,8 @@ function normaliseCatalog(data) {
     ...data,
     sizes,
     frames,
-    deliveryPrice: data.deliveryPrice ?? FALLBACK_CATALOG.deliveryPrice,
-    urgentPrice: data.urgentPrice ?? FALLBACK_CATALOG.urgentPrice,
+    deliveryPrice: asPrice(data?.deliveryPrice, FALLBACK_CATALOG.deliveryPrice),
+    urgentPrice: asPrice(data?.urgentPrice, FALLBACK_CATALOG.urgentPrice),
   };
 }
 
@@ -89,7 +89,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
   useEffect(() => {
     let active = true;
     const loadLivePrices = () => api.getPrices()
-      .then((data) => { if (active && data.success) setCatalog(normaliseCatalog(data)); })
+      .then((data) => { if (active && data.success) setCatalog(normalizeCatalog(data)); })
       .catch((error) => console.error("Failed to load live pricing:", error));
     loadLivePrices();
     window.addEventListener("focus", loadLivePrices);
@@ -453,7 +453,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
                 <dt className="text-[#6b6885]">Frame</dt>
                 <dd className="font-semibold">
                   {frame ? frame.label : "Not selected"}
-                  {frame?.price > 0 ? ` (+${frame.price.toLocaleString("en-LK")})` : ""}
+                  {frame?.price > 0 ? ` (+${asPrice(frame.price).toLocaleString("en-LK")})` : ""}
                 </dd>
               </div>
               <div className="flex justify-between border-b border-[#e7e5f1] py-2.5 text-sm">

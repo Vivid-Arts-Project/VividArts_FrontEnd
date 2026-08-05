@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-import { Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
-=======
->>>>>>> 30555075bab24fc3a5c90727b63e1c8853fa64a8
 import { useState } from "react";
 import UploadPhotoPage from "./UploadPhotoPage";
 import CustomisePage from "./CustomisePage";
@@ -24,11 +20,7 @@ import { Redirect } from "../RouterComponents";
  */
 export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {} }) {
   const navigate = useNavigate();
-<<<<<<< HEAD
-  const location = useLocation();
-=======
   const path = useLocation().split(/[?#]/, 1)[0];
->>>>>>> 30555075bab24fc3a5c90727b63e1c8853fa64a8
   const [photoData, setPhotoData] = useState(() => getCommissionDraft().photoData);
   const [order, setOrder] = useState(() => getCommissionDraft().order);
 
@@ -40,10 +32,7 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
   function handlePhotoNext(data) {
     setPhotoData(data);
     setCommissionPhoto(data);
-    // Keep the uploaded photo on the target history entry as well as in the
-    // draft. This prevents the customize route guard from redirecting while
-    // React is applying the state update during navigation.
-    navigate('/commission/customize', { state: { photoData: data } });
+    navigate('/commission/customize');
   }
 
   function handleCustomiseNext(orderData) {
@@ -59,50 +48,6 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
     onBack();
   }
 
-<<<<<<< HEAD
-  const activePhotoData = photoData ?? location.state?.photoData ?? getCommissionDraft().photoData;
-
-  return (
-    <div className="min-h-screen bg-[#0d0c1a] text-white">
-      <Routes>
-        <Route index element={<Navigate to={defaultStep} replace />} />
-        <Route
-          path="upload"
-          element={
-            <UploadPhotoPage 
-              initialPhotoData={photoData} 
-              onNext={handlePhotoNext} 
-              onBack={onBack} 
-              onNavigate={onNavigate}
-            />
-          }
-        />
-        <Route
-          path="customize"
-          element={activePhotoData ? (
-            <CustomisePage
-              photoData={activePhotoData}
-              initialOrder={order}
-              onNext={handleCustomiseNext}
-              onBack={() => navigate('/commission/upload')}
-              onNavigate={onNavigate}
-             />
-          ) : (
-            <Navigate to="/commission/upload" replace />
-          )}
-        />
-        <Route
-          path="payment"
-          element={order || isPaymentReturn ? (
-            <Payment order={order} onBack={() => navigate('/commission/customize')} onComplete={handlePaymentComplete} />
-          ) : (
-            <Navigate to="/commission/upload" replace />
-          )}
-        />
-      </Routes>
-    </div>
-  );
-=======
   let page;
   if (path === '/commission' || path === '/commission/') page = <Redirect to={`/commission/${defaultStep}`} replace />;
   else if (path === '/commission/upload') page = <UploadPhotoPage initialPhotoData={photoData} onNext={handlePhotoNext} onBack={onBack} onNavigate={onNavigate}/>;
@@ -115,5 +60,4 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
   else page = <Redirect to="/commission/upload" replace />;
 
   return <div className="min-h-screen bg-[#0d0c1a] text-white">{page}</div>;
->>>>>>> 30555075bab24fc3a5c90727b63e1c8853fa64a8
 }
