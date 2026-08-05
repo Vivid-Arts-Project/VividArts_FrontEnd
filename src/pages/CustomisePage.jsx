@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Stepper from "../components/Stepper";
 import CommissionHeader from "../components/CommissionHeader";
 import { api } from "../api";
@@ -36,6 +36,8 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
   const [urgentDeadlineError, setUrgentDeadlineError] = useState("");
   const [selectionError, setSelectionError] = useState("");
   const [catalog, setCatalog] = useState(FALLBACK_CATALOG);
+  const deliveryAddressRef = useRef(null);
+  const urgentDeadlineRef = useRef(null);
 
   const minimumUrgentDate = useMemo(() => {
     const date = new Date();
@@ -86,11 +88,19 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
     setSelectionError("");
     if (deliveryMethod === "courier" && !deliveryAddress.trim()) {
       setDeliveryAddressError("Please enter the address where we should deliver your portrait.");
+      window.requestAnimationFrame(() => {
+        deliveryAddressRef.current?.focus({ preventScroll: true });
+        deliveryAddressRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
       return;
     }
 
     if (urgent && (!urgentDeadline || urgentDeadline < minimumUrgentDate)) {
       setUrgentDeadlineError(`Please select a date on or after ${new Date(`${minimumUrgentDate}T00:00:00`).toLocaleDateString("en-LK", { day: "numeric", month: "short", year: "numeric" })}.`);
+      window.requestAnimationFrame(() => {
+        urgentDeadlineRef.current?.focus({ preventScroll: true });
+        urgentDeadlineRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
       return;
     }
 
@@ -289,13 +299,16 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
                   <p className="mt-1 text-xs leading-5 text-[#6b6885]">Enter the complete address where your finished portrait should be delivered.</p>
                   <textarea
                     id="delivery-address"
+                    ref={deliveryAddressRef}
                     rows={3}
                     value={deliveryAddress}
                     onChange={(event) => { setDeliveryAddress(event.target.value); setDeliveryAddressError(""); }}
                     placeholder="House number, street, city, postal code"
+                    aria-invalid={Boolean(deliveryAddressError)}
+                    aria-describedby={deliveryAddressError ? "delivery-address-error" : undefined}
                     className={`mt-3 w-full resize-y rounded-xl border bg-white px-4 py-3 text-sm font-medium text-[#29253b] outline-none transition focus:ring-4 ${deliveryAddressError ? "border-[#dc5d48] focus:border-[#dc5d48] focus:ring-[#dc5d48]/10" : "border-[#cfc8ff] focus:border-[#6366f1] focus:ring-[#6366f1]/10"}`}
                   />
-                  {deliveryAddressError && <p className="mt-2 text-xs font-semibold text-[#c2412d]">{deliveryAddressError}</p>}
+                  {deliveryAddressError && <p id="delivery-address-error" className="mt-2 text-xs font-semibold text-[#c2412d]">{deliveryAddressError}</p>}
                 </div>
               </div>
             </div>
@@ -355,6 +368,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
                   </p>
                   <input
                     id="urgent-deadline"
+                    ref={urgentDeadlineRef}
                     type="date"
                     min={minimumUrgentDate}
                     value={urgentDeadline}
@@ -362,9 +376,11 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
                       setUrgentDeadline(event.target.value);
                       setUrgentDeadlineError("");
                     }}
+                    aria-invalid={Boolean(urgentDeadlineError)}
+                    aria-describedby={urgentDeadlineError ? "urgent-deadline-error" : undefined}
                     className={`mt-3 w-full rounded-xl border bg-white px-4 py-3 text-sm font-semibold text-[#342819] outline-none transition focus:ring-4 ${urgentDeadlineError ? "border-[#dc5d48] focus:border-[#dc5d48] focus:ring-[#dc5d48]/10" : "border-[#e5bc69] focus:border-[#e49a18] focus:ring-[#f59e0b]/10"}`}
                   />
-                  {urgentDeadlineError && <p className="mt-2 text-xs font-semibold text-[#c2412d]">{urgentDeadlineError}</p>}
+                  {urgentDeadlineError && <p id="urgent-deadline-error" className="mt-2 text-xs font-semibold text-[#c2412d]">{urgentDeadlineError}</p>}
                 </div>
               </div>
             </div>

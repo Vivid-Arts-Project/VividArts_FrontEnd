@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import Icon from '../components/Icon';
+import { getCustomerToken } from '../authSession';
 
 export default function NotificationBell() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [readIds, setReadIds] = useState(new Set());
 
-  const token = localStorage.getItem('token');
+  const token = getCustomerToken();
   const isLoggedIn = Boolean(token);
 
   useEffect(() => {

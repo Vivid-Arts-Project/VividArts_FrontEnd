@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import OrderTracker from './OrderTracker';
+import { clearCustomerSession, getCustomerToken, setCustomerUsername } from '../authSession';
 
 function ProfilePage({ onNavigate }) {
   const [user, setUser] = useState(null);
@@ -11,7 +12,7 @@ function ProfilePage({ onNavigate }) {
   const avatarInputRef = useRef(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getCustomerToken();
     if (!token) {
       onNavigate('login');
       return;
@@ -40,7 +41,7 @@ function ProfilePage({ onNavigate }) {
           setOrders(ordersData);
         }
       } catch (error) {
-        localStorage.removeItem('token');
+        clearCustomerSession();
         setMessage(error.message || 'Please log in again.');
         onNavigate('login');
       }
@@ -51,7 +52,7 @@ function ProfilePage({ onNavigate }) {
 
   const handleUpdate = async (event) => {
     event.preventDefault();
-    const token = localStorage.getItem('token');
+    const token = getCustomerToken();
 
     try {
       const response = await fetch('/api/customers/profile', {
@@ -69,15 +70,14 @@ function ProfilePage({ onNavigate }) {
       }
 
       setMessage(data.message || 'Profile updated successfully');
-      try { localStorage.setItem('username', username); } catch { /* localStorage unavailable */ }
+      setCustomerUsername(username);
     } catch (error) {
       setMessage(error.message || 'Update failed');
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
+    clearCustomerSession();
     onNavigate('login');
   };
 
@@ -86,7 +86,7 @@ function ProfilePage({ onNavigate }) {
     if (action === 'revision' && !note?.trim()) return;
     try {
       const response = await fetch(`/api/orders/${order.id}/proof-review`, { method: 'POST', headers: {
-        'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json', Authorization: `Bearer ${getCustomerToken()}`,
       }, body: JSON.stringify({ action, note }) });
       const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Review failed');
       setOrders(current => current.map(item => item.id === order.id ? { ...item, status: data.status } : item));
@@ -101,7 +101,7 @@ function ProfilePage({ onNavigate }) {
   const initials = (user.username || 'U').slice(0, 1).toUpperCase();
 
   const uploadImage = async (file, type) => {
-    const token = localStorage.getItem('token');
+    const token = getCustomerToken();
     if (!token) return setMessage('Not authenticated');
 
     const fd = new FormData();
