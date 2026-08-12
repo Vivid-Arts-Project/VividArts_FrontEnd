@@ -4,11 +4,13 @@ import { clearCustomerSession, getCustomerToken, setCustomerUsername } from '../
 
 function ProfilePage({ onNavigate }) {
   const [user, setUser] = useState(null);
+  const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
   const [orders, setOrders] = useState([]);
-  const coverInputRef = useRef(null);
+  const [isEditing, setIsEditing] = useState(false);
   const avatarInputRef = useRef(null);
 
   useEffect(() => {
@@ -30,7 +32,9 @@ function ProfilePage({ onNavigate }) {
         }
 
         setUser(data);
+        setFullName(data.full_name || '');
         setUsername(data.username || '');
+        setPhoneNumber(data.phone_number || '');
         setEmail(data.email || '');
 
         const ordersRes = await fetch('/api/orders/my-orders', {
@@ -61,7 +65,7 @@ function ProfilePage({ onNavigate }) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ username, email }),
+        body: JSON.stringify({ fullName, username, phoneNumber, email }),
       });
 
       const data = await response.json();
@@ -71,14 +75,11 @@ function ProfilePage({ onNavigate }) {
 
       setMessage(data.message || 'Profile updated successfully');
       setCustomerUsername(username);
+      setUser((current) => current ? { ...current, full_name: fullName, username, phone_number: phoneNumber, email } : current);
+      setIsEditing(false);
     } catch (error) {
       setMessage(error.message || 'Update failed');
     }
-  };
-
-  const handleLogout = () => {
-    clearCustomerSession();
-    onNavigate('login');
   };
 
   const reviewProof = async (order, action) => {
@@ -98,18 +99,17 @@ function ProfilePage({ onNavigate }) {
     return <p style={{ textAlign: 'center', marginTop: '40px' }}>Loading your profile...</p>;
   }
 
-  const initials = (user.username || 'U').slice(0, 1).toUpperCase();
+  const initials = (user.full_name || user.username || 'U').slice(0, 1).toUpperCase();
 
-  const uploadImage = async (file, type) => {
+  const uploadImage = async (file) => {
     const token = getCustomerToken();
     if (!token) return setMessage('Not authenticated');
 
     const fd = new FormData();
-    if (type === 'cover') fd.append('coverImage', file);
-    else fd.append('profileImage', file);
+    fd.append('profileImage', file);
 
     try {
-      const res = await fetch(`/api/customers/profile/${type === 'cover' ? 'cover' : 'avatar'}`, {
+      const res = await fetch('/api/customers/profile/avatar', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: fd,
@@ -117,77 +117,85 @@ function ProfilePage({ onNavigate }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Upload failed');
       // refresh profile data in-place
-      setUser(prev => ({ ...prev, profile_image_url: data.profile_image_url || prev.profile_image_url, cover_image_url: data.cover_image_url || prev.cover_image_url }));
+      setUser(prev => ({ ...prev, profile_image_url: data.profile_image_url || prev.profile_image_url }));
       try { if (data.profile_image_url) localStorage.setItem('profile_image_url', data.profile_image_url); } catch { /* localStorage unavailable */ }
-      try { if (data.cover_image_url) localStorage.setItem('cover_image_url', data.cover_image_url); } catch { /* localStorage unavailable */ }
-      setMessage('Image updated');
+      setMessage('Profile photo updated successfully.');
       // update display name in localStorage if username changed elsewhere
     } catch (err) {
       setMessage(err.message || 'Upload failed');
     }
   };
 
-  const onAvatarSelected = (ev) => { const f = ev.target.files?.[0]; if (f) uploadImage(f, 'avatar'); };
-  const onCoverSelected = (ev) => { const f = ev.target.files?.[0]; if (f) uploadImage(f, 'cover'); };
+  const onAvatarSelected = (ev) => { const f = ev.target.files?.[0]; if (f) uploadImage(f); };
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '20px auto', padding: '0 16px' }}>
-      <div style={{ borderRadius: 12, overflow: 'hidden', color: '#fff' }}>
-        <div style={{ height: 200, background: user.cover_image_url ? `url(${user.cover_image_url}) center/cover no-repeat` : 'linear-gradient(90deg,#6d5bff,#2b8fe0)' }} />
-        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-end', padding: '0 20px', transform: 'translateY(-40px)' }}>
-          <div style={{ width: 96, height: 96, borderRadius: '50%', overflow: 'hidden', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#111827', fontSize: 36, fontWeight: 700 }}>
-            {user.profile_image_url ? <img src={user.profile_image_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
+    <div className="min-h-screen bg-[#090816] px-4 py-7 font-sans text-white sm:px-6">
+      <main className="mx-auto max-w-6xl">
+      <button type="button" onClick={() => onNavigate('landing')} className="mb-5 rounded-full border border-white/10 bg-white/[.05] px-4 py-2 text-xs font-bold text-white/75 transition hover:bg-white/10">← Back to home</button>
+      <section className="rounded-[28px] border border-white/[.12] bg-gradient-to-br from-[#151333] via-[#111025] to-[#12233d] p-6 shadow-[0_28px_80px_rgba(0,0,0,.4)] sm:p-8">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+          <div className="mx-auto h-32 w-32 shrink-0 overflow-hidden rounded-full border-4 border-[#a99bff] bg-gradient-to-br from-[#aa9dff] to-[#4db8f6] shadow-[0_0_0_6px_rgba(169,155,255,.12)] sm:mx-0">
+            {user.profile_image_url ? <img src={user.profile_image_url} alt="avatar" className="h-full w-full object-cover" /> : <span className="flex h-full w-full items-center justify-center text-4xl font-extrabold text-white">{initials}</span>}
           </div>
-          <div style={{ flex: 1 }}>
-            <h1 style={{ margin: 0, fontSize: 22 }}>{user.username}</h1>
-            <div style={{ marginTop: 6, color: '#c7c3e6' }}>{user.email}</div>
+          <div className="min-w-0 flex-1 text-center sm:text-left">
+            <p className="mb-1 text-xs font-bold uppercase tracking-[.17em] text-[#aa9dff]">Customer profile</p>
+            <h1 className="truncate text-3xl font-bold tracking-[-.025em] sm:text-4xl">{user.full_name || user.username}</h1>
+            <div className="mt-1 truncate text-sm text-white/55">@{user.username} · {user.email}</div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input ref={coverInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onCoverSelected} />
-            <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onAvatarSelected} />
-            <button onClick={() => coverInputRef.current && coverInputRef.current.click()} style={{ padding: '10px 14px', background: '#2b8fe0', color: '#fff', borderRadius: 8, border: 'none' }}>Edit Cover Photo</button>
-            <button onClick={() => avatarInputRef.current && avatarInputRef.current.click()} style={{ padding: '10px 14px', background: '#fff', color: '#111827', borderRadius: 8, border: 'none' }}>Edit Profile Picture</button>
-            <button onClick={() => onNavigate('landing')} style={{ padding: '10px 14px', background: '#111827', color: '#fff', borderRadius: 8, border: 'none' }}>Back to Landing</button>
-            <button onClick={handleLogout} style={{ padding: '10px 14px', background: '#e54d4d', color: '#fff', borderRadius: 8, border: 'none' }}>Logout</button>
+          <div className="flex flex-wrap justify-center gap-2 sm:justify-end">
+            <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={onAvatarSelected} />
+            <button type="button" onClick={() => avatarInputRef.current?.click()} className="rounded-xl border border-white/15 bg-white/[.07] px-3.5 py-2.5 text-xs font-bold text-white transition hover:bg-white/[.13]">Change photo</button>
+            <button type="button" onClick={() => { setMessage(''); setIsEditing(true); }} className="rounded-xl bg-gradient-to-r from-[#2d91df] to-[#7762d8] px-3.5 py-2.5 text-xs font-bold text-white shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5">Edit profile</button>
           </div>
         </div>
-      </div>
+        </section>
 
-      <div style={{ display: 'flex', gap: 24, marginTop: 24 }}>
-        <div style={{ flex: 2 }}>
-          <div style={{ borderRadius: 12, padding: 20, background: '#0a0916' }}>
-            <h3 style={{ marginTop: 0 }}>Profile Details</h3>
-            <form onSubmit={handleUpdate}>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ display: 'block', marginBottom: 6 }}>Username</label>
-                <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} required style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #27223f' }} />
+      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div>
+          <div className="rounded-[24px] border border-white/[.09] bg-white/[.045] p-5 shadow-xl shadow-black/10 sm:p-7">
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-[#aa9dff]">Account details</p>
+            <h3 className="mt-1 text-2xl font-bold">{isEditing ? 'Edit your profile' : 'Personal details'}</h3>
+            <form onSubmit={handleUpdate} className="mt-5">
+              <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-xs font-semibold text-white/65">Full name</label>
+                <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={!isEditing} required className="h-12 w-full rounded-xl border border-white/10 bg-[#0b0a1b] px-4 text-sm text-white outline-none disabled:cursor-default disabled:text-white/65 focus:border-[#8c7cf0] focus:ring-4 focus:ring-[#7161d8]/15" />
               </div>
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ display: 'block', marginBottom: 6 }}>Email</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ width: '100%', padding: 10, borderRadius: 8, border: '1px solid #27223f' }} />
+              <div>
+                <label className="mb-2 block text-xs font-semibold text-white/65">Username</label>
+                <input type="text" value={username} disabled required className="h-12 w-full rounded-xl border border-white/10 bg-[#0b0a1b] px-4 text-sm text-white/65 outline-none disabled:cursor-default" />
               </div>
-              <button type="submit" style={{ padding: '10px 14px', background: '#111827', color: '#fff', borderRadius: 8, border: 'none' }}>Save Changes</button>
-              {message && <div style={{ marginTop: 12, color: '#47c07a' }}>{message}</div>}
+              <div>
+                <label className="mb-2 block text-xs font-semibold text-white/65">Mobile number</label>
+                <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} disabled={!isEditing} required className="h-12 w-full rounded-xl border border-white/10 bg-[#0b0a1b] px-4 text-sm text-white outline-none disabled:cursor-default disabled:text-white/65 focus:border-[#8c7cf0] focus:ring-4 focus:ring-[#7161d8]/15" />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-semibold text-white/65">Email address</label>
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={!isEditing} required className="h-12 w-full rounded-xl border border-white/10 bg-[#0b0a1b] px-4 text-sm text-white outline-none disabled:cursor-default disabled:text-white/65 focus:border-[#8c7cf0] focus:ring-4 focus:ring-[#7161d8]/15" />
+              </div>
+              </div>
+              {isEditing && <div className="mt-5 flex flex-wrap gap-2"><button type="submit" className="rounded-xl bg-gradient-to-r from-[#2b8fe0] via-[#7161d8] to-[#7b4fc8] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5">Save changes</button><button type="button" onClick={() => { setFullName(user.full_name || ''); setPhoneNumber(user.phone_number || ''); setEmail(user.email || ''); setIsEditing(false); }} className="rounded-xl border border-white/15 bg-white/[.05] px-5 py-3 text-sm font-bold text-white/80">Cancel</button></div>}
+              {message && <div className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm font-medium text-emerald-200">{message}</div>}
             </form>
           </div>
 
-          <div style={{ marginTop: 16 }}>
-            <h3>My Orders</h3>
+          <div className="mt-7">
+            <div className="mb-4 flex items-end justify-between"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#aa9dff]">Commissions</p><h3 className="mt-1 text-2xl font-bold">My orders</h3></div><span className="text-sm font-semibold text-white/45">{orders.length} total</span></div>
             {orders.length === 0 ? (
-              <p style={{ color: '#6b7280' }}>No active orders found.</p>
+              <div className="rounded-[24px] border border-dashed border-white/15 bg-white/[.03] px-6 py-12 text-center"><div className="text-3xl">✦</div><h4 className="mt-3 text-lg font-bold">No commissions yet</h4><p className="mt-1 text-sm text-white/50">Your commissioned portraits will appear here.</p><button type="button" onClick={() => onNavigate('commission')} className="mt-5 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#17142d]">Start a commission</button></div>
             ) : (
               orders.map((order) => (
-                <div key={order._id || order.id} style={{ marginBottom: 12, padding: 12, borderRadius: 10, background: '#0c0b16' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <strong>Order #{(order.id || order._id || '').slice(-8) || 'N/A'}</strong>
-                    <span style={{ color: '#a78bfa' }}>{order.status}</span>
+                <div key={order._id || order.id} className="mb-4 rounded-[22px] border border-white/[.09] bg-[#111025] p-5 shadow-lg shadow-black/10">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div><p className="text-xs font-bold uppercase tracking-[.14em] text-white/40">Portrait commission</p><strong className="mt-1 block text-lg">Order #{(order.id || order._id || '').slice(-8) || 'N/A'}</strong></div>
+                    <span className="rounded-full bg-[#7868d8]/15 px-3 py-1.5 text-xs font-bold capitalize text-[#c2b9ff]">{String(order.status || 'in queue').replaceAll('_', ' ')}</span>
                   </div>
                   <OrderTracker currentStatus={order.status} />
-                  {order.proofImagePath && <div style={{ marginTop: 12 }}>
-                    <img src={order.proofImagePath} alt="Portrait proof" style={{ width: '100%', maxHeight: 320, objectFit: 'contain', borderRadius: 10, background: '#151326' }}/>
-                    {order.status === 'waiting_for_feedback' && <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                      <button onClick={() => reviewProof(order, 'approve')} style={{ padding: '9px 14px', border: 0, borderRadius: 8, background: '#278b5d', color: '#fff' }}>Approve proof</button>
-                      <button onClick={() => reviewProof(order, 'revision')} style={{ padding: '9px 14px', border: '1px solid #665d91', borderRadius: 8, background: 'transparent', color: '#fff' }}>Request changes</button>
+                  {order.proofImagePath && <div className="mt-4">
+                    <img src={order.proofImagePath} alt="Portrait proof" className="max-h-80 w-full rounded-xl border border-white/10 bg-[#0b0a1b] object-contain"/>
+                    {order.status === 'waiting_for_feedback' && <div className="mt-3 flex flex-wrap gap-2">
+                      <button type="button" onClick={() => reviewProof(order, 'approve')} className="rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-[#062b1b]">Approve proof</button>
+                      <button type="button" onClick={() => reviewProof(order, 'revision')} className="rounded-xl border border-white/15 bg-white/[.05] px-4 py-2.5 text-sm font-bold text-white">Request changes</button>
                     </div>}
                   </div>}
                 </div>
@@ -195,15 +203,17 @@ function ProfilePage({ onNavigate }) {
             )}
           </div>
         </div>
-        <aside style={{ width: 300 }}>
-          <div style={{ borderRadius: 12, padding: 16, background: '#0a0916' }}>
-            <h4 style={{ marginTop: 0 }}>About</h4>
+        <aside>
+          <div className="rounded-[24px] border border-white/[.09] bg-white/[.045] p-5">
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-[#aa9dff]">Contact information</p>
             <p style={{ color: '#a9a6c4' }}>{user.full_name || '—'}</p>
             <p style={{ color: '#a9a6c4' }}>Phone: {user.phone_number || '—'}</p>
             <p style={{ color: '#a9a6c4' }}>Address: {user.address || '—'}</p>
           </div>
+          <div className="mt-4 rounded-[24px] border border-[#7868d8]/20 bg-gradient-to-br from-[#322b67]/45 to-[#12253b]/45 p-5"><p className="text-xs font-bold uppercase tracking-[.16em] text-[#bfb5ff]">Your Vivid Arts account</p><p className="mt-3 text-sm leading-6 text-white/65">Keep your details current so we can contact you about proofs, revisions, and delivery.</p></div>
         </aside>
       </div>
+      </main>
     </div>
   );
 }

@@ -4,7 +4,9 @@ import { showNotification } from './notifications';
 import RoundBrandLogo from '../components/RoundBrandLogo';
 
 function RegisterPage({ onNavigate }) {
+  const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -88,7 +90,7 @@ function RegisterPage({ onNavigate }) {
       const response = await fetch('/api/customers/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password, confirmPassword, verificationToken }),
+        body: JSON.stringify({ fullName, username, phoneNumber, email, password, confirmPassword, verificationToken }),
       });
       const data = await readResponse(response);
       if (!response.ok) throw new Error(data.message || 'Registration failed.');
@@ -181,7 +183,9 @@ function RegisterPage({ onNavigate }) {
             {/* STEP 1 */}
             {step === 1 && <div className="space-y-4">
               {[
+                { label: 'Full name', type: 'text', value: fullName, setter: setFullName, icon: 'user', placeholder: 'Enter your full name', autoComplete: 'name' },
                 { label: 'Username', type: 'text', value: username, setter: setUsername, icon: 'user', placeholder: 'Choose a username', autoComplete: 'username' },
+                { label: 'Phone number', type: 'tel', value: phoneNumber, setter: setPhoneNumber, icon: 'phone', placeholder: 'Enter your phone number', autoComplete: 'tel' },
                 { label: 'Email address', type: 'email', value: email, setter: setEmail, icon: 'mail', placeholder: 'you@example.com', autoComplete: 'email' },
               ].map(field => (
                 <label className="block" key={field.label}>
@@ -192,7 +196,7 @@ function RegisterPage({ onNavigate }) {
                   </span>
                 </label>
               ))}
-              <button type="button" onClick={sendOtp} disabled={isLoading || !username.trim() || !email.trim()} className="group flex h-[50px] w-full items-center justify-center gap-2 rounded-xl border-none bg-gradient-to-r from-[#2b8fe0] via-[#7161d8] to-[#7b4fc8] text-sm font-bold text-white disabled:cursor-wait disabled:opacity-70">{isLoading ? <span className="login-spinner"/> : <>Send verification code <Icon name="arrowRight" size={17}/></>}</button>
+              <button type="button" onClick={sendOtp} disabled={isLoading || !fullName.trim() || !username.trim() || !phoneNumber.trim() || !email.trim()} className="group flex h-[50px] w-full items-center justify-center gap-2 rounded-xl border-none bg-gradient-to-r from-[#2b8fe0] via-[#7161d8] to-[#7b4fc8] text-sm font-bold text-white disabled:cursor-wait disabled:opacity-70">{isLoading ? <span className="login-spinner"/> : <>Send verification code <Icon name="arrowRight" size={17}/></>}</button>
             </div>}
 
             {/* STEP 2 */}
