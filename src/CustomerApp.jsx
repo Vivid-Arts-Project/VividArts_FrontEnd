@@ -1,5 +1,6 @@
 import './App.css';
 import LandingPage from './pages/LandingPage';
+import GalleryPage from './pages/GalleryPage';
 import CommissionFlow from './pages/CommissionFlow';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -15,6 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 // track the app's navigation instead of everything living at "/".
 const PATHS = {
   landing: '/',
+  gallery: '/gallery',
   commission: '/commission',
   login: '/login',
   register: '/register',
@@ -63,6 +65,7 @@ function CustomerApp() {
     return <ProfilePage onNavigate={navigateTo} />;
   }
   if (path === '/') return <LandingPage onNavigate={navigateTo} />;
+  if (path === '/gallery') return <GalleryPage onNavigate={navigateTo} />;
   return <Redirect to="/" replace />;
 }
 
