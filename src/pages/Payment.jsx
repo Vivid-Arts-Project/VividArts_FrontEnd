@@ -48,7 +48,7 @@ function submitCheckoutForm(actionUrl, fields) {
   form.submit()
 }
 
-export default function Payment({ order, onBack = () => {}, onComplete = () => {} }) {
+export default function Payment({ order, referencePhoto = null, onBack = () => {}, onComplete = () => {} }) {
   const safeOrder = order || fallbackOrder
   const [currency] = useState(currencies[0])
   const [isProcessing, setIsProcessing] = useState(false)
@@ -230,6 +230,14 @@ export default function Payment({ order, onBack = () => {}, onComplete = () => {
 
       if (!result.success || !result.checkoutUrl || !result.checkoutFields) {
         throw new Error(result.error || 'Failed to start PayHere checkout');
+      }
+
+      if (!result.commissionId) {
+        throw new Error('The commission was created without an order ID. Please contact support.');
+      }
+
+      if (referencePhoto) {
+        await api.uploadReferencePhotos(result.commissionId, [referencePhoto]);
       }
 
       setOrderId(result.orderId);

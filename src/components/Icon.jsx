@@ -207,6 +207,7 @@ const paths = {
     </>
   ),
   rating: <path d="m12 2.5 2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.32l-5.8 3.05 1.11-6.47-4.7-4.58 6.49-.94Z"/>,
+  download: <><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></>,
 };
 
 export default function Icon({ name, size = 20, className = '' }) {

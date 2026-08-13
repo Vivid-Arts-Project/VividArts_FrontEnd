@@ -55,7 +55,7 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
     ? <CustomisePage photoData={photoData} initialOrder={order} onNext={handleCustomiseNext} onBack={() => navigate('/commission/upload')} onNavigate={onNavigate}/>
     : <Redirect to="/commission/upload" replace />;
   else if (path === '/commission/payment') page = order || isPaymentReturn
-    ? <Payment order={order} onBack={() => navigate('/commission/customize')} onComplete={handlePaymentComplete} />
+    ? <Payment order={order} referencePhoto={photoData?.photo || null} onBack={() => navigate('/commission/customize')} onComplete={handlePaymentComplete} />
     : <Redirect to="/commission/upload" replace />;
   else page = <Redirect to="/commission/upload" replace />;
 

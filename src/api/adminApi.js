@@ -6,6 +6,7 @@ export const getOrder     = (id)        => api.get(`/admin/orders/${id}`);
 export const updateStatus = (id, status)=> api.patch(`/admin/orders/${id}/status`, { status });
 export const setLocation  = (id, loc)   => api.patch(`/admin/orders/${id}/location`, { artistLocation: loc });
 export const sendMessage  = (id, msg)   => api.post(`/admin/orders/${id}/messages`, { message: msg });
+export const referencePhotoDownloadUrl = (id, index) => `${api.defaults.baseURL}/admin/orders/${encodeURIComponent(id)}/reference-photos/${index}/download`;
 
 // Proof upload uses FormData (multipart), so Content-Type header is overridden
 export const uploadProof = (id, file) => {

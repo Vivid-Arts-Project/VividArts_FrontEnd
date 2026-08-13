@@ -6,6 +6,8 @@ import { NewOrderModal } from '../../components/Modals';
 //import { useAuth } from '../../context/AuthContext';
 
 import OrdersPage    from '../OrdersPage';
+import OrderManagePage from '../OrderManagePage';
+import { useLocation, useNavigate } from '../../router';
 import {
   DashboardPage, ProofsPage, RevisionsPage,
   ClientsPage, PaymentsPage, InvoicesPage,
@@ -14,6 +16,9 @@ import SettingsPage from '../SettingsPage';
 import GalleryManager from '../GalleryManager';
 
 export default function AdminApp() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const orderMatch = location.split(/[?#]/, 1)[0].match(/^\/admin\/orders\/([^/]+)$/);
   const [page, setPage]           = useState('orders');
   const [search, setSearch]       = useState('');
   const [toast, setToast]         = useState(null);
@@ -25,6 +30,7 @@ export default function AdminApp() {
 
   const renderPage = () => {
     const props = { search, onToast: showToast, onNav: setPage, onStatsLoaded: setStats };
+    if (orderMatch) return <OrderManagePage {...props} orderId={decodeURIComponent(orderMatch[1])}/>;
     switch (page) {
       case 'orders':    return <OrdersPage    {...props}/>;
       case 'dashboard': return <DashboardPage {...props}/>;
@@ -43,7 +49,7 @@ export default function AdminApp() {
     <div className="va-admin flex min-h-screen overflow-x-hidden">
       <Sidebar
         page={page}
-        onNav={setPage}
+        onNav={(nextPage) => { setPage(nextPage); navigate('/admin'); }}
         stats={stats}
         isOpen={mobileNavOpen}
         onClose={() => setMobileNavOpen(false)}
@@ -51,7 +57,7 @@ export default function AdminApp() {
       {mobileNavOpen && <button type="button" aria-label="Close navigation" className="fixed inset-0 z-[190] bg-[#0c0a20]/55 backdrop-blur-[2px] md:hidden" onClick={() => setMobileNavOpen(false)}/>}
       <div className="flex min-h-screen min-w-0 flex-1 flex-col overflow-x-hidden md:ml-[230px]">
         <Topbar
-          page={page}
+          page={orderMatch ? 'order' : page}
           search={search}
           onSearch={setSearch}
           onNewOrder={() => setShow(true)}

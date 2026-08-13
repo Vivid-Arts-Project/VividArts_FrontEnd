@@ -46,6 +46,22 @@ export const api = {
     });
   },
 
+  uploadReferencePhotos: async (commissionId, files) => {
+    const token = getCustomerToken();
+    const formData = new FormData();
+    files.forEach((file) => formData.append('referencePhotos', file));
+    const response = await fetch(`${API_URL}/payments/orders/${encodeURIComponent(commissionId)}/reference-photos`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => null);
+      throw new Error(error?.error || `Reference photo upload failed (${response.status})`);
+    }
+    return response.json();
+  },
+
   // Process payment
   processPayment: async (data) => {
     return fetchAPI(`${API_URL}/payments/process`, {
