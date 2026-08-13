@@ -6,10 +6,9 @@ import BrandLogo from './BrandLogo';
 
 const NAV = [
   { section: 'Overview' },
-  { id: 'orders',    icon: 'orders', label: 'Orders',        badgeDanger: false },
   { id: 'dashboard', icon: 'dashboard', label: 'Dashboard',     badgeDanger: false },
+  { id: 'orders',    icon: 'orders', label: 'Orders',        badgeDanger: false },
   { section: 'Workflow' },
-  { id: 'proofs',    icon: 'proofs', label: 'Proof Upload',  badgeDanger: false },
   { id: 'revisions', icon: 'revisions', label: 'Revisions',     badgeDanger: true  },
   { section: 'People' },
   { id: 'clients',   icon: 'clients', label: 'Clients',       badgeDanger: false },

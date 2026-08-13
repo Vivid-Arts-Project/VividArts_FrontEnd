@@ -4,6 +4,7 @@ import Icon from './Icon';
 
 const PAGE_META = {
   orders:    { title: 'Order Management',   bread: 'Orders'    },
+  order:     { title: 'Manage Order',        bread: 'Order details' },
   dashboard: { title: 'Dashboard',          bread: 'Dashboard' },
   proofs:    { title: 'Proof Upload',        bread: 'Proofs'    },
   revisions: { title: 'Revision Requests',  bread: 'Revisions' },
