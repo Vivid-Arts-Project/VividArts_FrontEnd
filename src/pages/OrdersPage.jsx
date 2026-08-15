@@ -29,7 +29,7 @@ const FRAME_LABELS = {
 const getFrameLabel = (frameType) => FRAME_LABELS[frameType] || frameType?.replace(/_/g, ' ') || '—';
 
 // ── Detail Panel ──────────────────────────────────────────────────────────────
-export function DetailPanel({ order, onClose, onStatusSaved, onToast, businessAddress = '' }) {
+export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, businessAddress = '' }) {
   const [status, setStatus]     = useState(order.status);
   const [saving, setSaving]     = useState(false);
   const [chatMsg, setChatMsg]   = useState('');
@@ -316,7 +316,7 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, businessAd
 
         {/* Cancel */}
         <div className="pb-0 border-b-0">
-          <button className={`${BTN_BASE} ${BTN_DANGER} w-full py-[9px] text-[13px]`}>
+          <button type="button" className={`${BTN_BASE} ${BTN_DANGER} w-full py-[9px] text-[13px]`} onClick={onCancel}>
             Cancel order
           </button>
         </div>
