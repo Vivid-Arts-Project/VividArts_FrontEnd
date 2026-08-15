@@ -18,7 +18,7 @@ const MODAL_BODY    = 'px-[22px] py-5';
 const MODAL_FOOT    = 'px-[22px] py-3.5 border-t border-va-border flex gap-2 justify-end';
 
 // ── Cancel Order Modal ────────────────────────────────────────────────────────
-export function CancelModal({ order, onClose, onConfirm }) {
+export function CancelModal({ order, onClose, onConfirm, busy = false }) {
   const [reason, setReason] = useState('');
   if (!order) return null;
   return (
@@ -45,9 +45,9 @@ export function CancelModal({ order, onClose, onConfirm }) {
           </div>
         </div>
         <div className={MODAL_FOOT}>
-          <button className={`${BTN_BASE} ${BTN_GHOST}`} onClick={onClose}>Keep order</button>
-          <button className={`${BTN_BASE} ${BTN_DANGER} px-4 py-2`} onClick={() => onConfirm(reason)}>
-            Cancel order
+          <button className={`${BTN_BASE} ${BTN_GHOST}`} disabled={busy} onClick={onClose}>Keep order</button>
+          <button className={`${BTN_BASE} ${BTN_DANGER} px-4 py-2 disabled:cursor-wait disabled:opacity-60`} disabled={busy} onClick={() => onConfirm(reason)}>
+            {busy ? 'Deleting…' : 'Cancel and delete order'}
           </button>
         </div>
       </div>
