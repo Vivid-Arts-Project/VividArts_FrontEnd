@@ -146,9 +146,9 @@ export default function LandingPage({ onNavigate = () => {} }) {
             <a className="transition hover:text-white" href="#how-it-works">
               How It Works
             </a>
-            <a className="transition hover:text-white" href="#gallery">
+            <button className="transition hover:text-white" onClick={() => onNavigate('gallery')}>
               Gallery
-            </a>
+            </button>
           </nav>
 
           <div className="flex items-center gap-2 md:gap-3">
@@ -184,7 +184,9 @@ export default function LandingPage({ onNavigate = () => {} }) {
           <div className="border-t border-white/10 bg-[#0d0b1f]/98 px-4 pb-5 pt-3 shadow-[0_18px_35px_rgba(0,0,0,.28)] md:hidden">
             <nav className="grid grid-cols-2 gap-2 text-sm font-semibold text-[#d4d0e5]">
               {[['Home', '#home'], ['About', '#about'], ['How It Works', '#how-it-works'], ['Gallery', '#gallery']].map(([label, href]) => (
-                <a key={href} href={href} className="rounded-xl border border-white/10 bg-white/[.045] px-4 py-3 text-center" onClick={() => setMobileMenuOpen(false)}>{label}</a>
+                href === '#gallery'
+                  ? <button key={href} className="rounded-xl border border-white/10 bg-white/[.045] px-4 py-3 text-center" onClick={() => { setMobileMenuOpen(false); onNavigate('gallery'); }}>{label}</button>
+                  : <a key={href} href={href} className="rounded-xl border border-white/10 bg-white/[.045] px-4 py-3 text-center" onClick={() => setMobileMenuOpen(false)}>{label}</a>
               ))}
             </nav>
             <div className="mt-3 grid gap-2">
@@ -227,7 +229,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
               >
                 Commission Now →
               </button>
-              <button className="rounded-full border border-white/10 bg-transparent px-6 py-3.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]">
+              <button className="rounded-full border border-white/10 bg-transparent px-6 py-3.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]" onClick={() => onNavigate('gallery')}>
                 View Gallery ↓
               </button>
             </div>
