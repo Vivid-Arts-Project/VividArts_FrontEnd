@@ -25,7 +25,7 @@ const timeAgo = (value) => {
   return new Date(value).toLocaleDateString('en-LK', { dateStyle: 'medium' });
 };
 
-export default function Topbar({ page, onNewOrder, search, onSearch, onMenu }) {
+export default function Topbar({ page, search, onSearch, onMenu }) {
   const { admin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -91,7 +91,6 @@ export default function Topbar({ page, onNewOrder, search, onSearch, onMenu }) {
             <Icon name="bell" size={18}/>
             {unreadCount > 0 && <span className="absolute right-[3px] top-[2px] flex min-h-4 min-w-4 items-center justify-center rounded-full border-2 border-white bg-va-danger px-0.5 text-[8px] font-extrabold leading-none text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}
           </button>
-          <button type="button" aria-label="Create new order" className="flex h-9 items-center gap-1.5 rounded-lg border-none bg-grad px-3 text-[13px] font-semibold text-white transition-all hover:-translate-y-px hover:opacity-90 hover:shadow-[0_4px_14px_rgba(91,63,168,0.3)] sm:h-auto sm:px-4 sm:py-2" onClick={onNewOrder}><span aria-hidden="true">+</span><span className="hidden sm:inline">New Order</span></button>
         </div>
       </header>
 

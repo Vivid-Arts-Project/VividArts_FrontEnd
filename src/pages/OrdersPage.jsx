@@ -5,12 +5,12 @@ import { STATUS_MAP } from '../components/statusConfig';
 import { getOrders, updateStatus, sendMessage, setLocation, uploadProof, referencePhotoDownloadUrl } from '../api/adminApi';
 import { useNavigate } from '../router';
 
-const STAGE_ORDER = ['in_queue','sketching','waiting_for_feedback','finished','framed','shipped','done'];
+const STAGE_ORDER = ['in_queue','sketching','waiting_for_feedback','approved','framed','shipped','done'];
 const BASE_STAGES = [
   { key: 'in_queue',             label: 'Queued'          },
   { key: 'sketching',            label: 'Sketching'       },
   { key: 'waiting_for_feedback', label: 'Waiting for feedback or approval' },
-  { key: 'finished',             label: 'Finished'        },
+  { key: 'approved',             label: 'Proof approved — continue artwork' },
 ];
 
 const BTN_FILL  = 'bg-grad text-white border-transparent hover:opacity-90';
@@ -38,13 +38,28 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
   const [uploadingProof, setUploadingProof] = useState(false);
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
 
-  const curIdx = STAGE_ORDER.indexOf(order.status);
+  const effectiveStatus = order.status === 'finished' ? 'approved' : order.status;
+  const curIdx = STAGE_ORDER.indexOf(effectiveStatus);
   const stages = [
     ...BASE_STAGES,
     ...(order.frameType && order.frameType !== 'without_frame' ? [{ key: 'framed', label: 'Framed' }] : []),
     ...(order.pickupOption === 'courier' ? [{ key: 'shipped', label: 'Shipped' }] : []),
     { key: 'done', label: 'Done' },
   ];
+  const statusOptions = (() => {
+    if (effectiveStatus === 'in_queue') return [['in_queue', 'Queued'], ['sketching', 'Sketching']];
+    if (effectiveStatus === 'sketching') return [['sketching', 'Sketching — upload a proof when ready']];
+    if (effectiveStatus === 'revision_requested') return [['revision_requested', 'Revision requested — upload a new proof']];
+    if (effectiveStatus === 'waiting_for_feedback') return [['waiting_for_feedback', 'Waiting for customer feedback or approval']];
+    if (effectiveStatus === 'approved') {
+      if (order.frameType && order.frameType !== 'without_frame') return [['approved', 'Approved & Finished'], ['framed', 'Framed']];
+      if (order.pickupOption === 'courier') return [['approved', 'Approved & Finished'], ['shipped', 'Shipped']];
+      return [['approved', 'Approved & Finished'], ['done', 'Done']];
+    }
+    if (effectiveStatus === 'framed') return order.pickupOption === 'courier' ? [['framed', 'Framed'], ['shipped', 'Shipped']] : [['framed', 'Framed'], ['done', 'Done']];
+    if (effectiveStatus === 'shipped') return [['shipped', 'Shipped'], ['done', 'Done']];
+    return [['done', 'Done']];
+  })();
 
   const handleStatusSave = async () => {
     setSaving(true);
@@ -156,7 +171,7 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
             {stages.map((st, i) => {
               const stIdx = STAGE_ORDER.indexOf(st.key);
               const isDone   = stIdx < curIdx;
-              const isActive = st.key === order.status || (order.status === 'revision' && st.key === 'waiting_for_feedback');
+              const isActive = st.key === effectiveStatus;
               const isLast = i === stages.length - 1;
               return (
                 <div
@@ -230,21 +245,13 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
             >
               <span className="flex items-center gap-2 font-semibold">
                 <Icon name={STATUS_MAP[status]?.icon || 'pending'} size={16}/>
-                {STATUS_MAP[status]?.label || (status === 'revision_requested' ? 'Revision requested by client' : 'Proof approved by client')}
+                {STATUS_MAP[status]?.label || String(status || '').replaceAll('_', ' ')}
               </span>
               <span className={`text-va-text3 transition-transform ${statusMenuOpen ? 'rotate-90' : ''}`}>›</span>
             </button>
             {statusMenuOpen && (
               <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 overflow-hidden rounded-lg border border-va-border bg-white p-1.5 shadow-[0_12px_30px_rgba(27,22,62,0.16)]">
-                {[
-                  ['in_queue', 'Queued'],
-                  ['sketching', 'Sketching'],
-                  ['waiting_for_feedback', 'Waiting for feedback or approval'],
-                  ['finished', 'Finished'],
-                  ...(order.frameType && order.frameType !== 'without_frame' ? [['framed', 'Framed']] : []),
-                  ...(order.pickupOption === 'courier' ? [['shipped', 'Shipped']] : []),
-                  ['done', 'Done'],
-                ].map(([value, label]) => (
+                {statusOptions.map(([value, label]) => (
                   <button
                     key={value}
                     type="button"
@@ -286,21 +293,27 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
         {/* Chat */}
         <div className="mb-5 rounded-va border border-va-border bg-white p-4 shadow-va lg:sticky lg:top-[84px] lg:col-start-2 lg:row-start-1">
           <div className="text-[11px] font-bold text-va-text3 tracking-wide uppercase mb-3">Chat</div>
-          <div className="max-h-[200px] overflow-y-auto bg-va-bg rounded-lg p-2.5 mb-2 flex flex-col gap-2">
+          <div className="h-[360px] overflow-y-auto bg-va-bg rounded-lg p-3 mb-2 flex flex-col gap-2">
             {messages.length === 0 && <div className="text-xs text-va-text3">No messages yet.</div>}
-            {messages.map((m, i) => (
-              <div key={i} className={`max-w-[80%] ${m.senderType === 'admin' ? 'self-end' : 'self-start'}`}>
+            {messages.map((m, i) => {
+              const isRevision = m.senderType === 'system' && m.message.toLowerCase().includes('requested changes');
+              const isSystem = m.senderType === 'system' && !isRevision;
+              return (
+              <div key={m.message_id || i} className={`max-w-[82%] ${m.senderType === 'admin' ? 'self-end' : isSystem || isRevision ? 'self-center' : 'self-start'}`}>
                 <div className={`px-3 py-[7px] rounded-2xl text-xs leading-relaxed ${
                   m.senderType === 'admin'
                     ? 'bg-va-blue text-white'
-                    : m.senderType === 'system'
-                      ? 'bg-[#f3f4f6] text-va-text3 italic'
+                    : isRevision
+                      ? 'border border-orange-300 bg-va-warn-bg text-va-warn'
+                      : isSystem
+                        ? 'border border-va-border bg-white text-va-text3'
                       : 'bg-white text-va-text border border-va-border'
                 }`}>
                   {m.message}
                 </div>
+                <div className={`mt-1 text-[9px] font-semibold uppercase tracking-wide text-va-text3 ${m.senderType === 'admin' ? 'text-right' : isSystem || isRevision ? 'text-center' : ''}`}>{m.senderType === 'admin' ? 'You' : isRevision ? 'Revision request' : isSystem ? 'Order update' : 'Customer'}</div>
               </div>
-            ))}
+            );})}
           </div>
           <div className="flex gap-1.5">
             <input
@@ -354,7 +367,7 @@ export default function OrdersPage({ search, onToast }) {
       filter === 'sketch' ? o.status === 'sketching' :
       filter === 'proof'  ? o.status === 'waiting_for_feedback' :
       filter === 'revision' ? o.status === 'revision_requested' :
-      filter === 'approved' ? o.status === 'finished' : true;
+      filter === 'approved' ? ['approved', 'finished'].includes(o.status) : true;
     return matchSearch && matchFilter;
   });
 
@@ -433,7 +446,7 @@ export default function OrdersPage({ search, onToast }) {
                   {filtered.map(o => (
                     <tr
                       key={o.id}
-                      className="cursor-pointer transition-colors [&>td]:px-3.5 [&>td]:py-3 [&>td]:border-b [&>td]:border-va-border [&>td]:text-[13px] [&>td]:align-middle hover:[&>td]:bg-va-bg"
+                      className={`cursor-pointer transition-colors [&>td]:px-3.5 [&>td]:py-3 [&>td]:border-b [&>td]:text-[13px] [&>td]:align-middle ${['approved', 'finished'].includes(o.status) ? '[&>td]:border-emerald-200 [&>td]:bg-emerald-50/70 hover:[&>td]:bg-emerald-100/70' : '[&>td]:border-va-border hover:[&>td]:bg-va-bg'}`}
                       onClick={() => navigate(`/admin/orders/${o.id}`)}
                     >
                       <td><span className="font-mono text-xs font-medium">#{o.id?.slice(0,8)}</span></td>
@@ -451,7 +464,7 @@ export default function OrdersPage({ search, onToast }) {
                         ? <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-[3px] rounded-full whitespace-nowrap bg-va-danger-bg text-va-danger"><Icon name="alert" size={13}/>Urgent</span>
                         : <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-[3px] rounded-full whitespace-nowrap bg-[#F0F0F8] text-[#555]">Normal</span>}
                       </td>
-                      <td><Badge status={o.status}/></td>
+                      <td><div className="flex flex-col items-start gap-1"><Badge status={o.status}/>{['approved', 'finished'].includes(o.status) && <span className="text-[10px] font-bold text-emerald-700">Ready for next step</span>}</div></td>
                       <td>
                         <div className="flex gap-[5px]">
                           <button className={`${BTN_BASE} ${BTN_FILL} ${BTN_SM}`} onClick={e => { e.stopPropagation(); navigate(`/admin/orders/${o.id}`); }}>Manage</button>
