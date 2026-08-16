@@ -7,8 +7,8 @@ const STATUS = {
   sketching: ['Sketching', 'The artist is working on your portrait.'],
   waiting_for_feedback: ['Proof ready', 'Your proof is ready for review.'],
   revision_requested: ['Revision requested', 'Your requested changes were sent to the artist.'],
-  approved: ['Proof approved', 'You approved the portrait proof.'],
-  finished: ['Artwork finished', 'Your portrait is complete.'],
+  approved: ['Approved & finished', 'Your portrait is approved and finished. Please pay any remaining balance.'],
+  finished: ['Approved & finished', 'Your portrait is approved and finished. Please pay any remaining balance.'],
   framed: ['Framed', 'Your portrait has been framed.'],
   shipped: ['Shipped / ready', 'Your order is on its way or ready for pickup.'],
   done: ['Completed', 'Your order has been completed.'],
@@ -53,6 +53,7 @@ export default function MyOrdersPage({ onNavigate }) {
   const [messageDrafts, setMessageDrafts] = useState({});
   const [sendingMessage, setSendingMessage] = useState('');
   const [revisionOrderId, setRevisionOrderId] = useState('');
+  const [payingBalance, setPayingBalance] = useState('');
 
   const loadOrders = useCallback(async () => {
     setError('');
@@ -133,6 +134,30 @@ export default function MyOrdersPage({ onNavigate }) {
       URL.revokeObjectURL(url);
     } catch (downloadError) {
       setNotice(downloadError.message || 'Unable to download the invoice.');
+    }
+  };
+
+  const payBalance = async (order) => {
+    if (payingBalance) return;
+    setPayingBalance(order.id);
+    setNotice('');
+    try {
+      const checkout = await api.createBalanceCheckout(order.id);
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = checkout.checkoutUrl;
+      Object.entries(checkout.checkoutFields).forEach(([name, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+    } catch (paymentError) {
+      setNotice(paymentError.message || 'Unable to start the balance payment.');
+      setPayingBalance('');
     }
   };
 
@@ -218,6 +243,11 @@ export default function MyOrdersPage({ onNavigate }) {
                       </div>
                     ))}
                     {completedPayment?.providerOrderId && <button type="button" onClick={() => downloadInvoice(completedPayment.providerOrderId)} className="mt-3 inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/[.06] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/[.11]"><Icon name="download" size={15}/> Download invoice</button>}
+                    {['approved', 'finished'].includes(order.workflowStatus || order.status) && order.balanceDue > 0 && (
+                      <button type="button" disabled={payingBalance === order.id} onClick={() => payBalance(order)} className="mt-3 ml-2 inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-xs font-extrabold text-[#062b1b] transition hover:bg-emerald-400 disabled:opacity-50">
+                        {payingBalance === order.id ? 'Opening payment…' : `Pay balance · ${formatMoney(order.balanceDue, order.currency)}`}
+                      </button>
+                    )}
                   </div>
 
                   <aside className="min-w-0 rounded-2xl border border-white/[.08] bg-[#0a0918]/55 p-4 sm:p-5">

@@ -57,11 +57,12 @@ export function DashboardPage({ onNav }) {
   }, []);
 
   const counts = {
-    active:   orders.length,
+    active:   orders.filter(o => o.status !== 'done').length,
     sketch:   orders.filter(o => o.status === 'sketching').length,
     proof:    orders.filter(o => o.status === 'waiting_for_feedback').length,
     shading:  orders.filter(o => o.status === 'shading').length,
-    approved: orders.filter(o => o.status === 'finished').length,
+    approved: orders.filter(o => ['approved', 'finished'].includes(o.status)).length,
+    completed: orders.filter(o => o.status === 'done').length,
   };
 
   return (
@@ -81,7 +82,7 @@ export function DashboardPage({ onNav }) {
         </div>
         <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
           <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-success mb-3"><Icon name="completed"/></div>
-          <div className="font-outfit text-[28px] font-extrabold text-va-text">{counts.approved}</div>
+          <div className="font-outfit text-[28px] font-extrabold text-va-text">{counts.completed}</div>
           <div className="text-xs text-va-text3 mt-0.5">Completed</div>
           <div className="text-xs font-semibold mt-2 text-va-success">All time</div>
         </div>
@@ -119,8 +120,8 @@ export function DashboardPage({ onNav }) {
               {[
                 ['bg-va-blue',    'Sketching',    counts.sketch],
                 ['bg-va-purple',  'Proof Sent',   counts.proof],
-                ['bg-va-warn',    'Final Shading',counts.shading],
-                ['bg-va-success', 'Approved',     counts.approved],
+                ['bg-va-warn',    'Revision',     orders.filter(order => order.status === 'revision_requested').length],
+                ['bg-va-success', 'Approved & Finished', counts.approved],
               ].map(([color, label, count]) => (
                 <div key={label} className="flex items-center justify-between text-xs mb-2">
                   <div className="flex items-center gap-1.5">
@@ -140,7 +141,7 @@ export function DashboardPage({ onNav }) {
           <div className={CARD}>
             <div className={CARD_HEAD}><div className={CARD_TITLE}>Action Required</div></div>
             <div className="p-0">
-              {orders.filter(o => ['waiting_for_feedback','revision'].includes(o.status)).slice(0,3).map(o => (
+              {orders.filter(o => ['waiting_for_feedback','revision_requested','approved','finished'].includes(o.status)).slice(0,3).map(o => (
                 <div key={o.id} className="px-4 py-3 border-b border-va-border flex items-center justify-between">
                   <div>
                     <div className="text-[13px] font-semibold">#{o.id?.slice(0,8)} — {o.customer?.fullName}</div>
@@ -151,7 +152,7 @@ export function DashboardPage({ onNav }) {
                   <button className={`${BTN_BASE} ${BTN_FILL} ${BTN_SM}`} onClick={() => onNav('orders')}>View</button>
                 </div>
               ))}
-              {orders.filter(o => ['waiting_for_feedback','revision'].includes(o.status)).length === 0 && (
+              {orders.filter(o => ['waiting_for_feedback','revision_requested','approved','finished'].includes(o.status)).length === 0 && (
                 <div className="p-5 text-va-text3 text-[13px] flex items-center justify-center gap-2">
                   <Icon name="completed" size={18} className="text-va-success"/> No urgent actions needed.
                 </div>

@@ -129,6 +129,12 @@ export const api = {
     });
   },
 
+  createBalanceCheckout: async (orderId) => {
+    return fetchAPI(`${API_URL}/payments/orders/${encodeURIComponent(orderId)}/balance-checkout`, {
+      method: 'POST',
+    });
+  },
+
   reviewOrderProof: async (orderId, action, note = '') => {
     return fetchAPI(`${API_URL}/orders/${encodeURIComponent(orderId)}/proof-review`, {
       method: 'POST',
