@@ -29,7 +29,7 @@ export default function Sidebar({ page, onNav, stats, isOpen = false, onClose = 
     if (!stats) return null;
     if (id === 'orders')    return stats.total            || null;
     if (id === 'proofs')    return stats.inQueue          || null;
-    if (id === 'revisions') return stats.waitingFeedback  || null;
+    if (id === 'revisions') return stats.revisionRequested || null;
     return null;
   };
 

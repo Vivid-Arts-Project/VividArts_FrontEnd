@@ -27,6 +27,8 @@ export default function OrderManagePage({ orderId, onToast }) {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- load the route's order when the page opens
     load();
+    const interval = window.setInterval(load, 5_000);
+    return () => window.clearInterval(interval);
   }, [load]);
 
   if (loading) return <div className="flex flex-1 items-center justify-center text-sm text-va-text3">Loading order…</div>;
@@ -48,7 +50,7 @@ export default function OrderManagePage({ orderId, onToast }) {
   };
 
   return <>
-    <DetailPanel order={order} businessAddress={admin?.businessAddress || ''} onClose={() => navigate('/admin')} onStatusSaved={load} onToast={onToast} onCancel={() => setShowCancel(true)}/>
+    <DetailPanel key={`${order.id}:${order.status}`} order={order} businessAddress={admin?.businessAddress || ''} onClose={() => navigate('/admin')} onStatusSaved={load} onToast={onToast} onCancel={() => setShowCancel(true)}/>
     {showCancel && <CancelModal order={order} busy={cancelling} onClose={() => !cancelling && setShowCancel(false)} onConfirm={confirmCancel}/>}
   </>;
 }

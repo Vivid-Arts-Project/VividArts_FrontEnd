@@ -1,8 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Sidebar  from '../../components/Sidebar';
 import Topbar   from '../../components/Topbar';
 import Toast    from '../../components/Toast';
-import { NewOrderModal } from '../../components/Modals';
 //import { useAuth } from '../../context/AuthContext';
 
 import OrdersPage    from '../OrdersPage';
@@ -15,6 +14,7 @@ import {
 import SettingsPage from '../SettingsPage';
 import GalleryManager from '../GalleryManager';
 import AdminNotificationsPage from '../AdminNotificationsPage';
+import { getOrders } from '../../api/adminApi';
 
 export default function AdminApp() {
   const location = useLocation();
@@ -24,11 +24,20 @@ export default function AdminApp() {
   const [page, setPage]           = useState('orders');
   const [search, setSearch]       = useState('');
   const [toast, setToast]         = useState(null);
-  const [showNewOrder, setShow]   = useState(false);
   const [stats, setStats]         = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const showToast = useCallback((msg) => setToast(msg), []);
+
+  useEffect(() => {
+    let active = true;
+    const loadStats = () => getOrders()
+      .then(response => { if (active) setStats(response.data.stats); })
+      .catch(() => {});
+    loadStats();
+    const interval = window.setInterval(loadStats, 5_000);
+    return () => { active = false; window.clearInterval(interval); };
+  }, []);
 
   const renderPage = () => {
     const props = { search, onToast: showToast, onNav: setPage, onStatsLoaded: setStats };
@@ -63,7 +72,6 @@ export default function AdminApp() {
           page={orderMatch ? 'order' : notificationHistory ? 'notifications' : page}
           search={search}
           onSearch={setSearch}
-          onNewOrder={() => setShow(true)}
           onMenu={() => setMobileNavOpen(true)}
         />
         <div className="flex min-w-0 flex-1 overflow-auto">
@@ -72,12 +80,6 @@ export default function AdminApp() {
       </div>
 
       {toast      && <Toast message={toast} onDone={() => setToast(null)}/>}
-      {showNewOrder && (
-        <NewOrderModal
-          onClose={() => setShow(false)}
-          onSubmit={() => { setShow(false); showToast('✓ Order created'); }}
-        />
-      )}
     </div>
   );
 }

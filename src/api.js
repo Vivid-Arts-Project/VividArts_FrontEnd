@@ -122,6 +122,13 @@ export const api = {
     return fetchAPI(`${API_URL}/orders/my-orders`);
   },
 
+  sendOrderMessage: async (orderId, message) => {
+    return fetchAPI(`${API_URL}/orders/${encodeURIComponent(orderId)}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    });
+  },
+
   reviewOrderProof: async (orderId, action, note = '') => {
     return fetchAPI(`${API_URL}/orders/${encodeURIComponent(orderId)}/proof-review`, {
       method: 'POST',

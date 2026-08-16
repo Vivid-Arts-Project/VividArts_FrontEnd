@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Badge from '../components/Badge';
 import Icon from '../components/Icon';
 import { getOrders, getCustomers, getPayments, invoiceUrl, uploadProof } from '../api/adminApi';
+import { useNavigate } from '../router';
 
 const CARD       = 'bg-white border border-va-border rounded-va shadow-va overflow-hidden';
 const CARD_HEAD  = 'px-5 py-4 border-b border-va-border flex items-center justify-between';
@@ -280,10 +281,17 @@ export function ProofsPage({ onToast }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // REVISIONS PAGE
 // ══════════════════════════════════════════════════════════════════════════════
-export function RevisionsPage({ onNav }) {
+export function RevisionsPage() {
   const [orders, setOrders] = useState([]);
+  const navigate = useNavigate();
   useEffect(() => {
-    getOrders().then(r => setOrders(r.data.orders.filter(o => o.status === 'waiting_for_feedback' || o.status === 'revision'))).catch(() => {});
+    let active = true;
+    const load = () => getOrders()
+      .then(r => { if (active) setOrders(r.data.orders.filter(o => o.status === 'revision_requested')); })
+      .catch(() => {});
+    load();
+    const interval = window.setInterval(load, 5_000);
+    return () => { active = false; window.clearInterval(interval); };
   }, []);
 
   return (
@@ -306,15 +314,22 @@ export function RevisionsPage({ onNav }) {
                 </div>
                 <Badge status={o.status}/>
               </div>
-              {o.messages?.filter(m => m.senderType === 'customer').slice(-1).map((m, i) => (
-                <div key={i} className="bg-va-danger-bg border border-red-300 rounded-lg px-3 py-2.5 mb-2.5">
-                  <div className="text-xs text-va-text2 leading-relaxed italic">"{m.message}"</div>
-                  <div className="text-[11px] text-va-text3 mt-1">Received {new Date(m.createdAt).toLocaleDateString()}</div>
+              <div className="mb-2.5 grid gap-2 rounded-lg border border-va-border bg-va-bg p-3 text-xs sm:grid-cols-2">
+                <div><span className="text-va-text3">Frame:</span> <strong>{o.frameType?.replace(/_/g, ' ') || '—'}</strong></div>
+                <div><span className="text-va-text3">Deadline:</span> <strong>{o.urgentDeadline ? new Date(o.urgentDeadline).toLocaleDateString() : 'Standard schedule'}</strong></div>
+                <div><span className="text-va-text3">Delivery:</span> <strong>{o.pickupOption === 'courier' ? 'Courier' : 'Pickup'}</strong></div>
+                <div><span className="text-va-text3">Order total:</span> <strong>{o.currency} {Number(o.totalPrice || 0).toLocaleString()}</strong></div>
+              </div>
+              {o.messages?.filter(m => m.senderType === 'system' && m.message.toLowerCase().includes('requested changes')).slice(-1).map(m => (
+                <div key={m.message_id || m.createdAt} className="bg-va-danger-bg border border-red-300 rounded-lg px-3 py-2.5 mb-2.5">
+                  <div className="mb-1 text-[10px] font-bold uppercase tracking-wide text-va-danger">Requested changes</div>
+                  <div className="text-xs text-va-text2 leading-relaxed">{m.message.replace(/^Customer requested changes:\s*/i, '')}</div>
+                  <div className="text-[11px] text-va-text3 mt-1">Received {new Date(m.createdAt).toLocaleString()}</div>
                 </div>
               ))}
               <div className="flex gap-2 mt-2.5">
-                <button className={`${BTN_BASE} ${BTN_FILL} flex-1 py-[9px]`} onClick={() => onNav('proofs')}>Upload revised proof</button>
-                <button className={`${BTN_BASE} ${BTN_GHOST} flex-1 py-[9px]`} onClick={() => onNav('orders')}>View order</button>
+                <button className={`${BTN_BASE} ${BTN_FILL} flex-1 py-[9px]`} onClick={() => navigate(`/admin/orders/${o.id}`)}>Upload revised proof</button>
+                <button className={`${BTN_BASE} ${BTN_GHOST} flex-1 py-[9px]`} onClick={() => navigate(`/admin/orders/${o.id}`)}>View order</button>
               </div>
             </div>
           ))}
