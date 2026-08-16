@@ -1,4 +1,16 @@
 const paths = {
+  home: (
+    <>
+      <path d="m3 11 9-8 9 8"/>
+      <path d="M5 10v11h14V10M9 21v-7h6v7"/>
+    </>
+  ),
+  power: (
+    <>
+      <path d="M12 2v10"/>
+      <path d="M18.4 6.6a9 9 0 1 1-12.8 0"/>
+    </>
+  ),
   orders: (
     <>
       <path d="M9 5h6M9 9h6M9 13h4"/>
