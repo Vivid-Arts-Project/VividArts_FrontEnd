@@ -29,7 +29,7 @@ const fetchAPI = async (url, options = {}) => {
 
 export const api = {
   // ==================== PAYMENT ENDPOINTS ====================
-  
+
   // Create payment order
   createPaymentOrder: async (data) => {
     return fetchAPI(`${API_URL}/payments/create-order`, {
@@ -114,6 +114,38 @@ export const api = {
   getProfile: async (token) => {
     return fetchAPI(`${API_URL}/customers/profile`, {
       headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  // Get the complete order history for the signed-in customer
+  getMyOrders: async () => {
+    return fetchAPI(`${API_URL}/orders/my-orders`);
+  },
+
+  reviewOrderProof: async (orderId, action, note = '') => {
+    return fetchAPI(`${API_URL}/orders/${encodeURIComponent(orderId)}/proof-review`, {
+      method: 'POST',
+      body: JSON.stringify({ action, note }),
+    });
+  },
+
+  getCustomerNotifications: async () => {
+    return fetchAPI(`${API_URL}/orders/notifications`);
+  },
+
+  markCustomerNotificationRead: async (notificationId) => {
+    return fetchAPI(`${API_URL}/orders/notifications/${encodeURIComponent(notificationId)}/read`, {
+      method: 'PATCH',
+    });
+  },
+
+  markAllCustomerNotificationsRead: async () => {
+    return fetchAPI(`${API_URL}/orders/notifications/read-all`, { method: 'PATCH' });
+  },
+
+  deleteCustomerNotification: async (notificationId) => {
+    return fetchAPI(`${API_URL}/orders/notifications/${encodeURIComponent(notificationId)}`, {
+      method: 'DELETE',
     });
   },
 

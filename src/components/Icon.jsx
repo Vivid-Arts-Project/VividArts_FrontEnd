@@ -1,4 +1,16 @@
 const paths = {
+  home: (
+    <>
+      <path d="m3 11 9-8 9 8"/>
+      <path d="M5 10v11h14V10M9 21v-7h6v7"/>
+    </>
+  ),
+  power: (
+    <>
+      <path d="M12 2v10"/>
+      <path d="M18.4 6.6a9 9 0 1 1-12.8 0"/>
+    </>
+  ),
   orders: (
     <>
       <path d="M9 5h6M9 9h6M9 13h4"/>
@@ -208,6 +220,7 @@ const paths = {
   ),
   rating: <path d="m12 2.5 2.9 5.88 6.49.94-4.7 4.58 1.11 6.47L12 17.32l-5.8 3.05 1.11-6.47-4.7-4.58 6.49-.94Z"/>,
   download: <><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></>,
+  trash: <><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6"/></>,
 };
 
 export default function Icon({ name, size = 20, className = '' }) {

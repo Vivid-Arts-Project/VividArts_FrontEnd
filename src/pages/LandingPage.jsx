@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import NotificationBell from './NotificationBell';
 import Icon from '../components/Icon';
 import BrandLogo from '../components/BrandLogo';
-import { clearCustomerSession, CUSTOMER_AUTH_EVENT, getCustomerToken, getCustomerUsername } from '../authSession';
+import { clearCustomerSession, CUSTOMER_AUTH_EVENT, getCustomerToken } from '../authSession';
 import { clearCommissionDraft } from '../commissionDraft';
 
 const stats = [
@@ -55,8 +55,8 @@ export default function LandingPage({ onNavigate = () => {} }) {
   const [websiteImages, setWebsiteImages] = useState([]);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(Boolean(getCustomerToken()));
-  const [displayName, setDisplayName] = useState(getCustomerUsername);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeNav, setActiveNav] = useState('home');
 
   useEffect(() => {
     clearCommissionDraft();
@@ -74,7 +74,6 @@ export default function LandingPage({ onNavigate = () => {} }) {
   useEffect(() => {
     const syncAuthentication = () => {
       setIsSignedIn(Boolean(getCustomerToken()));
-      setDisplayName(getCustomerUsername());
     };
     window.addEventListener(CUSTOMER_AUTH_EVENT, syncAuthentication);
 
@@ -117,10 +116,12 @@ export default function LandingPage({ onNavigate = () => {} }) {
     onNavigate(page);
   };
 
+  const navItemClass = (key) => `inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/10 hover:text-white ${activeNav === key ? 'bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,.04)]' : 'text-[#aaa7bd]'}`;
+
   return (
     <div id="home" className="min-h-screen bg-[#0a0916] font-sans text-[#f5f4fb]">
-      <header className="sticky top-0 z-10 border-b border-[#7164c9]/25 bg-gradient-to-r from-[#090815]/95 via-[#111026]/95 to-[#17102d]/95 shadow-[0_12px_38px_rgba(3,2,15,0.32)] backdrop-blur-xl">
-        <div className="mx-auto flex min-h-[74px] max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:min-h-[82px] sm:px-8 sm:py-4 lg:px-8">
+      <header className="sticky top-0 z-50 px-3 pt-3 sm:px-6 sm:pt-5">
+        <div className="mx-auto flex min-h-[68px] max-w-[1440px] items-center gap-4 rounded-[32px] border border-white/[.13] bg-[#151326]/70 px-3 py-2.5 shadow-[0_20px_45px_rgba(0,0,0,.38)] backdrop-blur-[20px] sm:px-5 lg:px-6">
           <a href="#home" className="group flex shrink-0 items-center gap-3" aria-label="Vivid Arts home">
             <span className="flex h-13 w-14 items-center justify-center rounded-2xl border border-[#b9afff]/30 bg-white shadow-[0_10px_28px_rgba(93,78,210,0.3)] transition duration-300 group-hover:-translate-y-0.5 group-hover:shadow-[0_14px_34px_rgba(111,87,230,0.4)]">
               <BrandLogo size={48} />
@@ -130,50 +131,44 @@ export default function LandingPage({ onNavigate = () => {} }) {
               <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.26em] text-[#aaa3c9]">Pencil portraits</span>
             </span>
           </a>
-          {isSignedIn && (
-            <div className="hidden md:flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/10 text-[15px] font-semibold">{(displayName || 'U').slice(0,1).toUpperCase()}</div>
-              <div className="text-[15px] font-semibold text-white/90">{displayName}</div>
-            </div>
-          )}
-          <nav className="hidden gap-6 text-[15px] font-medium text-[#b8b4cc] md:flex lg:gap-8">
-            <a className="transition hover:text-white" href="#home">
-              Home
+          <nav className="hidden flex-1 items-center justify-center gap-1 px-4 xl:flex">
+            <a className={navItemClass('home')} href="#home" onClick={() => setActiveNav('home')}>
+              <Icon name="home" size={15} className={activeNav === 'home' ? 'text-[#a99bff]' : 'opacity-65'}/> Home
             </a>
-            <a className="transition hover:text-white" href="#about">
-              About
+            <a className={navItemClass('about')} href="#about" onClick={() => setActiveNav('about')}>
+              <Icon name="info" size={15} className={activeNav === 'about' ? 'text-[#a99bff]' : 'opacity-65'}/> About
             </a>
-            <a className="transition hover:text-white" href="#how-it-works">
-              How It Works
+            <a className={navItemClass('process')} href="#how-it-works" onClick={() => setActiveNav('process')}>
+              <Icon name="orders" size={15} className={activeNav === 'process' ? 'text-[#a99bff]' : 'opacity-65'}/> How It Works
             </a>
-            <button className="transition hover:text-white" onClick={() => onNavigate('gallery')}>
-              Gallery
+            <button className={navItemClass('gallery')} onClick={() => { setActiveNav('gallery'); onNavigate('gallery'); }}>
+              <Icon name="proofs" size={15} className={activeNav === 'gallery' ? 'text-[#a99bff]' : 'opacity-65'}/> Gallery
             </button>
           </nav>
 
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-3">
             <div className="hidden items-center gap-3 md:flex">
               {!isSignedIn ? (
                 <button
-                  className="rounded-full border border-white/15 bg-white/[0.07] px-5 py-2.5 text-[15px] font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.25)] transition hover:-translate-y-0.5 hover:border-[#a78bfa]/50 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]"
+                  className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-5 py-2.5 text-sm font-bold text-white shadow-[0_5px_18px_rgba(126,87,225,.38)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(126,87,225,.48)] focus:outline-none focus:ring-2 focus:ring-[#a78bfa]"
                   onClick={() => onNavigate('login')}
                 >
                   Sign In
                 </button>
               ) : (
                 <>
-                  <button className="rounded-full border border-white/15 bg-white/[0.07] px-5 py-2.5 text-[15px] font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.25)] transition hover:-translate-y-0.5 hover:border-[#a78bfa]/50 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]" onClick={() => onNavigate('profile')}>My Account</button>
-                  <button className="rounded-full border border-white/15 bg-white/[0.07] px-5 py-2.5 text-[15px] font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.25)] transition hover:-translate-y-0.5 hover:border-[#a78bfa]/50 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]" onClick={handleLogout}>Logout</button>
+                  <button className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-[#c9c5d8] transition duration-300 hover:-translate-y-0.5 hover:bg-white/10 hover:text-white" onClick={() => onNavigate('profile')}><Icon name="user" size={15}/>My Account</button>
+                  <button className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-[#aaa7bd] transition duration-300 hover:-translate-y-0.5 hover:bg-white/10 hover:text-white" onClick={handleLogout}><Icon name="power" size={15}/>Logout</button>
+                  <button className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-5 py-2.5 text-sm font-bold text-white shadow-[0_5px_18px_rgba(126,87,225,.38)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(126,87,225,.48)] focus:outline-none focus:ring-2 focus:ring-[#a78bfa]" onClick={() => onNavigate('orders')}><Icon name="orders" size={15}/>My Orders</button>
                 </>
               )}
-              <button className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-5 py-2.5 text-[15px] font-bold text-white shadow-[0_10px_28px_rgba(99,102,241,0.38)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(126,87,225,0.48)] focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-[#0a0916]" onClick={handleCommission}>Commission a Portrait</button>
             </div>
             <NotificationBell />
             <button
               type="button"
               aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileMenuOpen}
-              className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/15 bg-white/[.07] text-white md:hidden"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/[.07] text-white transition hover:border-[#a78bfa]/50 hover:bg-white/10 md:hidden"
               onClick={() => setMobileMenuOpen(open => !open)}
             >
               <Icon name={mobileMenuOpen ? 'close' : 'menu'} size={21}/>
@@ -181,24 +176,24 @@ export default function LandingPage({ onNavigate = () => {} }) {
           </div>
         </div>
         {mobileMenuOpen && (
-          <div className="border-t border-white/10 bg-[#0d0b1f]/98 px-4 pb-5 pt-3 shadow-[0_18px_35px_rgba(0,0,0,.28)] md:hidden">
+          <div className="mx-auto mt-2 max-w-[1440px] rounded-[24px] border border-white/[.13] bg-[#151326]/90 px-4 pb-5 pt-4 shadow-[0_20px_45px_rgba(0,0,0,.38)] backdrop-blur-[20px] md:hidden">
             <nav className="grid grid-cols-2 gap-2 text-sm font-semibold text-[#d4d0e5]">
-              {[['Home', '#home'], ['About', '#about'], ['How It Works', '#how-it-works'], ['Gallery', '#gallery']].map(([label, href]) => (
+              {[['Home', '#home', 'home', 'home'], ['About', '#about', 'info', 'about'], ['How It Works', '#how-it-works', 'orders', 'process'], ['Gallery', '#gallery', 'proofs', 'gallery']].map(([label, href, icon, key]) => (
                 href === '#gallery'
-                  ? <button key={href} className="rounded-xl border border-white/10 bg-white/[.045] px-4 py-3 text-center" onClick={() => { setMobileMenuOpen(false); onNavigate('gallery'); }}>{label}</button>
-                  : <a key={href} href={href} className="rounded-xl border border-white/10 bg-white/[.045] px-4 py-3 text-center" onClick={() => setMobileMenuOpen(false)}>{label}</a>
+                  ? <button key={href} className={`flex items-center justify-center gap-2 rounded-full border px-4 py-3 text-center transition ${activeNav === key ? 'border-white/15 bg-white/10 text-white' : 'border-white/[.08] bg-white/[.04] text-[#c5c1d2]'}`} onClick={() => { setActiveNav(key); setMobileMenuOpen(false); onNavigate('gallery'); }}><Icon name={icon} size={15} className="text-[#a99bff]"/>{label}</button>
+                  : <a key={href} href={href} className={`flex items-center justify-center gap-2 rounded-full border px-4 py-3 text-center transition ${activeNav === key ? 'border-white/15 bg-white/10 text-white' : 'border-white/[.08] bg-white/[.04] text-[#c5c1d2]'}`} onClick={() => { setActiveNav(key); setMobileMenuOpen(false); }}><Icon name={icon} size={15} className="text-[#a99bff]"/>{label}</a>
               ))}
             </nav>
             <div className="mt-3 grid gap-2">
               {!isSignedIn ? (
-                <button className="rounded-xl border border-white/15 bg-white/[.07] px-4 py-3 text-sm font-bold" onClick={() => { setMobileMenuOpen(false); onNavigate('login'); }}>Sign In</button>
+                <button className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-4 py-3 text-sm font-bold shadow-[0_5px_18px_rgba(126,87,225,.35)]" onClick={() => { setMobileMenuOpen(false); onNavigate('login'); }}>Sign In</button>
               ) : (
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <button className="rounded-xl border border-white/15 bg-white/[.07] px-4 py-3 text-sm font-bold" onClick={() => { setMobileMenuOpen(false); onNavigate('profile'); }}>My Account</button>
-                  <button className="rounded-xl border border-white/15 bg-white/[.07] px-4 py-3 text-sm font-bold" onClick={handleLogout}>Logout</button>
+                  <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[.07] px-4 py-3 text-sm font-bold" onClick={handleLogout}><Icon name="power" size={16}/>Logout</button>
+                  <button className="rounded-xl bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-4 py-3 text-sm font-extrabold text-white" onClick={() => { setMobileMenuOpen(false); onNavigate('orders'); }}>My Orders</button>
                 </div>
               )}
-              <button className="rounded-xl bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-4 py-3 text-sm font-extrabold text-white" onClick={() => { setMobileMenuOpen(false); handleCommission(); }}>Commission a Portrait</button>
             </div>
           </div>
         )}
@@ -324,7 +319,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
               <div className="absolute inset-x-8 inset-y-0 rounded-[28px] border border-white/10 bg-gradient-to-br from-[#20204a] via-[#17152f] to-[#121025] shadow-[0_30px_80px_rgba(0,0,0,.35)]">
                 <div className="absolute inset-5 rounded-[20px] border border-white/[.08] bg-[radial-gradient(circle_at_50%_32%,rgba(147,197,253,.2),transparent_48%)]"/>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <BrandLogo size={230} full className="opacity-95 drop-shadow-[0_18px_30px_rgba(43,143,224,.18)]"/>
+                  <BrandLogo size={230} full className="rounded-[20px] opacity-95 drop-shadow-[0_18px_30px_rgba(43,143,224,.18)]"/>
                 </div>
                 <div className="absolute bottom-7 left-7 right-7 flex items-end justify-between">
                   <div><span className="block text-[10px] uppercase tracking-[.2em] text-white/35">Vivid Arts</span><strong className="mt-1 block font-outfit text-lg">Drawn with intention</strong></div>

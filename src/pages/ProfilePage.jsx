@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import OrderTracker from './OrderTracker';
 import { clearCustomerSession, getCustomerToken, setCustomerUsername } from '../authSession';
 
 function ProfilePage({ onNavigate }) {
@@ -9,7 +8,7 @@ function ProfilePage({ onNavigate }) {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
-  const [orders, setOrders] = useState([]);
+  const [messageType, setMessageType] = useState('success');
   const [isEditing, setIsEditing] = useState(false);
   const avatarInputRef = useRef(null);
 
@@ -37,15 +36,9 @@ function ProfilePage({ onNavigate }) {
         setPhoneNumber(data.phone_number || '');
         setEmail(data.email || '');
 
-        const ordersRes = await fetch('/api/orders/my-orders', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (ordersRes.ok) {
-          const ordersData = await ordersRes.json();
-          setOrders(ordersData);
-        }
       } catch (error) {
         clearCustomerSession();
+        setMessageType('error');
         setMessage(error.message || 'Please log in again.');
         onNavigate('login');
       }
@@ -74,25 +67,14 @@ function ProfilePage({ onNavigate }) {
       }
 
       setMessage(data.message || 'Profile updated successfully');
+      setMessageType('success');
       setCustomerUsername(username);
       setUser((current) => current ? { ...current, full_name: fullName, username, phone_number: phoneNumber, email } : current);
       setIsEditing(false);
     } catch (error) {
+      setMessageType('error');
       setMessage(error.message || 'Update failed');
     }
-  };
-
-  const reviewProof = async (order, action) => {
-    const note = action === 'revision' ? window.prompt('Describe the changes you need:') : '';
-    if (action === 'revision' && !note?.trim()) return;
-    try {
-      const response = await fetch(`/api/orders/${order.id}/proof-review`, { method: 'POST', headers: {
-        'Content-Type': 'application/json', Authorization: `Bearer ${getCustomerToken()}`,
-      }, body: JSON.stringify({ action, note }) });
-      const data = await response.json(); if (!response.ok) throw new Error(data.error || 'Review failed');
-      setOrders(current => current.map(item => item.id === order.id ? { ...item, status: data.status } : item));
-      setMessage(data.message);
-    } catch (error) { setMessage(error.message); }
   };
 
   if (!user) {
@@ -103,7 +85,11 @@ function ProfilePage({ onNavigate }) {
 
   const uploadImage = async (file) => {
     const token = getCustomerToken();
-    if (!token) return setMessage('Not authenticated');
+    if (!token) {
+      setMessageType('error');
+      setMessage('Not authenticated');
+      return;
+    }
 
     const fd = new FormData();
     fd.append('profileImage', file);
@@ -119,9 +105,11 @@ function ProfilePage({ onNavigate }) {
       // refresh profile data in-place
       setUser(prev => ({ ...prev, profile_image_url: data.profile_image_url || prev.profile_image_url }));
       try { if (data.profile_image_url) localStorage.setItem('profile_image_url', data.profile_image_url); } catch { /* localStorage unavailable */ }
+      setMessageType('success');
       setMessage('Profile photo updated successfully.');
       // update display name in localStorage if username changed elsewhere
     } catch (err) {
+      setMessageType('error');
       setMessage(err.message || 'Upload failed');
     }
   };
@@ -131,7 +119,16 @@ function ProfilePage({ onNavigate }) {
   return (
     <div className="min-h-screen bg-[#090816] px-4 py-7 font-sans text-white sm:px-6">
       <main className="mx-auto max-w-6xl">
-      <button type="button" onClick={() => onNavigate('landing')} className="mb-5 rounded-full border border-white/10 bg-white/[.05] px-4 py-2 text-xs font-bold text-white/75 transition hover:bg-white/10">← Back to home</button>
+      <div className="mb-5 flex justify-end">
+        <button
+          type="button"
+          onClick={() => onNavigate('landing')}
+          className="group inline-flex items-center rounded-xl border border-[#a99bff]/45 bg-gradient-to-r from-[#318fe2] to-[#7354d6] px-5 py-3 text-sm font-bold text-white shadow-[0_10px_28px_rgba(79,91,215,.35)] transition-all duration-300 hover:-translate-y-0.5 hover:from-[#45a3ef] hover:to-[#8868e7] hover:shadow-[0_14px_34px_rgba(111,87,230,.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b8afff] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090816]"
+        >
+          <span className="mr-2 inline-block text-base transition-transform duration-300 group-hover:-translate-x-1">←</span>
+          Back to home
+        </button>
+      </div>
       <section className="rounded-[28px] border border-white/[.12] bg-gradient-to-br from-[#151333] via-[#111025] to-[#12233d] p-6 shadow-[0_28px_80px_rgba(0,0,0,.4)] sm:p-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
           <div className="mx-auto h-32 w-32 shrink-0 overflow-hidden rounded-full border-4 border-[#a99bff] bg-gradient-to-br from-[#aa9dff] to-[#4db8f6] shadow-[0_0_0_6px_rgba(169,155,255,.12)] sm:mx-0">
@@ -145,7 +142,7 @@ function ProfilePage({ onNavigate }) {
           <div className="flex flex-wrap justify-center gap-2 sm:justify-end">
             <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={onAvatarSelected} />
             <button type="button" onClick={() => avatarInputRef.current?.click()} className="rounded-xl border border-white/15 bg-white/[.07] px-3.5 py-2.5 text-xs font-bold text-white transition hover:bg-white/[.13]">Change photo</button>
-            <button type="button" onClick={() => { setMessage(''); setIsEditing(true); }} className="rounded-xl bg-gradient-to-r from-[#2d91df] to-[#7762d8] px-3.5 py-2.5 text-xs font-bold text-white shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5">Edit profile</button>
+            <button type="button" onClick={() => { setMessage(''); setMessageType('success'); setIsEditing(true); }} className="rounded-xl bg-gradient-to-r from-[#2d91df] to-[#7762d8] px-3.5 py-2.5 text-xs font-bold text-white shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5">Edit profile</button>
           </div>
         </div>
         </section>
@@ -175,32 +172,12 @@ function ProfilePage({ onNavigate }) {
               </div>
               </div>
               {isEditing && <div className="mt-5 flex flex-wrap gap-2"><button type="submit" className="rounded-xl bg-gradient-to-r from-[#2b8fe0] via-[#7161d8] to-[#7b4fc8] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-950/30 transition hover:-translate-y-0.5">Save changes</button><button type="button" onClick={() => { setFullName(user.full_name || ''); setPhoneNumber(user.phone_number || ''); setEmail(user.email || ''); setIsEditing(false); }} className="rounded-xl border border-white/15 bg-white/[.05] px-5 py-3 text-sm font-bold text-white/80">Cancel</button></div>}
-              {message && <div className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm font-medium text-emerald-200">{message}</div>}
-            </form>
-          </div>
-
-          <div className="mt-7">
-            <div className="mb-4 flex items-end justify-between"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-[#aa9dff]">Commissions</p><h3 className="mt-1 text-2xl font-bold">My orders</h3></div><span className="text-sm font-semibold text-white/45">{orders.length} total</span></div>
-            {orders.length === 0 ? (
-              <div className="rounded-[24px] border border-dashed border-white/15 bg-white/[.03] px-6 py-12 text-center"><div className="text-3xl">✦</div><h4 className="mt-3 text-lg font-bold">No commissions yet</h4><p className="mt-1 text-sm text-white/50">Your commissioned portraits will appear here.</p><button type="button" onClick={() => onNavigate('commission')} className="mt-5 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#17142d]">Start a commission</button></div>
-            ) : (
-              orders.map((order) => (
-                <div key={order._id || order.id} className="mb-4 rounded-[22px] border border-white/[.09] bg-[#111025] p-5 shadow-lg shadow-black/10">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div><p className="text-xs font-bold uppercase tracking-[.14em] text-white/40">Portrait commission</p><strong className="mt-1 block text-lg">Order #{(order.id || order._id || '').slice(-8) || 'N/A'}</strong></div>
-                    <span className="rounded-full bg-[#7868d8]/15 px-3 py-1.5 text-xs font-bold capitalize text-[#c2b9ff]">{String(order.status || 'in queue').replaceAll('_', ' ')}</span>
-                  </div>
-                  <OrderTracker currentStatus={order.status} />
-                  {order.proofImagePath && <div className="mt-4">
-                    <img src={order.proofImagePath} alt="Portrait proof" className="max-h-80 w-full rounded-xl border border-white/10 bg-[#0b0a1b] object-contain"/>
-                    {order.status === 'waiting_for_feedback' && <div className="mt-3 flex flex-wrap gap-2">
-                      <button type="button" onClick={() => reviewProof(order, 'approve')} className="rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-bold text-[#062b1b]">Approve proof</button>
-                      <button type="button" onClick={() => reviewProof(order, 'revision')} className="rounded-xl border border-white/15 bg-white/[.05] px-4 py-2.5 text-sm font-bold text-white">Request changes</button>
-                    </div>}
-                  </div>}
+              {message && (
+                <div className={`mt-4 rounded-xl border px-4 py-3 text-sm font-medium ${messageType === 'error' ? 'border-red-400/35 bg-red-500/15 text-red-200' : 'border-emerald-400/20 bg-emerald-400/10 text-emerald-200'}`}>
+                  {message}
                 </div>
-              ))
-            )}
+              )}
+            </form>
           </div>
         </div>
         <aside>

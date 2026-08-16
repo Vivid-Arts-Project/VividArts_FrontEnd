@@ -5,6 +5,8 @@ import CommissionFlow from './pages/CommissionFlow';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
+import MyOrdersPage from './pages/MyOrdersPage';
+import CustomerNotificationsPage from './pages/CustomerNotificationsPage';
 import { isTrustedNavigation, useLocation, useNavigate } from './router';
 import { Redirect } from './RouterComponents';
 import { clearCustomerSession, CUSTOMER_AUTH_EVENT, hasCustomerSession, useIdleTimeout } from './authSession';
@@ -21,6 +23,8 @@ const PATHS = {
   login: '/login',
   register: '/register',
   profile: '/profile',
+  orders: '/my-orders',
+  notifications: '/notifications',
 };
 
 function CustomerApp() {
@@ -63,6 +67,14 @@ function CustomerApp() {
   if (path === '/profile') {
     if (!isSignedIn || !isTrustedNavigation()) return <Redirect to="/" replace />;
     return <ProfilePage onNavigate={navigateTo} />;
+  }
+  if (path === '/my-orders') {
+    if (!isSignedIn || !isTrustedNavigation()) return <Redirect to="/" replace />;
+    return <MyOrdersPage onNavigate={navigateTo} />;
+  }
+  if (path === '/notifications') {
+    if (!isSignedIn || !isTrustedNavigation()) return <Redirect to="/" replace />;
+    return <CustomerNotificationsPage onNavigate={navigateTo} />;
   }
   if (path === '/') return <LandingPage onNavigate={navigateTo} />;
   if (path === '/gallery') return <GalleryPage onNavigate={navigateTo} />;
