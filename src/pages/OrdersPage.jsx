@@ -344,7 +344,7 @@ export default function OrdersPage({ search, onToast }) {
   const [orders, setOrders]       = useState([]);
   const [stats, setStats]         = useState({});
   const [loading, setLoading]     = useState(true);
-  const [filter, setFilter]       = useState('all');
+  const [filter, setFilter]       = useState('active');
 
   const load = useCallback(async () => {
     try {
@@ -363,7 +363,8 @@ export default function OrdersPage({ search, onToast }) {
   const filtered = orders.filter(o => {
     const matchSearch = !search || [o.id, o.customer?.fullName, o.customer?.email].join(' ').toLowerCase().includes(search.toLowerCase());
     const matchFilter =
-      filter === 'all' ? true :
+      filter === 'active' ? o.status !== 'done' :
+      filter === 'completed' ? o.status === 'done' :
       filter === 'sketch' ? o.status === 'sketching' :
       filter === 'proof'  ? o.status === 'waiting_for_feedback' :
       filter === 'revision' ? o.status === 'revision_requested' :
@@ -412,9 +413,9 @@ export default function OrdersPage({ search, onToast }) {
         {/* Table */}
         <div className="bg-white border border-va-border rounded-va shadow-va overflow-hidden">
           <div className="px-5 py-4 border-b border-va-border flex items-center justify-between">
-            <div className="font-outfit text-sm font-bold text-va-text">All Orders</div>
+            <div className="font-outfit text-sm font-bold text-va-text">{filter === 'completed' ? 'Completed Orders' : 'Active Production Queue'}</div>
             <div className="flex gap-1.5 flex-wrap">
-              {[['all','All'],['sketch','Sketching'],['proof','Proof Sent'],['revision','Revision'],['approved','Approved']].map(([f, l]) => (
+              {[['active','Active'],['sketch','Sketching'],['proof','Proof Sent'],['revision','Revision'],['approved','Approved'],['completed','Done']].map(([f, l]) => (
                 <div
                   key={f}
                   className={`text-xs font-semibold px-3 py-[5px] rounded-full border cursor-pointer transition-all ${filter === f ? 'border-va-blue bg-va-info-bg text-va-blue' : 'border-va-border bg-white text-va-text3 hover:border-va-border2 hover:text-va-text'}`}

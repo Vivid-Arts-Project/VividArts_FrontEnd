@@ -28,6 +28,15 @@ function fmt(value) {
   return `LKR ${asPrice(value).toLocaleString("en-LK")}`;
 }
 
+function dateInputValue(daysFromToday) {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromToday);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function normalizeCatalog(data) {
   const sizes = Object.fromEntries(Object.entries(FALLBACK_CATALOG.sizes).map(([id, fallback]) => {
     const live = data?.sizes?.[id] ?? {};
@@ -72,19 +81,14 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
   const [urgent, setUrgent] = useState(initialOrder?.urgent ?? false);
   const [urgentDeadline, setUrgentDeadline] = useState(initialOrder?.urgentDeadline ?? "");
   const [urgentDeadlineError, setUrgentDeadlineError] = useState("");
+  const [urgentAvailability, setUrgentAvailability] = useState(null);
   const [selectionError, setSelectionError] = useState("");
   const [catalog, setCatalog] = useState(FALLBACK_CATALOG);
   const deliveryAddressRef = useRef(null);
   const urgentDeadlineRef = useRef(null);
 
-  const minimumUrgentDate = useMemo(() => {
-    const date = new Date();
-    date.setDate(date.getDate() + 7);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  }, []);
+  const minimumUrgentDate = useMemo(() => dateInputValue(1), []);
+  const maximumUrgentDate = useMemo(() => dateInputValue(7), []);
 
   useEffect(() => {
     let active = true;
@@ -97,6 +101,14 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
       active = false;
       window.removeEventListener("focus", loadLivePrices);
     };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    api.getUrgentAvailability()
+      .then((data) => { if (active && data.success) setUrgentAvailability(data); })
+      .catch((error) => console.error("Failed to load urgent-order availability:", error));
+    return () => { active = false; };
   }, []);
 
   const sizes = Object.entries(catalog.sizes).map(([id, value]) => ({ id, ...value, dims: SIZE_DIMS[id] }));
@@ -133,8 +145,13 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
       return;
     }
 
-    if (urgent && (!urgentDeadline || urgentDeadline < minimumUrgentDate)) {
-      setUrgentDeadlineError(`Please select a date on or after ${new Date(`${minimumUrgentDate}T00:00:00`).toLocaleDateString("en-LK", { day: "numeric", month: "short", year: "numeric" })}.`);
+    if (urgent && urgentAvailability?.available === false) {
+      setUrgentDeadlineError("Urgent-order capacity is currently full. Please choose a standard order or contact us for the next available urgent date.");
+      return;
+    }
+
+    if (urgent && (!urgentDeadline || urgentDeadline < minimumUrgentDate || urgentDeadline > maximumUrgentDate)) {
+      setUrgentDeadlineError("Please select a completion date within the next 7 days.");
       window.requestAnimationFrame(() => {
         urgentDeadlineRef.current?.focus({ preventScroll: true });
         urgentDeadlineRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -352,7 +369,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
             </div>
           )}
 
-          <label className={`group relative mt-5 flex cursor-pointer items-center justify-between gap-4 overflow-hidden rounded-2xl border-2 p-4 transition-all duration-300 sm:p-5 ${
+          <label className={`group relative mt-5 flex items-center justify-between gap-4 overflow-hidden rounded-2xl border-2 p-4 transition-all duration-300 sm:p-5 ${urgentAvailability?.available === false && !urgent ? "cursor-not-allowed opacity-70" : "cursor-pointer"} ${
             urgent
               ? "border-[#f59e0b] bg-gradient-to-r from-[#fff8e7] to-[#fff1d4] shadow-[0_14px_30px_rgba(245,158,11,0.18)]"
               : "border-[#f1cc83] bg-gradient-to-r from-[#fffdf7] to-[#fff8e9] shadow-[0_10px_24px_rgba(180,121,22,0.1)] hover:-translate-y-0.5 hover:border-[#f0ad32] hover:shadow-[0_15px_32px_rgba(180,121,22,0.16)]"
@@ -370,7 +387,14 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
                   <span className="rounded-full bg-[#f59e0b] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white">Priority</span>
                 </span>
                 <span className="block text-sm font-medium text-[#7a5b28]">
-                  Faster priority handling for <strong className="text-[#b86606]">+ {fmt(catalog.urgentPrice)}</strong>
+                  Completed within 7 days for <strong className="text-[#b86606]">+ {fmt(catalog.urgentPrice)}</strong>
+                </span>
+                <span className="mt-1 block text-xs font-semibold text-[#8a6a35]">
+                  {urgentAvailability
+                    ? urgentAvailability.available
+                      ? `${urgentAvailability.remaining} of ${urgentAvailability.limit} urgent slots available in the current ${urgentAvailability.windowDays}-day period.`
+                      : `Fully booked: only ${urgentAvailability.limit} urgent orders are accepted per ${urgentAvailability.windowDays}-day period.`
+                    : "Only 2 urgent orders are accepted per 10-day period."}
                 </span>
               </span>
             </span>
@@ -380,6 +404,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
             <input
               type="checkbox"
               checked={urgent}
+              disabled={urgentAvailability?.available === false && !urgent}
               onChange={(event) => {
                 setUrgent(event.target.checked);
                 setUrgentDeadlineError("");
@@ -402,13 +427,14 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
                     When do you need your portrait?
                   </label>
                   <p className="mt-1 text-xs leading-5 text-[#806334]">
-                    Choose your preferred completion date. Urgent portraits require at least 7 days.
+                    Urgent orders are for portraits needed within one week. Choose a date from tomorrow through the next 7 days.
                   </p>
                   <input
                     id="urgent-deadline"
                     ref={urgentDeadlineRef}
                     type="date"
                     min={minimumUrgentDate}
+                    max={maximumUrgentDate}
                     value={urgentDeadline}
                     onChange={(event) => {
                       setUrgentDeadline(event.target.value);
@@ -466,6 +492,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
               </div>
               {urgent && <div className="flex justify-between border-t border-[#e7e5f1] py-2.5 text-sm"><dt className="text-[#6b6885]">Urgent order</dt><dd className="font-semibold">{fmt(catalog.urgentPrice)}</dd></div>}
               {urgent && urgentDeadline && <div className="flex justify-between border-t border-[#e7e5f1] py-2.5 text-sm"><dt className="text-[#6b6885]">Requested by</dt><dd className="font-semibold">{new Date(`${urgentDeadline}T00:00:00`).toLocaleDateString("en-LK", { day: "numeric", month: "short", year: "numeric" })}</dd></div>}
+              {notes.trim() && <div className="border-t border-[#e7e5f1] py-2.5 text-sm"><dt className="text-[#6b6885]">Special instructions</dt><dd className="mt-1 whitespace-pre-wrap break-words font-semibold leading-5">{notes.trim()}</dd></div>}
             </dl>
 
             <div className="mt-4 rounded-xl bg-[#f5f3ff] p-4 text-center">

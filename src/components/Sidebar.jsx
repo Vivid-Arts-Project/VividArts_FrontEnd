@@ -97,7 +97,11 @@ export default function Sidebar({ page, onNav, stats, isOpen = false, onClose = 
       {/* User section — shows real name and role from DB */}
       <div className="shrink-0 px-3 py-3.5 border-t border-white/[0.06] bg-[#12102A]">
         <div className="flex items-center gap-2.5 cursor-pointer rounded-lg p-1.5 transition-colors hover:bg-white/[0.06]" onClick={() => { onNav('settings'); onClose(); }}>
-          <div className="w-9 h-9 rounded-full bg-grad flex items-center justify-center font-bold text-[13px] text-white shrink-0">{initials}</div>
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-grad text-[13px] font-bold text-white">
+            {admin?.profileImageUrl
+              ? <img src={admin.profileImageUrl} alt={`${displayName} profile`} className="h-full w-full object-cover"/>
+              : initials}
+          </div>
           <div className="flex-1 min-w-0">
             <div className="text-xs text-white/70 font-medium overflow-hidden text-ellipsis whitespace-nowrap">
               {displayName}

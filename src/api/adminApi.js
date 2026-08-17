@@ -26,6 +26,13 @@ export const invoiceUrl   = (payhereOrderId) => `${api.defaults.baseURL}/payment
 // Admin profile and settings
 export const getProfile          = ()     => api.get('/admin/me');
 export const updateProfile       = (data) => api.patch('/admin/profile', data);
+export const uploadAdminProfileImage = (file) => {
+  const data = new FormData();
+  data.append('profileImage', file);
+  return api.patch('/admin/profile/image', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
 export const updateBusiness      = (data) => api.patch('/admin/business', data);
 export const updateNotifications = (data) => api.patch('/admin/notifications', data);
 export const changePassword      = (data) => api.patch('/admin/password', data);

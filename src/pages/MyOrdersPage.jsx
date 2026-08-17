@@ -224,6 +224,7 @@ export default function MyOrdersPage({ onNavigate }) {
                       <Detail label="Delivery" value={order.pickupOption === 'courier' ? 'Courier delivery' : 'Customer pickup'}/>
                       <Detail label="Urgency" value={order.isUrgent ? 'Urgent order' : 'Standard order'}/>
                       <Detail label="Requested deadline" value={order.isUrgent ? formatDate(order.urgentDeadline) : 'Not applicable'}/>
+                      {order.estimatedCompletionAt && <Detail label="Estimated completion" value={formatDate(order.estimatedCompletionAt)} accent/>}
                     </dl>
                     {order.deliveryAddress && <div className="mt-3"><Detail label="Delivery address" value={order.deliveryAddress}/></div>}
                     {order.artistLocation && <div className="mt-3"><Detail label="Pickup location" value={order.artistLocation}/></div>}
