@@ -134,6 +134,7 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
           <div className="flex justify-between items-start mb-2 text-xs"><span className="text-va-text3">Paper</span><span className="font-semibold text-va-text text-right max-w-[60%]">{order.paperSize}</span></div>
           <div className="flex justify-between items-start mb-2 text-xs"><span className="text-va-text3">Subjects</span><span className="font-semibold text-va-text text-right max-w-[60%]">{order.subjectCount?.replace(/_/g,' ')}</span></div>
           <div className="flex justify-between items-start mb-2 text-xs"><span className="text-va-text3">Frame</span><span className="font-semibold text-va-text text-right max-w-[60%]">{getFrameLabel(order.frameType)}</span></div>
+          <div className="flex justify-between items-start mb-2 text-xs"><span className="text-va-text3">Delivery</span><span className="font-semibold text-va-text text-right max-w-[60%]">{order.pickupOption === 'courier' ? 'Courier delivery' : 'Customer pickup'}</span></div>
           <div className="flex justify-between items-start mb-2 text-xs">
             <span className="text-va-text3">Total</span>
             <span className="font-semibold text-right max-w-[60%] text-va-purple">
@@ -284,7 +285,7 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
           <div className="mb-5 pb-5 border-b border-va-border">
             <div className="text-[11px] font-bold text-va-text3 tracking-wide uppercase mb-3">Delivery</div>
             <div className="rounded-lg bg-va-info-bg px-3 py-2.5 text-xs text-va-text2">This customer selected courier delivery, so a pickup location is not required.</div>
-            <div className="mt-3 text-xs"><span className="font-semibold text-va-text">Delivery address</span><div className="mt-1 whitespace-pre-wrap text-va-text2">{order.customer?.address || 'No delivery address is available. Contact the client using chat.'}</div></div>
+            <div className="mt-3 text-xs"><span className="font-semibold text-va-text">Delivery address</span><div className="mt-1 whitespace-pre-wrap text-va-text2">{order.deliveryAddress || order.customer?.address || 'No delivery address is available. Contact the client using chat.'}</div></div>
           </div>
         )}
 

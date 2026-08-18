@@ -64,6 +64,20 @@ export function DashboardPage({ onNav }) {
     approved: orders.filter(o => ['approved', 'finished'].includes(o.status)).length,
     completed: orders.filter(o => o.status === 'done').length,
   };
+  const tomorrowEnd = new Date();
+  tomorrowEnd.setDate(tomorrowEnd.getDate() + 1);
+  tomorrowEnd.setHours(23, 59, 59, 999);
+  const actionOrders = orders
+    .filter(order => {
+      if (order.status === 'done') return false;
+      const urgentDeadline = order.isUrgent && order.urgentDeadline ? new Date(`${order.urgentDeadline}T23:59:59`) : null;
+      return (urgentDeadline && urgentDeadline <= tomorrowEnd) || ['waiting_for_feedback','revision_requested','approved','finished'].includes(order.status);
+    })
+    .sort((a, b) => {
+      const aDeadline = a.isUrgent && a.urgentDeadline ? new Date(a.urgentDeadline).getTime() : Number.MAX_SAFE_INTEGER;
+      const bDeadline = b.isUrgent && b.urgentDeadline ? new Date(b.urgentDeadline).getTime() : Number.MAX_SAFE_INTEGER;
+      return aDeadline - bDeadline;
+    });
 
   return (
     <div className="flex-1 px-3 py-4 sm:px-6 sm:py-[22px]">
@@ -141,18 +155,20 @@ export function DashboardPage({ onNav }) {
           <div className={CARD}>
             <div className={CARD_HEAD}><div className={CARD_TITLE}>Action Required</div></div>
             <div className="p-0">
-              {orders.filter(o => ['waiting_for_feedback','revision_requested','approved','finished'].includes(o.status)).slice(0,3).map(o => (
+              {actionOrders.slice(0,3).map(o => (
                 <div key={o.id} className="px-4 py-3 border-b border-va-border flex items-center justify-between">
                   <div>
                     <div className="text-[13px] font-semibold">#{o.id?.slice(0,8)} — {o.customer?.fullName}</div>
                     <div className="text-xs text-va-text3 mt-0.5">
-                      <Badge status={o.status}/>
+                      {o.isUrgent && o.urgentDeadline && new Date(`${o.urgentDeadline}T23:59:59`) <= tomorrowEnd
+                        ? <span className="inline-flex rounded-full bg-va-danger-bg px-2.5 py-[3px] text-[11px] font-bold text-va-danger">Urgent · due {new Date(`${o.urgentDeadline}T00:00:00`).toLocaleDateString()}</span>
+                        : <Badge status={o.status}/>}
                     </div>
                   </div>
                   <button className={`${BTN_BASE} ${BTN_FILL} ${BTN_SM}`} onClick={() => onNav('orders')}>View</button>
                 </div>
               ))}
-              {orders.filter(o => ['waiting_for_feedback','revision_requested','approved','finished'].includes(o.status)).length === 0 && (
+              {actionOrders.length === 0 && (
                 <div className="p-5 text-va-text3 text-[13px] flex items-center justify-center gap-2">
                   <Icon name="completed" size={18} className="text-va-success"/> No urgent actions needed.
                 </div>
@@ -494,9 +510,9 @@ export function PaymentsPage() {
                   <td><strong>{o.currency} {total.toLocaleString()}</strong></td>
                   <td>{o.currency} {paid.toLocaleString()}</td>
                   <td className={paid < total ? 'text-va-warn' : 'text-va-success'}>
-                    {o.currency} {(total - paid).toLocaleString()}
+                    {o.currency} {Math.max(0, total - paid).toLocaleString()}
                   </td>
-                  <td><span className="text-xs bg-va-bg2 px-2 py-[3px] rounded font-semibold">Advance</span></td>
+                  <td><span className="text-xs bg-va-bg2 px-2 py-[3px] rounded font-semibold">{paid <= 0 ? 'Unpaid' : paid >= total ? 'Full' : 'Advance'}</span></td>
                   <td><Badge status={paid <= 0 ? 'pending' : paid >= total ? 'completed' : 'advance'}/></td>
                 </tr>
               );

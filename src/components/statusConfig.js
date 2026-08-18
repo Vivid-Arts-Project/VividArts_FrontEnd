@@ -1,4 +1,7 @@
 export const STATUS_MAP = {
+  pending:              { label: 'Pending',       icon: 'pending',   cls: 'bg-va-warn-bg text-va-warn'       },
+  advance:              { label: 'Advance paid',  icon: 'advance',   cls: 'bg-va-info-bg text-va-info'       },
+  completed:            { label: 'Paid in full',  icon: 'completed', cls: 'bg-va-success-bg text-va-success' },
   in_queue:             { label: 'Queued',        icon: 'pending',   cls: 'bg-[#F0F0F8] text-[#555]'         },
   sketching:            { label: 'Sketching',      icon: 'pencil',    cls: 'bg-va-info-bg text-va-info'       },
   shading:              { label: 'Final Shading',  icon: 'pencil',    cls: 'bg-va-warn-bg text-va-warn'       },

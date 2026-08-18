@@ -16,18 +16,40 @@ import GalleryManager from '../GalleryManager';
 import AdminNotificationsPage from '../AdminNotificationsPage';
 import { getOrders } from '../../api/adminApi';
 
+const ADMIN_PAGES = new Set(['dashboard', 'orders', 'proofs', 'revisions', 'clients', 'payments', 'invoices', 'settings', 'gallery']);
+
+const pageFromPath = (path) => {
+  const orderDetail = path.match(/^\/admin\/orders\/[^/]+$/);
+  if (orderDetail) return 'orders';
+  const section = path.match(/^\/admin\/([^/]+)$/)?.[1];
+  return ADMIN_PAGES.has(section) ? section : 'dashboard';
+};
+
 export default function AdminApp() {
   const location = useLocation();
   const navigate = useNavigate();
-  const orderMatch = location.split(/[?#]/, 1)[0].match(/^\/admin\/orders\/([^/]+)$/);
-  const notificationHistory = location.split(/[?#]/, 1)[0] === '/admin/notifications';
-  const [page, setPage]           = useState('orders');
+  const path = location.split(/[?#]/, 1)[0];
+  const orderMatch = path.match(/^\/admin\/orders\/([^/]+)$/);
+  const notificationHistory = path === '/admin/notifications';
+  const page = pageFromPath(path);
   const [search, setSearch]       = useState('');
   const [toast, setToast]         = useState(null);
   const [stats, setStats]         = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const showToast = useCallback((msg) => setToast(msg), []);
+  const handlePageNavigation = useCallback((nextPage) => {
+    // Search is page-specific. Keeping a previous page's query makes the order
+    // table look incomplete until a full refresh resets this in-memory state.
+    setSearch('');
+    navigate(`/admin/${ADMIN_PAGES.has(nextPage) ? nextPage : 'dashboard'}`);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (/^\/admin\/orders\/[^/]+$/.test(path) || path === '/admin/notifications') return;
+    const nextPage = pageFromPath(path);
+    if (path !== `/admin/${nextPage}`) navigate(`/admin/${nextPage}`, { replace: true });
+  }, [navigate, path]);
 
   useEffect(() => {
     let active = true;
@@ -40,7 +62,7 @@ export default function AdminApp() {
   }, []);
 
   const renderPage = () => {
-    const props = { search, onToast: showToast, onNav: setPage, onStatsLoaded: setStats };
+    const props = { search, onToast: showToast, onNav: handlePageNavigation, onStatsLoaded: setStats };
     if (orderMatch) return <OrderManagePage {...props} orderId={decodeURIComponent(orderMatch[1])}/>;
     if (notificationHistory) return <AdminNotificationsPage {...props}/>;
     switch (page) {
@@ -61,7 +83,7 @@ export default function AdminApp() {
     <div className="va-admin flex min-h-screen overflow-x-hidden">
       <Sidebar
         page={page}
-        onNav={(nextPage) => { setPage(nextPage); navigate('/admin'); }}
+        onNav={handlePageNavigation}
         stats={stats}
         isOpen={mobileNavOpen}
         onClose={() => setMobileNavOpen(false)}
