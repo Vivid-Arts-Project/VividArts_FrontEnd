@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   getProfile, updateProfile, updateBusiness,
-  updateNotifications, changePassword,
+  updateNotifications, changePassword, uploadAdminProfileImage,
   getPricing, updatePriceRow,
 } from '../api/adminApi';
+import { useAuth } from '../context/useAuth';
 
 // ── Small reusable loading skeleton ──────────────────────────────────────────
 function Skeleton({ width = '100%', height = 14 }) {
@@ -28,6 +29,7 @@ const CAT_LABELS = {
 // ══════════════════════════════════════════════════════════════════════════════
 export default function SettingsPage({ onToast }) {
   const [tab, setTab] = useState('profile');
+  const { updateAdmin } = useAuth();
 
   // ── Shared admin data loaded once ─────────────────────────────────────────
   const [admin, setAdmin]     = useState(null);
@@ -56,7 +58,7 @@ export default function SettingsPage({ onToast }) {
   }, [onToast]);
 
   return (
-    <div className="page-content" style={{ maxWidth: 760 }}>
+    <div className="page-content" style={{ maxWidth: 1180 }}>
       {/* Shimmer keyframe */}
       <style>{`@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }`}</style>
 
@@ -72,7 +74,7 @@ export default function SettingsPage({ onToast }) {
         ))}
       </div>
 
-      {tab === 'profile'       && <ProfileTab       key={admin?.updatedAt || admin?.id || 'loading'} admin={admin} loading={loading} onToast={onToast} onSaved={loadProfile}/>}
+      {tab === 'profile'       && <ProfileTab       key={admin?.updatedAt || admin?.id || 'loading'} admin={admin} loading={loading} onToast={onToast} onSaved={loadProfile} updateAdmin={updateAdmin}/>}
       {tab === 'business'      && <BusinessTab      key={admin?.updatedAt || admin?.id || 'loading'} admin={admin} loading={loading} onToast={onToast} onSaved={loadProfile}/>}
       {tab === 'notifications' && <NotificationsTab key={admin?.updatedAt || admin?.id || 'loading'} admin={admin} loading={loading} onToast={onToast} onSaved={loadProfile}/>}
       {tab === 'security'      && <SecurityTab                                      onToast={onToast}/>}
@@ -84,7 +86,7 @@ export default function SettingsPage({ onToast }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // PROFILE TAB
 // ══════════════════════════════════════════════════════════════════════════════
-function ProfileTab({ admin, loading, onToast, onSaved }) {
+function ProfileTab({ admin, loading, onToast, onSaved, updateAdmin }) {
   const [form, setForm] = useState(() => ({
     firstName: admin?.firstName || '',
     lastName:  admin?.lastName  || '',
@@ -92,18 +94,40 @@ function ProfileTab({ admin, loading, onToast, onSaved }) {
     phone:     admin?.phone     || '',
   }));
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await updateProfile(form);
+      const response = await updateProfile(form);
+      updateAdmin(response.data.admin);
       onToast('✓ Profile saved');
       onSaved(); // re-fetch so Sidebar name updates too
     } catch (e) {
       onToast('❌ ' + (e.response?.data?.error || 'Failed to save profile'));
     } finally { setSaving(false); }
+  };
+
+  const handlePhotoUpload = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return onToast('❌ Select a JPG, PNG, or WebP image');
+    if (file.size > 5 * 1024 * 1024) return onToast('❌ Profile photo must be 5 MB or smaller');
+
+    setUploadingPhoto(true);
+    try {
+      const response = await uploadAdminProfileImage(file);
+      updateAdmin(response.data.admin);
+      onToast('✓ Profile photo updated');
+      onSaved();
+    } catch (error) {
+      onToast('❌ ' + (error.response?.data?.error || 'Failed to upload profile photo'));
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const initials = admin
@@ -116,14 +140,21 @@ function ProfileTab({ admin, loading, onToast, onSaved }) {
       <div className="card-body">
         {/* Avatar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 22 }}>
-          <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--grad)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 22, color: '#fff', fontFamily: "'Outfit',sans-serif", flexShrink: 0 }}>
-            {loading ? '?' : initials}
+          <div style={{ width: 64, height: 64, borderRadius: '50%', overflow: 'hidden', background: 'var(--grad)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 22, color: '#fff', fontFamily: "'Outfit',sans-serif", flexShrink: 0 }}>
+            {admin?.profileImageUrl
+              ? <img src={admin.profileImageUrl} alt="Admin profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+              : loading ? '?' : initials}
           </div>
           <div>
             <div style={{ fontSize: 16, fontWeight: 700, fontFamily: "'Outfit',sans-serif" }}>
               {loading ? <Skeleton width={140}/> : `${admin?.firstName} ${admin?.lastName}`}
             </div>
             <div style={{ fontSize: 13, color: 'var(--va-text3)', marginTop: 4 }}>Artist & Administrator</div>
+            <label className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', marginTop: 10, cursor: uploadingPhoto ? 'wait' : 'pointer' }}>
+              {uploadingPhoto ? 'Uploading…' : admin?.profileImageUrl ? 'Change photo' : 'Add profile photo'}
+              <input type="file" accept="image/jpeg,image/png,image/webp" hidden disabled={uploadingPhoto || loading} onChange={handlePhotoUpload}/>
+            </label>
+            <div style={{ marginTop: 6, fontSize: 11, color: 'var(--va-text3)' }}>JPG, PNG or WebP · Max 5 MB</div>
           </div>
         </div>
 

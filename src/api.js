@@ -105,6 +105,17 @@ export const api = {
     return fetchAPI(`${API_URL}/payments/queue-position`);
   },
 
+  getTimelinePreview: async (order) => {
+    return fetchAPI(`${API_URL}/payments/timeline-preview`, {
+      method: 'POST',
+      body: JSON.stringify(order),
+    });
+  },
+
+  getUrgentAvailability: async () => {
+    return fetchAPI(`${API_URL}/payments/urgent-availability`);
+  },
+
   // Get all payments
   getAllPayments: async () => {
     return fetchAPI(`${API_URL}/payments`);

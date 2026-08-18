@@ -466,7 +466,6 @@ a,
 .va-admin .page-content {
   width: 100%;
   padding: 24px;
-  overflow-y: auto;
 }
 
 .va-admin .settings-tabs {
@@ -474,7 +473,7 @@ a,
   gap: 2px;
   margin-bottom: 24px;
   border-bottom: 1px solid var(--color-va-border);
-  overflow-x: auto;
+  overflow: visible;
 }
 
 .va-admin .settings-tab {
@@ -744,6 +743,11 @@ a,
 
   .va-admin .page-content {
     padding: 16px;
+  }
+
+  .va-admin .settings-tabs {
+    overflow-x: auto;
+    overflow-y: hidden;
   }
 
   .va-admin .grid-2 {

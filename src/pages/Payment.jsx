@@ -31,6 +31,13 @@ function formatMoney(amount, code, rate) {
   return `${code} ${value.toLocaleString()}`
 }
 
+function formatTimelineDate(value) {
+  if (!value) return 'To be confirmed'
+  return new Date(`${value}T00:00:00`).toLocaleDateString('en-LK', {
+    day: 'numeric', month: 'short', year: 'numeric',
+  })
+}
+
 function submitCheckoutForm(actionUrl, fields) {
   const form = document.createElement('form')
   form.method = 'POST'
@@ -65,7 +72,7 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('pending');
   const [isDownloading, setIsDownloading] = useState(false);
-  const [queuePosition, setQueuePosition] = useState(null);
+  const [timeline, setTimeline] = useState(null);
   const [successMessage, setSuccessMessage] = useState('Your deposit has been received.');
   const [customerInfo, setCustomerInfo] = useState({
     firstName: '', lastName: '', email: '', phone: '',
@@ -84,14 +91,17 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
   }, []);
 
   useEffect(() => {
-    api.getQueuePosition()
+    api.getTimelinePreview({
+      urgent: safeOrder.urgent === true,
+      urgentDeadline: safeOrder.urgent ? safeOrder.urgentDeadline : null,
+      people: safeOrder.people,
+      deliveryMethod: safeOrder.deliveryMethod,
+    })
       .then((data) => {
-        if (data.success && Number.isInteger(data.queuePosition)) {
-          setQueuePosition(data.queuePosition);
-        }
+        if (data.success) setTimeline(data.timeline);
       })
-      .catch((err) => console.error('Failed to load queue position:', err));
-  }, []);
+      .catch((err) => console.error('Failed to load estimated timeline:', err));
+  }, [safeOrder.deliveryMethod, safeOrder.people, safeOrder.urgent, safeOrder.urgentDeadline]);
 
   useEffect(() => {
     const token = getCustomerToken();
@@ -426,6 +436,12 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
               {safeOrder.deliveryMethod === 'courier' && safeOrder.deliveryAddress && (
                 <div className="flex justify-between gap-4 py-2 border-b border-black/[0.06] text-[13px]"><span className="shrink-0 text-[#6b6b80]">Address</span><span className="text-right font-medium">{safeOrder.deliveryAddress}</span></div>
               )}
+              {safeOrder.notes?.trim() && (
+                <div className="py-2 border-b border-black/[0.06] text-[13px]">
+                  <div className="text-[#6b6b80]">Special instructions</div>
+                  <div className="mt-1 whitespace-pre-wrap break-words font-medium leading-5">{safeOrder.notes.trim()}</div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-between items-center mt-[14px] pt-[14px] border-t-[1.5px] border-[rgba(83,74,183,0.18)]">
@@ -449,9 +465,12 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#7f77dd] shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               Estimated timeline
             </div>
-            <div className="flex justify-between text-xs py-[5px]"><span className="text-[#6b6b80]">Queue position</span><span className="text-[#534ab7] font-medium">{queuePosition ? `#${queuePosition}` : 'Loading…'}</span></div>
-            <div className="flex justify-between text-xs py-[5px]"><span className="text-[#6b6b80]">Sketching starts</span><span className="text-[#534ab7] font-medium">~3 days</span></div>
-            <div className="flex justify-between text-xs py-[5px]"><span className="text-[#6b6b80]">Delivery estimate</span><span className="text-[#534ab7] font-medium">7–10 working days</span></div>
+            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Queue position</span><span className="text-right text-[#534ab7] font-medium">{timeline ? `#${timeline.queuePosition} · ${timeline.queueType}` : 'Loading…'}</span></div>
+            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Sketching starts</span><span className="text-right text-[#534ab7] font-medium">{timeline ? formatTimelineDate(timeline.sketchingStart) : 'Loading…'}</span></div>
+            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Drawing period</span><span className="text-right text-[#534ab7] font-medium">{timeline ? `${timeline.drawingDays} days` : 'Loading…'}</span></div>
+            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Revision period</span><span className="text-right text-[#534ab7] font-medium">{timeline ? `${timeline.revisionDays} days` : 'Loading…'}</span></div>
+            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Estimated completion</span><span className="text-right text-[#534ab7] font-medium">{timeline ? formatTimelineDate(timeline.estimatedCompletion) : 'Loading…'}</span></div>
+            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Delivery estimate</span><span className="max-w-[190px] text-right text-[#534ab7] font-medium">{timeline?.deliveryEstimate || 'Loading…'}</span></div>
           </div>
 
         </div>
