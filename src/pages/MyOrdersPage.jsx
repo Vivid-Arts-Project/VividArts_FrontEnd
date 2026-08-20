@@ -17,7 +17,7 @@ const STATUS = {
 const FRAME_LABELS = {
   without_frame: 'Without frame',
   plastic_frame: 'Classic frame',
-  wooden_frame: 'Premium wooden frame',
+  wooden_frame: 'Premium frame',
 };
 
 const formatDate = (value, includeTime = false) => {
@@ -89,8 +89,9 @@ export default function MyOrdersPage({ onNavigate }) {
     setNotice('');
     try {
       const result = await api.reviewOrderProof(order.id, action);
-      setNotice(result.message);
+      setNotice(`${result.message}. The full order price and remaining balance are shown below.`);
       await loadOrders();
+      window.requestAnimationFrame(() => document.getElementById(`payment-${order.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
     } catch (reviewError) {
       setNotice(reviewError.message || 'Unable to submit your review.');
     } finally {
@@ -230,9 +231,9 @@ export default function MyOrdersPage({ onNavigate }) {
                     {order.artistLocation && <div className="mt-3"><Detail label="Pickup location" value={order.artistLocation}/></div>}
                     {order.customerNote && <div className="mt-3"><Detail label="Your instructions" value={order.customerNote}/></div>}
 
-                    <h4 className="mb-3 mt-6 text-xs font-bold uppercase tracking-[.16em] text-[#aaa0f4]">Payment</h4>
+                    <h4 id={`payment-${order.id}`} className="mb-3 mt-6 scroll-mt-6 text-xs font-bold uppercase tracking-[.16em] text-[#aaa0f4]">Payment</h4>
                     <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                      <Detail label="Order total" value={formatMoney(order.totalPrice, order.currency)} accent/>
+                      <Detail label="Full order price" value={formatMoney(order.totalPrice, order.currency)} accent/>
                       <Detail label="Amount paid" value={formatMoney(order.amountPaid, order.currency)}/>
                       <Detail label="Balance due" value={formatMoney(order.balanceDue, order.currency)}/>
                       <Detail label="Payment plan" value={order.paymentType === 'full' ? 'Paid in full' : 'Advance payment'}/>
