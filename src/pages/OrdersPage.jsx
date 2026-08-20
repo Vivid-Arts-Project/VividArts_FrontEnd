@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Icon from '../components/Icon';
 import Badge from '../components/Badge';
-import { STATUS_MAP } from '../components/statusConfig';
+import { STATUS_ACTION_LABELS, STATUS_MAP } from '../components/statusConfig';
 import { getOrders, updateStatus, sendMessage, setLocation, uploadProof, referencePhotoDownloadUrl } from '../api/adminApi';
 import { useNavigate } from '../router';
 
@@ -46,20 +46,8 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
     ...(order.pickupOption === 'courier' ? [{ key: 'shipped', label: 'Shipped' }] : []),
     { key: 'done', label: 'Done' },
   ];
-  const statusOptions = (() => {
-    if (effectiveStatus === 'in_queue') return [['in_queue', 'Queued'], ['sketching', 'Sketching']];
-    if (effectiveStatus === 'sketching') return [['sketching', 'Sketching — upload a proof when ready']];
-    if (effectiveStatus === 'revision_requested') return [['revision_requested', 'Revision requested — upload a new proof']];
-    if (effectiveStatus === 'waiting_for_feedback') return [['waiting_for_feedback', 'Waiting for customer feedback or approval']];
-    if (effectiveStatus === 'approved') {
-      if (order.frameType && order.frameType !== 'without_frame') return [['approved', 'Approved & Finished'], ['framed', 'Framed']];
-      if (order.pickupOption === 'courier') return [['approved', 'Approved & Finished'], ['shipped', 'Shipped']];
-      return [['approved', 'Approved & Finished'], ['done', 'Done']];
-    }
-    if (effectiveStatus === 'framed') return order.pickupOption === 'courier' ? [['framed', 'Framed'], ['shipped', 'Shipped']] : [['framed', 'Framed'], ['done', 'Done']];
-    if (effectiveStatus === 'shipped') return [['shipped', 'Shipped'], ['done', 'Done']];
-    return [['done', 'Done']];
-  })();
+  const statusOptions = (order.allowedTransitions || [effectiveStatus])
+    .map(value => [value, STATUS_ACTION_LABELS[value] || STATUS_MAP[value]?.label || value]);
 
   const handleStatusSave = async () => {
     setSaving(true);

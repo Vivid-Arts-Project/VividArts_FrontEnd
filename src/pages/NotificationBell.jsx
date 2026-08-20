@@ -3,6 +3,7 @@ import Icon from '../components/Icon';
 import { getCustomerToken } from '../authSession';
 import { api } from '../api';
 import { useLocation, useNavigate } from '../router';
+import { startVisiblePolling } from '../utils/polling';
 
 export const CUSTOMER_NOTIFICATIONS_EVENT = 'vividarts:customer-notifications';
 
@@ -40,12 +41,10 @@ export default function NotificationBell() {
 
   useEffect(() => {
     if (!token) return undefined;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- load persisted notifications when the signed-in header mounts
-    loadNotifications();
-    const interval = window.setInterval(loadNotifications, 30_000);
+    const stopPolling = startVisiblePolling(loadNotifications, 30_000);
     window.addEventListener(CUSTOMER_NOTIFICATIONS_EVENT, loadNotifications);
     return () => {
-      window.clearInterval(interval);
+      stopPolling();
       window.removeEventListener(CUSTOMER_NOTIFICATIONS_EVENT, loadNotifications);
     };
   }, [loadNotifications, token]);

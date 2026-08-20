@@ -3,6 +3,7 @@ import Badge from '../components/Badge';
 import Icon from '../components/Icon';
 import { getOrders, getCustomers, getPayments, invoiceUrl, uploadProof } from '../api/adminApi';
 import { useNavigate } from '../router';
+import { startVisiblePolling } from '../utils/polling';
 
 const CARD       = 'bg-white border border-va-border rounded-va shadow-va overflow-hidden';
 const CARD_HEAD  = 'px-5 py-4 border-b border-va-border flex items-center justify-between';
@@ -306,9 +307,8 @@ export function RevisionsPage() {
     const load = () => getOrders()
       .then(r => { if (active) setOrders(r.data.orders.filter(o => o.status === 'revision_requested')); })
       .catch(() => {});
-    load();
-    const interval = window.setInterval(load, 5_000);
-    return () => { active = false; window.clearInterval(interval); };
+    const stopPolling = startVisiblePolling(load, 5_000);
+    return () => { active = false; stopPolling(); };
   }, []);
 
   return (
@@ -449,40 +449,42 @@ export function ClientsPage() {
 // PAYMENTS PAGE
 // ══════════════════════════════════════════════════════════════════════════════
 export function PaymentsPage() {
-  const [orders, setOrders] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [summary, setSummary] = useState({ balancePending: 0, halfPaidOrderCount: 0 });
   useEffect(() => {
-    const load = () => getOrders().then(r => setOrders(r.data.orders)).catch(() => {});
-    load();
-    const timer = setInterval(load, 10000);
-    return () => clearInterval(timer);
+    const load = () => getPayments().then(r => {
+      setPayments(r.data.payments || []);
+      setSummary(r.data.summary || { balancePending: 0, halfPaidOrderCount: 0 });
+    }).catch(() => {});
+    return startVisiblePolling(load, 10_000);
   }, []);
   const now = new Date();
-  const collectedThisMonth = orders.filter(o => { const date = new Date(o.updatedAt); return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear(); }).reduce((sum, o) => sum + Number(o.amountPaid || 0), 0);
-  const pendingBalance = orders.reduce((sum, o) => sum + Math.max(0, Number(o.totalPrice || 0) - Number(o.amountPaid || 0)), 0);
+  const completed = payments.filter(payment => payment.status === 'completed');
+  const collectedThisMonth = completed.filter(payment => { const date = new Date(payment.completedAt); return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear(); }).reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
 
   return (
     <div className="flex-1 px-3 py-4 sm:px-6 sm:py-[22px]">
-      <div className="grid grid-cols-4 gap-3.5 mb-4">
+      <div className="grid grid-cols-1 gap-3.5 mb-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="bg-grad border border-transparent rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
           <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center text-white mb-3"><Icon name="payments"/></div>
           <div className="font-outfit text-[28px] font-extrabold text-white">LKR {collectedThisMonth.toLocaleString()}</div>
           <div className="text-xs text-white/60 mt-0.5">Collected this month</div>
         </div>
         <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
-          <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-warn mb-3"><Icon name="pending"/></div>
-          <div className="font-outfit text-[28px] font-extrabold text-va-text">LKR {pendingBalance.toLocaleString()}</div>
+          <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-warning mb-3"><Icon name="pending"/></div>
+          <div className="font-outfit text-[28px] font-extrabold text-va-text">LKR {Number(summary.balancePending || 0).toLocaleString()}</div>
           <div className="text-xs text-va-text3 mt-0.5">Balance pending</div>
-          <div className="text-xs font-semibold mt-2 text-va-warn">Half-paid orders</div>
+          <div className="text-xs text-va-warning font-semibold mt-2">{summary.halfPaidOrderCount || 0} half-paid {summary.halfPaidOrderCount === 1 ? 'order' : 'orders'}</div>
         </div>
         <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
           <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-success mb-3"><Icon name="bank"/></div>
-          <div className="font-outfit text-[28px] font-extrabold text-va-text">{orders.filter(o => Number(o.amountPaid) >= Number(o.totalPrice) && Number(o.totalPrice) > 0).length}</div>
-          <div className="text-xs text-va-text3 mt-0.5">Fully paid orders</div>
+          <div className="font-outfit text-[28px] font-extrabold text-va-text">{completed.filter(payment => payment.paymentType === 'full').length}</div>
+          <div className="text-xs text-va-text3 mt-0.5">Completed balances</div>
         </div>
         <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
           <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-purple mb-3"><Icon name="advance"/></div>
-          <div className="font-outfit text-[28px] font-extrabold text-va-text">{orders.filter(o => Number(o.amountPaid) > 0 && Number(o.amountPaid) < Number(o.totalPrice)).length}</div>
-          <div className="text-xs text-va-text3 mt-0.5">Advance paid orders</div>
+          <div className="font-outfit text-[28px] font-extrabold text-va-text">{completed.filter(payment => payment.paymentType === 'advance').length}</div>
+          <div className="text-xs text-va-text3 mt-0.5">Completed deposits</div>
         </div>
       </div>
       <div className={CARD}>
@@ -490,33 +492,27 @@ export function PaymentsPage() {
         <table className="w-full border-collapse">
           <thead>
             <tr>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Order ID</th>
+              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Reference</th>
               <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Client</th>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Total</th>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Paid</th>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Remaining</th>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Type</th>
+              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Purpose</th>
+              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Amount</th>
+              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Method</th>
+              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Paid date</th>
               <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Status</th>
             </tr>
           </thead>
           <tbody>
-            {orders.map(o => {
-              const total = parseFloat(o.totalPrice || 0);
-              const paid  = parseFloat(o.amountPaid || 0);
-              return (
-                <tr key={o.id} className="cursor-pointer transition-colors [&>td]:px-3.5 [&>td]:py-3 [&>td]:border-b [&>td]:border-va-border [&>td]:text-[13px] [&>td]:align-middle hover:[&>td]:bg-va-bg">
-                  <td><span className={ORDER_ID_MONO}>#{o.id?.slice(0,8)}</span></td>
-                  <td>{o.customer?.fullName}</td>
-                  <td><strong>{o.currency} {total.toLocaleString()}</strong></td>
-                  <td>{o.currency} {paid.toLocaleString()}</td>
-                  <td className={paid < total ? 'text-va-warn' : 'text-va-success'}>
-                    {o.currency} {Math.max(0, total - paid).toLocaleString()}
-                  </td>
-                  <td><span className="text-xs bg-va-bg2 px-2 py-[3px] rounded font-semibold">{paid <= 0 ? 'Unpaid' : paid >= total ? 'Full' : 'Advance'}</span></td>
-                  <td><Badge status={paid <= 0 ? 'pending' : paid >= total ? 'completed' : 'advance'}/></td>
-                </tr>
-              );
-            })}
+            {payments.map(payment => (
+              <tr key={payment.paymentId} className="cursor-pointer transition-colors [&>td]:px-3.5 [&>td]:py-3 [&>td]:border-b [&>td]:border-va-border [&>td]:text-[13px] [&>td]:align-middle hover:[&>td]:bg-va-bg">
+                <td><span className={ORDER_ID_MONO}>{payment.transactionId || payment.payhereOrderId || `#${payment.paymentId}`}</span></td>
+                <td>{payment.order?.customer?.full_name || payment.order?.customer?.username || 'Client'}</td>
+                <td><span className="text-xs bg-va-bg2 px-2 py-[3px] rounded font-semibold">{payment.paymentType === 'full' ? 'Balance' : 'Deposit'}</span></td>
+                <td><strong>{payment.currency} {Number(payment.amount || 0).toLocaleString()}</strong></td>
+                <td className="capitalize">{payment.paymentMethod || '—'}</td>
+                <td className="text-va-text3">{payment.completedAt ? new Date(payment.completedAt).toLocaleString() : '—'}</td>
+                <td><Badge status={payment.status}/></td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -531,9 +527,7 @@ export function InvoicesPage() {
   const [payments, setPayments] = useState([]);
   useEffect(() => {
     const load = () => getPayments().then(r => setPayments((r.data.payments || []).filter(p => p.status === 'completed'))).catch(() => {});
-    load();
-    const timer = setInterval(load, 10000);
-    return () => clearInterval(timer);
+    return startVisiblePolling(load, 10_000);
   }, []);
   return (
     <div className="flex-1 px-3 py-4 sm:px-6 sm:py-[22px]">

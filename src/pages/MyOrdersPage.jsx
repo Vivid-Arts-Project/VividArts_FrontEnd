@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import Icon from '../components/Icon';
+import { startVisiblePolling } from '../utils/polling';
 
 const STATUS = {
   in_queue: ['Order received', 'Your order is in the artist’s queue.'],
@@ -72,9 +73,8 @@ export default function MyOrdersPage({ onNavigate }) {
       .then(data => { if (active) { setOrders(data); setError(''); } })
       .catch(loadError => { if (active && loading) setError(loadError.message || 'Unable to load your orders.'); })
       .finally(() => { if (active) setLoading(false); });
-    refresh();
-    const interval = window.setInterval(refresh, 5_000);
-    return () => { active = false; window.clearInterval(interval); };
+    const stopPolling = startVisiblePolling(refresh, 5_000);
+    return () => { active = false; stopPolling(); };
     // `loading` is intentionally omitted so polling does not restart after the first response.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

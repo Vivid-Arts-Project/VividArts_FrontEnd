@@ -13,3 +13,14 @@ export const STATUS_MAP = {
   shipped:              { label: 'Shipped',        icon: 'package',   cls: 'bg-[#ECFDF5] text-[#059669]'      },
   done:                 { label: 'Done',           icon: 'completed', cls: 'bg-va-success-bg text-va-success' },
 };
+
+export const STATUS_ACTION_LABELS = {
+  in_queue: 'Queued',
+  sketching: 'Sketching — upload a proof when ready',
+  waiting_for_feedback: 'Waiting for customer feedback or approval',
+  revision_requested: 'Revision requested — upload a new proof',
+  approved: 'Approved & Finished',
+  framed: 'Framed',
+  shipped: 'Shipped',
+  done: 'Done',
+};
