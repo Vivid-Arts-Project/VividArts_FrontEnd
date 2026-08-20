@@ -3,9 +3,15 @@ import BrandLogo from '../components/BrandLogo';
 
 export default function GalleryPage({ onNavigate = () => {} }) {
   const [images, setImages] = useState([]);
-  useEffect(() => {
-    fetch('/api/content/gallery').then(r => r.ok ? r.json() : []).then(setImages).catch(() => {});
-  }, []);
+  const [loadError, setLoadError] = useState('');
+  const loadImages = () => fetch('/api/content/gallery')
+    .then(response => {
+      if (!response.ok) throw new Error('Unable to load the gallery.');
+      return response.json();
+    })
+    .then(data => { setImages(data); setLoadError(''); })
+    .catch(() => setLoadError(navigator.onLine ? 'Unable to load the gallery.' : 'You are offline.'));
+  useEffect(() => { loadImages(); }, []);
 
   return (
     <div className="min-h-screen bg-[#0a0916] font-sans text-[#f5f4fb]">
@@ -32,6 +38,7 @@ export default function GalleryPage({ onNavigate = () => {} }) {
           </button>
         </div>
 
+        {loadError && <div role="alert" className="mb-5 flex items-center justify-between rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200"><span>{loadError}</span><button type="button" onClick={loadImages} className="rounded-lg border border-red-300/40 px-3 py-1.5 font-semibold">Retry</button></div>}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {images.map((img) => (
             <figure key={img.id} className="group relative overflow-hidden rounded-[14px] border border-white/10 bg-[#0f0e1d]">

@@ -3,6 +3,7 @@ import { useAuth } from '../context/useAuth';
 import Icon from './Icon';
 import { getAdminNotifications, markAdminNotificationRead, markAllAdminNotificationsRead } from '../api/adminApi';
 import { useLocation, useNavigate } from '../router';
+import { startVisiblePolling } from '../utils/polling';
 
 const PAGE_META = {
   orders: { title: 'Order Management', bread: 'Orders' },
@@ -43,12 +44,10 @@ export default function Topbar({ page, search, onSearch, onMenu }) {
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch persisted notifications when the admin shell mounts
-    loadNotifications();
-    const interval = window.setInterval(loadNotifications, 30_000);
+    const stopPolling = startVisiblePolling(loadNotifications, 30_000);
     window.addEventListener('vividarts:admin-notifications', loadNotifications);
     return () => {
-      window.clearInterval(interval);
+      stopPolling();
       window.removeEventListener('vividarts:admin-notifications', loadNotifications);
     };
   }, [loadNotifications]);

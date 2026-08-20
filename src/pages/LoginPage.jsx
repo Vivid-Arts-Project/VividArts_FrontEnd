@@ -37,7 +37,7 @@ function LoginPage({ onNavigate }) {
         throw new Error(data.message || 'Login failed');
       }
 
-      startCustomerSession(data.token, data.customer?.username || username);
+      startCustomerSession(null, data.customer?.username || username);
       setIsError(false);
       setMessage('Login successful.');
       showNotification('success', 'Login successful! Welcome back.');

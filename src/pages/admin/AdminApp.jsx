@@ -15,6 +15,7 @@ import SettingsPage from '../SettingsPage';
 import GalleryManager from '../GalleryManager';
 import AdminNotificationsPage from '../AdminNotificationsPage';
 import { getOrders } from '../../api/adminApi';
+import { startVisiblePolling } from '../../utils/polling';
 
 const ADMIN_PAGES = new Set(['dashboard', 'orders', 'proofs', 'revisions', 'clients', 'payments', 'invoices', 'settings', 'gallery']);
 
@@ -36,6 +37,7 @@ export default function AdminApp() {
   const [toast, setToast]         = useState(null);
   const [stats, setStats]         = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [dataError, setDataError] = useState(null);
 
   const showToast = useCallback((msg) => setToast(msg), []);
   const handlePageNavigation = useCallback((nextPage) => {
@@ -44,6 +46,12 @@ export default function AdminApp() {
     setSearch('');
     navigate(`/admin/${ADMIN_PAGES.has(nextPage) ? nextPage : 'dashboard'}`);
   }, [navigate]);
+
+  useEffect(() => {
+    const handleDataError = event => setDataError(event.detail || { message: 'Unable to load data.' });
+    window.addEventListener('vividarts:data-request-error', handleDataError);
+    return () => window.removeEventListener('vividarts:data-request-error', handleDataError);
+  }, []);
 
   useEffect(() => {
     if (/^\/admin\/orders\/[^/]+$/.test(path) || path === '/admin/notifications') return;
@@ -56,9 +64,8 @@ export default function AdminApp() {
     const loadStats = () => getOrders()
       .then(response => { if (active) setStats(response.data.stats); })
       .catch(() => {});
-    loadStats();
-    const interval = window.setInterval(loadStats, 5_000);
-    return () => { active = false; window.clearInterval(interval); };
+    const stopPolling = startVisiblePolling(loadStats, 5_000);
+    return () => { active = false; stopPolling(); };
   }, []);
 
   const renderPage = () => {
@@ -96,6 +103,12 @@ export default function AdminApp() {
           onSearch={setSearch}
           onMenu={() => setMobileNavOpen(true)}
         />
+        {dataError && (
+          <div role="alert" className="mx-3 mt-3 flex items-center justify-between gap-3 rounded-lg border border-red-300 bg-va-danger-bg px-4 py-3 text-sm text-va-danger sm:mx-6">
+            <span>{dataError.message}</span>
+            <button type="button" className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-xs font-bold" onClick={() => { const retry = dataError.retry; setDataError(null); retry?.().catch(() => {}); }}>Retry</button>
+          </div>
+        )}
         <div className="flex min-w-0 flex-1 overflow-auto">
           {renderPage()}
         </div>

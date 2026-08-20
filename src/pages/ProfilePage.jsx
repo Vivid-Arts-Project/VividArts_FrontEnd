@@ -22,7 +22,7 @@ function ProfilePage({ onNavigate }) {
     const fetchProfileData = async () => {
       try {
         const response = await fetch('/api/customers/profile', {
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'same-origin',
         });
 
         const data = await response.json();
@@ -49,15 +49,14 @@ function ProfilePage({ onNavigate }) {
 
   const handleUpdate = async (event) => {
     event.preventDefault();
-    const token = getCustomerToken();
 
     try {
       const response = await fetch('/api/customers/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
+        credentials: 'same-origin',
         body: JSON.stringify({ fullName, username, phoneNumber, email }),
       });
 
@@ -97,7 +96,7 @@ function ProfilePage({ onNavigate }) {
     try {
       const res = await fetch('/api/customers/profile/avatar', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'same-origin',
         body: fd,
       });
       const data = await res.json();

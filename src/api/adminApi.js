@@ -1,12 +1,35 @@
 import api from './axios';
 
+const sharedReads = new Map();
+const sharedGet = (url, ttlMs = 1_000) => {
+  const now = Date.now();
+  const cached = sharedReads.get(url);
+  if (cached && (cached.pending || now - cached.createdAt < ttlMs)) return cached.promise;
+  const entry = { createdAt: now, pending: true };
+  entry.promise = api.get(url)
+    .catch(error => {
+      window.dispatchEvent(new CustomEvent('vividarts:data-request-error', { detail: {
+        message: navigator.onLine ? 'Unable to refresh data from the server.' : 'You are offline. Reconnect and try again.',
+        retry: () => { sharedReads.delete(url); return sharedGet(url, 0); },
+      } }));
+      throw error;
+    })
+    .finally(() => { entry.pending = false; });
+  sharedReads.set(url, entry);
+  return entry.promise;
+};
+
+const invalidateOrders = () => {
+  for (const key of sharedReads.keys()) if (key.startsWith('/admin/orders')) sharedReads.delete(key);
+};
+
 // ── Orders ────────────────────────────────────────────────────────────────────
-export const getOrders    = ()          => api.get('/admin/orders');
-export const getOrder     = (id)        => api.get(`/admin/orders/${id}`);
-export const updateStatus = (id, status)=> api.patch(`/admin/orders/${id}/status`, { status });
-export const setLocation  = (id, loc)   => api.patch(`/admin/orders/${id}/location`, { artistLocation: loc });
-export const sendMessage  = (id, msg)   => api.post(`/admin/orders/${id}/messages`, { message: msg });
-export const deleteOrder  = (id, reason = '') => api.delete(`/admin/orders/${id}`, { data: { reason } });
+export const getOrders    = (page = 1, limit = 50) => sharedGet(`/admin/orders?page=${page}&limit=${limit}`);
+export const getOrder     = (id)        => sharedGet(`/admin/orders/${id}`, 500);
+export const updateStatus = async (id, status) => { const result = await api.patch(`/admin/orders/${id}/status`, { status }); invalidateOrders(); return result; };
+export const setLocation  = async (id, loc) => { const result = await api.patch(`/admin/orders/${id}/location`, { artistLocation: loc }); invalidateOrders(); return result; };
+export const sendMessage  = async (id, msg) => { const result = await api.post(`/admin/orders/${id}/messages`, { message: msg }); invalidateOrders(); return result; };
+export const deleteOrder  = async (id, reason = '') => { const result = await api.delete(`/admin/orders/${id}`, { data: { reason } }); invalidateOrders(); return result; };
 export const referencePhotoDownloadUrl = (id, index) => `${api.defaults.baseURL}/admin/orders/${encodeURIComponent(id)}/reference-photos/${index}/download`;
 
 // Proof upload uses FormData (multipart), so Content-Type header is overridden
@@ -19,8 +42,8 @@ export const uploadProof = (id, file) => {
 };
 
 // ── Customers (for Clients page) ──────────────────────────────────────────────
-export const getCustomers = () => api.get('/admin/customers');
-export const getPayments  = () => api.get('/payments');
+export const getCustomers = (page = 1, limit = 50) => sharedGet(`/admin/customers?page=${page}&limit=${limit}`);
+export const getPayments  = (page = 1, limit = 50) => sharedGet(`/payments?page=${page}&limit=${limit}`);
 export const invoiceUrl   = (payhereOrderId) => `${api.defaults.baseURL}/payments/${encodeURIComponent(payhereOrderId)}/invoice`;
 
 // Admin profile and settings
@@ -48,7 +71,7 @@ export const addGalleryImage = (data) => api.post('/content/admin/gallery', data
 export const removeGalleryImage = (id) => api.delete(`/content/admin/gallery/${id}`);
 
 // Admin activity notifications
-export const getAdminNotifications = () => api.get('/admin/activity-notifications');
+export const getAdminNotifications = (page = 1, limit = 50) => sharedGet(`/admin/activity-notifications?page=${page}&limit=${limit}`);
 export const markAdminNotificationRead = (id) => api.patch(`/admin/activity-notifications/${id}/read`);
 export const markAllAdminNotificationsRead = () => api.patch('/admin/activity-notifications/read-all');
 export const deleteAdminNotification = (id) => api.delete(`/admin/activity-notifications/${id}`);

@@ -1,15 +1,12 @@
-import { getCustomerToken } from './authSession';
-
 const API_URL = '/api';
 
 // Helper function for API calls with error handling
 const fetchAPI = async (url, options = {}) => {
   try {
-    const token = getCustomerToken();
     const response = await fetch(url, {
+      credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
       },
       ...options,
@@ -47,12 +44,11 @@ export const api = {
   },
 
   uploadReferencePhotos: async (commissionId, files) => {
-    const token = getCustomerToken();
     const formData = new FormData();
     files.forEach((file) => formData.append('referencePhotos', file));
     const response = await fetch(`${API_URL}/payments/orders/${encodeURIComponent(commissionId)}/reference-photos`, {
       method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'same-origin',
       body: formData,
     });
     if (!response.ok) {
@@ -84,9 +80,8 @@ export const api = {
 
   // Invoice PDF download URL (available once payment is completed)
   downloadInvoice: async (orderId) => {
-    const token = getCustomerToken();
     const response = await fetch(`${API_URL}/payments/${encodeURIComponent(orderId)}/invoice`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: 'same-origin',
     });
     if (!response.ok) {
       const contentType = response.headers.get('content-type') || '';
@@ -122,10 +117,8 @@ export const api = {
   },
 
   // Get the currently authenticated customer's profile
-  getProfile: async (token) => {
-    return fetchAPI(`${API_URL}/customers/profile`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  getProfile: async () => {
+    return fetchAPI(`${API_URL}/customers/profile`);
   },
 
   // Get the complete order history for the signed-in customer

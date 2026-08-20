@@ -4,6 +4,7 @@ import { useAuth } from '../context/useAuth';
 import { useNavigate } from '../router';
 import { DetailPanel } from './OrdersPage';
 import { CancelModal } from '../components/Modals';
+import { startVisiblePolling } from '../utils/polling';
 
 export default function OrderManagePage({ orderId, onToast }) {
   const [order, setOrder] = useState(null);
@@ -25,10 +26,7 @@ export default function OrderManagePage({ orderId, onToast }) {
   }, [orderId, onToast]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- load the route's order when the page opens
-    load();
-    const interval = window.setInterval(load, 5_000);
-    return () => window.clearInterval(interval);
+    return startVisiblePolling(load, 5_000);
   }, [load]);
 
   if (loading) return <div className="flex flex-1 items-center justify-center text-sm text-va-text3">Loading order…</div>;

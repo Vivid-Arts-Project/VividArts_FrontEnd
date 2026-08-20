@@ -2,37 +2,38 @@ import { useEffect, useRef } from 'react';
 
 export const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 export const CUSTOMER_AUTH_EVENT = 'vividarts:customer-auth';
-const CUSTOMER_TOKEN_KEY = 'vividarts:customer-token';
+const CUSTOMER_SESSION_KEY = 'vividarts:customer-session';
 const CUSTOMER_USERNAME_KEY = 'vividarts:customer-username';
 const ADMIN_SESSION_KEY = 'vividarts:admin-session';
 const PAYMENT_RETURN_SESSION_KEY = 'vividarts:payment-return-session';
 const PAYMENT_RETURN_MAX_AGE_MS = 30 * 60 * 1000;
 
 export function getCustomerToken() {
-  return sessionStorage.getItem(CUSTOMER_TOKEN_KEY);
+  return localStorage.getItem(CUSTOMER_SESSION_KEY) === 'active' ? 'cookie-session' : null;
 }
 
 export function getCustomerUsername() {
-  return sessionStorage.getItem(CUSTOMER_USERNAME_KEY) || '';
+  return localStorage.getItem(CUSTOMER_USERNAME_KEY) || '';
 }
 
 export function setCustomerUsername(username) {
-  sessionStorage.setItem(CUSTOMER_USERNAME_KEY, username);
+  localStorage.setItem(CUSTOMER_USERNAME_KEY, username);
   window.dispatchEvent(new Event(CUSTOMER_AUTH_EVENT));
 }
 
-export function startCustomerSession(token, username) {
-  sessionStorage.setItem(CUSTOMER_TOKEN_KEY, token);
-  sessionStorage.setItem(CUSTOMER_USERNAME_KEY, username);
+export function startCustomerSession(_token, username) {
+  localStorage.setItem(CUSTOMER_SESSION_KEY, 'active');
+  localStorage.setItem(CUSTOMER_USERNAME_KEY, username);
   localStorage.removeItem('token');
   localStorage.removeItem('username');
   window.dispatchEvent(new Event(CUSTOMER_AUTH_EVENT));
 }
 
 export function clearCustomerSession() {
-  sessionStorage.removeItem(CUSTOMER_TOKEN_KEY);
-  sessionStorage.removeItem(CUSTOMER_USERNAME_KEY);
+  localStorage.removeItem(CUSTOMER_SESSION_KEY);
+  localStorage.removeItem(CUSTOMER_USERNAME_KEY);
   localStorage.removeItem(PAYMENT_RETURN_SESSION_KEY);
+  fetch('/api/customers/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
   window.dispatchEvent(new Event(CUSTOMER_AUTH_EVENT));
 }
 
@@ -60,12 +61,10 @@ export function isPaymentReturnLocation() {
 }
 
 export function preparePaymentReturnSession(orderId) {
-  const token = getCustomerToken();
-  if (!token || !orderId) return;
+  if (!hasCustomerSession() || !orderId) return;
 
   localStorage.setItem(PAYMENT_RETURN_SESSION_KEY, JSON.stringify({
     orderId,
-    token,
     username: getCustomerUsername(),
     createdAt: Date.now(),
   }));
@@ -78,12 +77,11 @@ function restorePaymentReturnSession() {
   try {
     const stored = JSON.parse(localStorage.getItem(PAYMENT_RETURN_SESSION_KEY) || 'null');
     const isValid = stored?.orderId === returnedOrderId
-      && typeof stored.token === 'string'
       && Date.now() - Number(stored.createdAt) <= PAYMENT_RETURN_MAX_AGE_MS;
 
     if (!isValid) return false;
-    sessionStorage.setItem(CUSTOMER_TOKEN_KEY, stored.token);
-    sessionStorage.setItem(CUSTOMER_USERNAME_KEY, stored.username || '');
+    localStorage.setItem(CUSTOMER_SESSION_KEY, 'active');
+    localStorage.setItem(CUSTOMER_USERNAME_KEY, stored.username || '');
     return true;
   } catch {
     return false;
