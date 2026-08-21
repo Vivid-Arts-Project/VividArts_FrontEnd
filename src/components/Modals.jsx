@@ -35,18 +35,21 @@ export function CancelModal({ order, onClose, onConfirm, busy = false }) {
             <strong>{order.customer?.fullName || 'this client'}</strong>? The client will be notified automatically.
           </p>
           <div className="mt-3.5 mb-0">
-            <label className={FIELD_LABEL}>Reason for cancellation (optional)</label>
+            <label className={FIELD_LABEL}>Reason for cancellation <span className="text-va-danger">*</span></label>
             <textarea
               className={`${FIELD_INPUT} resize-y min-h-[80px]`}
               placeholder="e.g. Reference photo is too low resolution to proceed…"
               value={reason}
+              maxLength={500}
+              required
               onChange={e => setReason(e.target.value)}
             />
+            <div className="mt-1.5 flex items-center justify-between gap-3 text-[10px]"><span className={reason.trim() ? 'text-va-text3' : 'text-va-danger'}>{reason.trim() ? 'This reason will be sent to the customer.' : 'A cancellation reason is required.'}</span><span className="shrink-0 text-va-text3">{reason.length}/500</span></div>
           </div>
         </div>
         <div className={MODAL_FOOT}>
           <button className={`${BTN_BASE} ${BTN_GHOST}`} disabled={busy} onClick={onClose}>Keep order</button>
-          <button className={`${BTN_BASE} ${BTN_DANGER} px-4 py-2 disabled:cursor-wait disabled:opacity-60`} disabled={busy} onClick={() => onConfirm(reason)}>
+          <button className={`${BTN_BASE} ${BTN_DANGER} px-4 py-2 disabled:cursor-not-allowed disabled:opacity-45`} disabled={busy || !reason.trim()} onClick={() => onConfirm(reason.trim())}>
             {busy ? 'Deleting…' : 'Cancel and delete order'}
           </button>
         </div>

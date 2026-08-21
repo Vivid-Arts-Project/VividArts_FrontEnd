@@ -22,6 +22,9 @@ const sharedGet = (url, ttlMs = 1_000) => {
 const invalidateOrders = () => {
   for (const key of sharedReads.keys()) if (key.startsWith('/admin/orders')) sharedReads.delete(key);
 };
+const invalidateReviews = () => {
+  for (const key of sharedReads.keys()) if (key.startsWith('/admin/reviews')) sharedReads.delete(key);
+};
 
 // ── Orders ────────────────────────────────────────────────────────────────────
 export const getOrders    = (page = 1, limit = 50) => sharedGet(`/admin/orders?page=${page}&limit=${limit}`);
@@ -76,6 +79,10 @@ export const getGalleryImages = () => api.get('/content/admin/gallery');
 export const saveGalleryImage = (id, data) => api.patch(`/content/admin/gallery/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
 export const addGalleryImage = (data) => api.post('/content/admin/gallery', data, { headers: { 'Content-Type': 'multipart/form-data' } });
 export const removeGalleryImage = (id) => api.delete(`/content/admin/gallery/${id}`);
+
+export const getReviews = (status = 'all', page = 1, limit = 50) => sharedGet(`/admin/reviews?status=${encodeURIComponent(status)}&page=${page}&limit=${limit}`);
+export const updateReview = async (id, data) => { const result = await api.patch(`/admin/reviews/${id}`, data); invalidateReviews(); return result; };
+export const deleteReview = async id => { const result = await api.delete(`/admin/reviews/${id}`); invalidateReviews(); return result; };
 
 // Admin activity notifications
 export const getAdminNotifications = (page = 1, limit = 50) => sharedGet(`/admin/activity-notifications?page=${page}&limit=${limit}`);

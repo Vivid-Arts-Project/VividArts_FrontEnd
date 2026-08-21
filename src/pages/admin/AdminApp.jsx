@@ -14,10 +14,11 @@ import {
 import SettingsPage from '../SettingsPage';
 import GalleryManager from '../GalleryManager';
 import AdminNotificationsPage from '../AdminNotificationsPage';
+import ReviewsPage from '../ReviewsPage';
 import { getOrders } from '../../api/adminApi';
 import { startVisiblePolling } from '../../utils/polling';
 
-const ADMIN_PAGES = new Set(['dashboard', 'orders', 'proofs', 'revisions', 'clients', 'payments', 'invoices', 'settings', 'gallery']);
+const ADMIN_PAGES = new Set(['dashboard', 'orders', 'proofs', 'revisions', 'clients', 'reviews', 'payments', 'invoices', 'settings', 'gallery']);
 
 const pageFromPath = (path) => {
   const orderDetail = path.match(/^\/admin\/orders\/[^/]+$/);
@@ -82,6 +83,7 @@ export default function AdminApp() {
       case 'invoices':  return <InvoicesPage  {...props}/>;
       case 'settings':  return <SettingsPage  {...props}/>;
       case 'gallery':   return <GalleryManager {...props}/>;
+      case 'reviews':   return <ReviewsPage {...props}/>;
       default:          return <OrdersPage    {...props}/>;
     }
   };

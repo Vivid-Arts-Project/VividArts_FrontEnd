@@ -184,7 +184,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
   }
 
   return (
-    <div className="min-h-screen bg-[#0d0c1a] pb-16 font-sans text-white">
+    <div className="soft-navy-violet-bg min-h-screen pb-16 font-sans text-white">
       <div className="mx-auto max-w-[980px] px-[18px] py-7">
         <CommissionHeader onBack={onBack} onHome={() => onNavigate('landing')} />
         <Stepper current={2} />

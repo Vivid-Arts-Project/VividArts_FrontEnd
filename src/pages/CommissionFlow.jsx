@@ -74,5 +74,5 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
     : <Redirect to="/commission/upload" replace />;
   else page = <Redirect to="/commission/upload" replace />;
 
-  return <div className="min-h-screen bg-[#0d0c1a] text-white">{page}</div>;
+  return <div className="soft-navy-violet-bg min-h-screen text-white">{page}</div>;
 }

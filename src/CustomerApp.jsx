@@ -8,6 +8,7 @@ import ProfilePage from './pages/ProfilePage';
 import MyOrdersPage from './pages/MyOrdersPage';
 import InvoicePage from './pages/InvoicePage';
 import CustomerNotificationsPage from './pages/CustomerNotificationsPage';
+import CustomerReviewsPage from './pages/CustomerReviewsPage';
 import { isTrustedNavigation, useLocation, useNavigate } from './router';
 import { Redirect } from './RouterComponents';
 import { clearCustomerSession, CUSTOMER_AUTH_EVENT, hasCustomerSession, useIdleTimeout } from './authSession';
@@ -26,6 +27,7 @@ const PATHS = {
   profile: '/profile',
   orders: '/my-orders',
   notifications: '/notifications',
+  reviews: '/reviews',
 };
 
 function CustomerApp() {
@@ -85,6 +87,7 @@ function CustomerApp() {
   }
   if (path === '/') return <LandingPage onNavigate={navigateTo} />;
   if (path === '/gallery') return <GalleryPage onNavigate={navigateTo} />;
+  if (path === '/reviews') return <CustomerReviewsPage onNavigate={navigateTo} />;
   return <Redirect to="/" replace />;
 }
 

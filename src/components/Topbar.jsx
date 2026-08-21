@@ -12,6 +12,7 @@ const PAGE_META = {
   proofs: { title: 'Proof Upload', bread: 'Proofs' },
   revisions: { title: 'Revision Requests', bread: 'Revisions' },
   clients: { title: 'Clients', bread: 'Clients' },
+  reviews: { title: 'Customer Reviews', bread: 'Reviews' },
   payments: { title: 'Payments', bread: 'Payments' },
   invoices: { title: 'Invoices', bread: 'Invoices' },
   settings: { title: 'Settings', bread: 'Settings' },
