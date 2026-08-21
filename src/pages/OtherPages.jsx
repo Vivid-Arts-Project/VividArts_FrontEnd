@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import Badge from '../components/Badge';
 import Icon from '../components/Icon';
-import { getOrders, getCustomers, getPayments, invoiceUrl, uploadProof } from '../api/adminApi';
+import { getOrders, getCustomers, getPayments, downloadInvoice, uploadProof } from '../api/adminApi';
 import { useNavigate } from '../router';
+import { saveBlob } from '../utils/download';
 import { startVisiblePolling } from '../utils/polling';
 
 const CARD       = 'bg-white border border-va-border rounded-va shadow-va overflow-hidden';
@@ -525,10 +526,27 @@ export function PaymentsPage() {
 // ══════════════════════════════════════════════════════════════════════════════
 export function InvoicesPage() {
   const [payments, setPayments] = useState([]);
+  const [downloading, setDownloading] = useState('');
+  const [error, setError] = useState('');
   useEffect(() => {
     const load = () => getPayments().then(r => setPayments((r.data.payments || []).filter(p => p.status === 'completed'))).catch(() => {});
     return startVisiblePolling(load, 10_000);
   }, []);
+
+  const handleDownload = async (payhereOrderId) => {
+    if (!payhereOrderId || downloading) return;
+    setDownloading(payhereOrderId);
+    setError('');
+    try {
+      const invoice = await downloadInvoice(payhereOrderId);
+      saveBlob(invoice, `invoice-${payhereOrderId}.pdf`);
+    } catch (downloadError) {
+      setError(downloadError.response?.data?.error || downloadError.message || 'Unable to download the invoice.');
+    } finally {
+      setDownloading('');
+    }
+  };
+
   return (
     <div className="flex-1 px-3 py-4 sm:px-6 sm:py-[22px]">
       <div className={CARD}>
@@ -537,6 +555,7 @@ export function InvoicesPage() {
           <span className="text-xs text-va-text3">Completed advance payments</span>
         </div>
         <div className={CARD_BODY}>
+          {error && <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{error}</div>}
           {payments.map(payment => (
             <div key={payment.paymentId} className="flex items-center justify-between py-3 border-b border-va-border last:border-b-0">
               <div>
@@ -545,7 +564,7 @@ export function InvoicesPage() {
               </div>
               <div className="text-right">
                 <div className="text-[13px] font-bold">{payment.currency} {Number(payment.amount || 0).toLocaleString()}</div>
-                <a href={invoiceUrl(payment.payhereOrderId)} target="_blank" rel="noreferrer" className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM} mt-1 inline-block no-underline`}>View / Download PDF</a>
+                <button type="button" disabled={downloading === payment.payhereOrderId} onClick={() => handleDownload(payment.payhereOrderId)} className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM} mt-1 disabled:cursor-wait disabled:opacity-60`}>{downloading === payment.payhereOrderId ? 'Preparing PDF…' : 'Download PDF'}</button>
               </div>
             </div>
           ))}

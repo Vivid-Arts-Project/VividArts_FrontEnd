@@ -35,8 +35,13 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
   const [chatMsg, setChatMsg]   = useState('');
   const [location, setLoc]      = useState(order.artistLocation || '');
   const [proofFile, setProofFile] = useState(null);
+  const [proofPreviewUrl, setProofPreviewUrl] = useState('');
   const [uploadingProof, setUploadingProof] = useState(false);
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
+
+  useEffect(() => () => {
+    if (proofPreviewUrl) URL.revokeObjectURL(proofPreviewUrl);
+  }, [proofPreviewUrl]);
 
   const effectiveStatus = order.status === 'finished' ? 'approved' : order.status;
   const curIdx = STAGE_ORDER.indexOf(effectiveStatus);
@@ -94,11 +99,18 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
     try {
       await uploadProof(order.id, proofFile);
       setProofFile(null);
+      setProofPreviewUrl('');
       onToast(`Proof sent to ${order.customer?.fullName || 'client'} — awaiting approval`);
       onStatusSaved();
     } catch (error) {
       onToast(error.response?.data?.error || 'Proof upload failed');
     } finally { setUploadingProof(false); }
+  };
+
+  const handleProofFileChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    setProofFile(file);
+    setProofPreviewUrl(file ? URL.createObjectURL(file) : '');
   };
 
   const messages = order.messages || [];
@@ -186,7 +198,9 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {order.referencePhotos.map((url, i) => (
                 <div key={url} className="overflow-hidden rounded-lg border border-va-border bg-va-bg">
-                  <a href={url} target="_blank" rel="noreferrer"><img src={url} alt={`Reference ${i + 1}`} className="h-36 w-full object-cover"/></a>
+                  <a href={url} target="_blank" rel="noreferrer" className="flex h-56 items-center justify-center bg-white p-2 sm:h-64">
+                    <img src={url} alt={`Reference ${i + 1}`} className="h-full w-full object-contain"/>
+                  </a>
                   <a href={referencePhotoDownloadUrl(order.id, i)} className={`${BTN_BASE} ${BTN_GHOST} m-2 flex items-center justify-center gap-1.5 no-underline`}>
                     <Icon name="download" size={14}/> Download reference {i + 1}
                   </a>
@@ -201,10 +215,10 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
           <div className="text-[11px] font-bold text-va-text3 tracking-wide uppercase mb-3">Proof Upload</div>
           {order.proofImagePath ? (
             <>
-              <div className="rounded-lg overflow-hidden border border-va-border mb-2.5">
-                <div className="w-full h-[130px] bg-gradient-to-br from-va-bg2 to-[#d0c8f0] flex items-center justify-center relative overflow-hidden">
+              <div className="mb-2.5 overflow-hidden rounded-lg border border-va-border">
+                <div className="relative flex h-[clamp(280px,50vw,620px)] w-full items-center justify-center overflow-hidden bg-gradient-to-br from-va-bg2 to-[#d0c8f0] p-3">
                   <div className="absolute font-outfit text-[22px] font-extrabold text-[rgba(91,63,168,0.12)] -rotate-[30deg] tracking-[3px] uppercase select-none">VIVID ARTS</div>
-                  <img src={order.proofImagePath} alt="proof" className="w-full h-full object-cover absolute top-0 left-0 opacity-[0.85]"/>
+                  <img src={order.proofImagePath} alt="proof" className="relative z-[1] h-full w-full object-contain"/>
                 </div>
               </div>
               <div className="flex gap-1.5">
@@ -213,11 +227,25 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
             </>
           ) : <div className="mb-3 text-xs text-va-text3">No proof has been uploaded for this order yet.</div>}
           <div className="rounded-lg border border-blue-200 bg-va-info-bg px-3 py-2.5 text-xs text-va-info">Uploading sends the proof to the customer and changes the order to waiting for feedback.</div>
-          <label className="mt-3 block cursor-pointer rounded-lg border-[1.5px] border-dashed border-va-border2 bg-va-bg px-3.5 py-5 text-center transition-all hover:border-va-blue hover:bg-va-info-bg">
-            <input type="file" accept="image/jpeg,image/png" className="hidden" disabled={uploadingProof} onChange={e => setProofFile(e.target.files?.[0] || null)}/>
-            <Icon name="upload" size={26} className="mx-auto mb-1.5 text-va-purple"/>
-            <div className="text-xs font-semibold text-va-text">{proofFile ? proofFile.name : order.proofImagePath ? 'Choose a replacement proof' : 'Choose proof image'}</div>
-            <div className="mt-1 text-[11px] text-va-text3">JPG or PNG · Max 10 MB</div>
+          <label className="mt-3 block cursor-pointer overflow-hidden rounded-lg border-[1.5px] border-dashed border-va-border2 bg-va-bg text-center transition-all hover:border-va-blue hover:bg-va-info-bg">
+            <input type="file" accept="image/jpeg,image/png" className="hidden" disabled={uploadingProof} onChange={handleProofFileChange}/>
+            {proofPreviewUrl ? (
+              <>
+                <div className="flex h-[clamp(280px,48vw,560px)] w-full items-center justify-center bg-white p-3">
+                  <img src={proofPreviewUrl} alt="Selected proof preview" className="h-full w-full object-contain"/>
+                </div>
+                <div className="border-t border-va-border bg-va-bg px-3.5 py-3">
+                  <div className="flex items-center justify-center gap-2 text-xs font-semibold text-va-text"><Icon name="upload" size={17} className="text-va-purple"/>{proofFile.name}</div>
+                  <div className="mt-1 text-[11px] text-va-text3">Full image preview · Click to choose another image</div>
+                </div>
+              </>
+            ) : (
+              <div className="px-3.5 py-5">
+                <Icon name="upload" size={26} className="mx-auto mb-1.5 text-va-purple"/>
+                <div className="text-xs font-semibold text-va-text">{order.proofImagePath ? 'Choose a replacement proof' : 'Choose proof image'}</div>
+                <div className="mt-1 text-[11px] text-va-text3">JPG or PNG · Max 10 MB</div>
+              </div>
+            )}
           </label>
           {proofFile && <button className={`${BTN_BASE} ${BTN_FILL} mt-2 w-full py-[9px] text-[13px]`} disabled={uploadingProof} onClick={handleProofUpload}>{uploadingProof ? 'Uploading…' : 'Upload and send proof'}</button>}
         </div>

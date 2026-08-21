@@ -5,6 +5,7 @@ import {
   getPricing, updatePriceRow,
 } from '../api/adminApi';
 import { useAuth } from '../context/useAuth';
+import Icon from '../components/Icon';
 
 // ── Small reusable loading skeleton ──────────────────────────────────────────
 function Skeleton({ width = '100%', height = 14 }) {
@@ -133,54 +134,81 @@ function ProfileTab({ admin, loading, onToast, onSaved, updateAdmin }) {
   const initials = admin
     ? `${admin.firstName?.charAt(0) || ''}${admin.lastName?.charAt(0) || ''}`.toUpperCase() || 'A'
     : 'A';
+  const displayName = `${admin?.firstName || ''} ${admin?.lastName || ''}`.trim() || 'Administrator';
+  const inputClass = 'h-12 w-full rounded-xl border border-[#dddaf2] bg-[#fafaff] px-4 text-sm text-[#211f36] outline-none transition-all duration-200 placeholder:text-[#aaa6c0] hover:border-[#c6c0eb] focus:border-[#7968dc] focus:bg-white focus:ring-4 focus:ring-[#7968dc]/10';
 
   return (
-    <div className="card">
-      <div className="card-head"><div className="card-title">Profile Information</div></div>
-      <div className="card-body">
-        {/* Avatar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 22 }}>
-          <div style={{ width: 64, height: 64, borderRadius: '50%', overflow: 'hidden', background: 'var(--grad)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 22, color: '#fff', fontFamily: "'Outfit',sans-serif", flexShrink: 0 }}>
-            {admin?.profileImageUrl
-              ? <img src={admin.profileImageUrl} alt="Admin profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
-              : loading ? '?' : initials}
-          </div>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700, fontFamily: "'Outfit',sans-serif" }}>
-              {loading ? <Skeleton width={140}/> : `${admin?.firstName} ${admin?.lastName}`}
+    <div className="overflow-hidden rounded-[22px] border border-[#dcd8f2] bg-white shadow-[0_22px_60px_rgba(65,53,138,.10)]">
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#191535] via-[#403586] to-[#268fdd] px-5 py-7 text-white sm:px-8 sm:py-9">
+        <div className="pointer-events-none absolute -right-16 -top-24 h-72 w-72 rounded-full border border-white/10 bg-white/[.06]"/>
+        <div className="pointer-events-none absolute -bottom-24 right-40 h-56 w-56 rounded-full bg-[#7f6ce7]/25 blur-3xl"/>
+        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center">
+          <div className="relative w-fit shrink-0">
+            <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[30px] border-4 border-white bg-gradient-to-br from-[#4aa5e8] to-[#8061d8] font-outfit text-3xl font-extrabold text-white shadow-[0_18px_45px_rgba(9,8,30,.36)]">
+              {admin?.profileImageUrl
+                ? <img src={admin.profileImageUrl} alt="Admin profile" className="h-full w-full object-cover"/>
+                : loading ? '?' : initials}
             </div>
-            <div style={{ fontSize: 13, color: 'var(--va-text3)', marginTop: 4 }}>Artist & Administrator</div>
-            <label className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', marginTop: 10, cursor: uploadingPhoto ? 'wait' : 'pointer' }}>
-              {uploadingPhoto ? 'Uploading…' : admin?.profileImageUrl ? 'Change photo' : 'Add profile photo'}
+            <label className={`absolute -bottom-2 -right-2 flex h-10 w-10 items-center justify-center rounded-xl border-2 border-white bg-[#7963dc] text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-[#6650ca] ${uploadingPhoto ? 'cursor-wait opacity-70' : 'cursor-pointer'}`} title={admin?.profileImageUrl ? 'Change profile photo' : 'Add profile photo'}>
+              <Icon name={uploadingPhoto ? 'pending' : 'camera'} size={19}/>
               <input type="file" accept="image/jpeg,image/png,image/webp" hidden disabled={uploadingPhoto || loading} onChange={handlePhotoUpload}/>
             </label>
-            <div style={{ marginTop: 6, fontSize: 11, color: 'var(--va-text3)' }}>JPG, PNG or WebP · Max 5 MB</div>
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[.15em] text-[#ddd8ff] backdrop-blur-sm">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,.9)]"/> Admin profile
+            </div>
+            <h2 className="truncate font-outfit text-2xl font-extrabold tracking-[-.02em] sm:text-3xl">
+              {loading ? <Skeleton width={180} height={28}/> : displayName}
+            </h2>
+            <p className="mt-1 text-sm font-medium text-white/65">Artist & Administrator</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-xs text-white/75"><Icon name="mail" size={14}/>{admin?.email || 'Email not added'}</span>
+              <span className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-xs text-white/75"><Icon name="phone" size={14}/>{admin?.phone || 'Phone not added'}</span>
+            </div>
+            {uploadingPhoto && <p className="mt-3 text-[11px] text-white/55">Uploading your new photo… JPG, PNG or WebP · Maximum 5 MB</p>}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-5 py-6 sm:px-8 sm:py-8">
+        <div className="mb-6 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[.16em] text-[#7968dc]">Account details</p>
+            <h3 className="mt-1 font-outfit text-xl font-bold text-[#211f36]">Personal information</h3>
+          </div>
+          <p className="text-xs text-[#8d89a6]">Keep your administrator contact details current.</p>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div>
+            <label className="mb-2 block text-xs font-bold text-[#393650]">First name</label>
+            {loading ? <Skeleton height={48}/> : <input className={inputClass} value={form.firstName} onChange={e => set('firstName', e.target.value)}/>} 
+          </div>
+          <div>
+            <label className="mb-2 block text-xs font-bold text-[#393650]">Last name</label>
+            {loading ? <Skeleton height={48}/> : <input className={inputClass} value={form.lastName} onChange={e => set('lastName', e.target.value)}/>} 
           </div>
         </div>
 
-        <div className="grid-2">
-          <div className="field">
-            <label className="field-label">First Name</label>
-            {loading ? <Skeleton height={38}/> : <input className="field-input" value={form.firstName} onChange={e => set('firstName', e.target.value)}/>}
+        <div className="mt-5 grid gap-5 sm:grid-cols-2">
+          <div>
+            <label className="mb-2 block text-xs font-bold text-[#393650]">Email address</label>
+            {loading ? <Skeleton height={48}/> : <input className={inputClass} type="email" value={form.email} onChange={e => set('email', e.target.value)}/>} 
           </div>
-          <div className="field">
-            <label className="field-label">Last Name</label>
-            {loading ? <Skeleton height={38}/> : <input className="field-input" value={form.lastName}  onChange={e => set('lastName',  e.target.value)}/>}
+          <div>
+            <label className="mb-2 block text-xs font-bold text-[#393650]">Phone number</label>
+            {loading ? <Skeleton height={48}/> : <input className={inputClass} type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+94 77 000 0000"/>}
           </div>
-        </div>
-        <div className="field">
-          <label className="field-label">Email Address</label>
-          {loading ? <Skeleton height={38}/> : <input className="field-input" type="email" value={form.email} onChange={e => set('email', e.target.value)}/>}
-        </div>
-        <div className="field">
-          <label className="field-label">Phone</label>
-          {loading ? <Skeleton height={38}/> : <input className="field-input" value={form.phone} onChange={e => set('phone', e.target.value)} placeholder="+94 77 000 0000"/>}
         </div>
 
-        <button className="btn btn-fill" style={{ padding: '9px 20px' }} onClick={handleSave} disabled={saving || loading}>
-          {saving ? 'Saving…' : 'Save changes'}
-        </button>
-      </div>
+        <div className="mt-7 flex justify-end border-t border-[#eeecf7] pt-5">
+          <button className="inline-flex min-w-[160px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#338fdf] via-[#675ed4] to-[#7546b9] px-6 py-3 text-sm font-bold text-white shadow-[0_12px_28px_rgba(91,63,168,.24)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_34px_rgba(91,63,168,.34)] disabled:cursor-wait disabled:opacity-60" onClick={handleSave} disabled={saving || loading}>
+            <Icon name={saving ? 'pending' : 'completed'} size={17}/>{saving ? 'Saving…' : 'Save changes'}
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

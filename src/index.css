@@ -50,6 +50,91 @@ a,
   scroll-margin-top: 88px;
 }
 
+.home-about-showcase__card {
+  isolation: isolate;
+  animation: homeAboutCardFloat 6s ease-in-out infinite;
+}
+
+.home-about-showcase__card::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 25%, rgba(137, 191, 255, 0.13) 48%, transparent 70%);
+  background-size: 220% 100%;
+  content: '';
+  pointer-events: none;
+  animation: homeAboutCardShine 7s ease-in-out infinite;
+}
+
+.home-about-showcase__logo {
+  transform-origin: 50% 55%;
+  animation: homeAboutLogoFloat 5s ease-in-out infinite;
+  transition: filter 350ms ease, transform 350ms ease;
+}
+
+.home-about-showcase:hover .home-about-showcase__logo {
+  filter: drop-shadow(0 20px 30px rgba(82, 157, 255, 0.32));
+}
+
+.home-about-showcase__badge {
+  will-change: transform;
+}
+
+.home-about-showcase__badge--left {
+  animation: homeAboutBadgeLeft 4.8s ease-in-out infinite;
+}
+
+.home-about-showcase__badge--right {
+  animation: homeAboutBadgeRight 5.2s ease-in-out 0.35s infinite;
+}
+
+.home-about-showcase__pencil {
+  animation: homeAboutPencilPulse 3.2s ease-in-out infinite;
+}
+
+@keyframes homeAboutCardFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(0.35deg); }
+}
+
+@keyframes homeAboutCardShine {
+  0%, 22% { background-position: 180% 0; opacity: 0; }
+  42%, 58% { opacity: 1; }
+  78%, 100% { background-position: -80% 0; opacity: 0; }
+}
+
+@keyframes homeAboutLogoFloat {
+  0%, 100% { transform: translateY(0) scale(1) rotate(-0.5deg); }
+  50% { transform: translateY(-7px) scale(1.025) rotate(0.75deg); }
+}
+
+@keyframes homeAboutBadgeLeft {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-0.4deg); }
+  50% { transform: translate3d(-5px, -10px, 0) rotate(1deg); }
+}
+
+@keyframes homeAboutBadgeRight {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0.4deg); }
+  50% { transform: translate3d(5px, -8px, 0) rotate(-1deg); }
+}
+
+@keyframes homeAboutPencilPulse {
+  0%, 100% { transform: rotate(0deg) scale(1); box-shadow: 0 0 0 rgba(125, 179, 255, 0); }
+  45% { transform: rotate(-7deg) scale(1.06); box-shadow: 0 10px 28px rgba(95, 154, 255, 0.24); }
+  60% { transform: rotate(3deg) scale(1.03); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-about-showcase__card,
+  .home-about-showcase__card::before,
+  .home-about-showcase__logo,
+  .home-about-showcase__badge,
+  .home-about-showcase__pencil {
+    animation: none;
+  }
+}
+
 /* ── ADMIN DESIGN TOKENS (Vivid Arts admin panel) ──
    Tailwind v4 reads custom utilities straight from this @theme block —
    there's no tailwind.config.js in this project, so this replaces it. */

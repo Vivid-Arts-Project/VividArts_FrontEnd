@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import MyOrdersPage from './pages/MyOrdersPage';
+import InvoicePage from './pages/InvoicePage';
 import CustomerNotificationsPage from './pages/CustomerNotificationsPage';
 import { isTrustedNavigation, useLocation, useNavigate } from './router';
 import { Redirect } from './RouterComponents';
@@ -71,6 +72,12 @@ function CustomerApp() {
   if (path === '/my-orders') {
     if (!isSignedIn || !isTrustedNavigation()) return <Redirect to="/" replace />;
     return <MyOrdersPage onNavigate={navigateTo} />;
+  }
+  if (path.startsWith('/invoice/')) {
+    if (!isSignedIn || !isTrustedNavigation()) return <Redirect to="/" replace />;
+    const orderId = decodeURIComponent(path.slice('/invoice/'.length));
+    if (!orderId) return <Redirect to="/my-orders" replace />;
+    return <InvoicePage orderId={orderId} onNavigate={navigateTo} />;
   }
   if (path === '/notifications') {
     if (!isSignedIn || !isTrustedNavigation()) return <Redirect to="/" replace />;
