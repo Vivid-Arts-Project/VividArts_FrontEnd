@@ -1,0 +1,189 @@
+
+
+/*
+ * Wrapped in Tailwind's `base` layer so these generic element resets
+ * stay lower-priority than Tailwind utility classes. Unlayered CSS
+ * always beats layered CSS regardless of specificity, so without this
+ * `button { background: none }` / `a { color: inherit }` below would
+ * silently override utilities like `bg-[#534ab7]` on <button>/<a> tags.
+ */
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0a0916;
+    color: #f5f4fb;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  button,
+  input,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+button {
+  cursor: pointer;
+}
+  button {
+    background: none;
+    border: none;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid #a78bfa;
+    outline-offset: 2px;
+  }
+}
+
+.app-switcher {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 100;
+  display: flex;
+  gap: 8px;
+}
+
+.app-switcher button {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(20, 18, 42, 0.9);
+  color: #f5f4fb;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.app-switcher button:hover {
+  border-color: #a78bfa;
+}
+
+.app-switcher button.active {
+  background: linear-gradient(100deg, #6366f1, #8b5cf6);
+  border-color: transparent;
+}
+
+.payment-success-check {
+  width: 92px;
+  height: 92px;
+  margin: 0 auto 24px;
+  border-radius: 999px;
+  background: radial-gradient(circle, #f4fff9 35%, #e3faee 100%);
+  box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.2);
+  animation: payment-success-pop 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.25) both,
+    payment-success-glow 2s ease-in-out 1.1s infinite;
+}
+
+.payment-success-check svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.payment-success-check__circle,
+.payment-success-check__tick {
+  fill: none;
+  stroke: #16a34a;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.payment-success-check__circle {
+  stroke-width: 5;
+  stroke-dasharray: 202;
+  stroke-dashoffset: 202;
+  transform: rotate(-90deg);
+  transform-origin: 40px 40px;
+  animation: payment-success-draw-circle 0.7s ease-out 0.15s forwards;
+}
+
+.payment-success-check__tick {
+  stroke-width: 6;
+  stroke-dasharray: 50;
+  stroke-dashoffset: 50;
+  animation: payment-success-draw-tick 0.42s ease-out 0.72s forwards;
+}
+
+@keyframes payment-success-pop {
+  0% { opacity: 0; transform: scale(0.55); }
+  70% { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes payment-success-draw-circle {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes payment-success-draw-tick {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes payment-success-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.18); }
+  50% { box-shadow: 0 0 0 12px rgba(22, 163, 74, 0); }
+}
+
+.upload-photo-float {
+  animation: upload-photo-float 2.8s ease-in-out infinite;
+}
+
+@keyframes upload-photo-float {
+  0%, 100% {
+    transform: translateY(0);
+    box-shadow: 0 12px 28px rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 34px rgba(99, 102, 241, 0.38);
+  }
+}
+
+.home-text-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  filter: blur(3px);
+  transition:
+    opacity 0.7s ease var(--reveal-delay, 0ms),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms),
+    filter 0.55s ease var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.home-text-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

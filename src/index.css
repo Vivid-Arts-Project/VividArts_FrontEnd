@@ -1,1 +1,868 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.brand-logo {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.brand-logo-image {
+  position: absolute;
+  max-width: none;
+  object-fit: contain;
+  left: -17.8%;
+}
+
+.brand-logo-image--mark { top: -65.5%; }
+.brand-logo-image--full { top: -52.3%; }
+
+#home,
+#gallery,
+#how-it-works,
+#about {
+  scroll-margin-top: 88px;
+}
+
+.home-about-showcase__card {
+  isolation: isolate;
+  animation: homeAboutCardFloat 6s ease-in-out infinite;
+}
+
+.home-about-showcase__card::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 25%, rgba(137, 191, 255, 0.13) 48%, transparent 70%);
+  background-size: 220% 100%;
+  content: '';
+  pointer-events: none;
+  animation: homeAboutCardShine 7s ease-in-out infinite;
+}
+
+.home-about-showcase__logo {
+  transform-origin: 50% 55%;
+  animation: homeAboutLogoFloat 5s ease-in-out infinite;
+  transition: filter 350ms ease, transform 350ms ease;
+}
+
+.home-about-showcase:hover .home-about-showcase__logo {
+  filter: drop-shadow(0 20px 30px rgba(82, 157, 255, 0.32));
+}
+
+.home-about-showcase__badge {
+  will-change: transform;
+}
+
+.home-about-showcase__badge--left {
+  animation: homeAboutBadgeLeft 4.8s ease-in-out infinite;
+}
+
+.home-about-showcase__badge--right {
+  animation: homeAboutBadgeRight 5.2s ease-in-out 0.35s infinite;
+}
+
+.home-about-showcase__pencil {
+  animation: homeAboutPencilPulse 3.2s ease-in-out infinite;
+}
+
+@keyframes homeAboutCardFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(0.35deg); }
+}
+
+@keyframes homeAboutCardShine {
+  0%, 22% { background-position: 180% 0; opacity: 0; }
+  42%, 58% { opacity: 1; }
+  78%, 100% { background-position: -80% 0; opacity: 0; }
+}
+
+@keyframes homeAboutLogoFloat {
+  0%, 100% { transform: translateY(0) scale(1) rotate(-0.5deg); }
+  50% { transform: translateY(-7px) scale(1.025) rotate(0.75deg); }
+}
+
+@keyframes homeAboutBadgeLeft {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-0.4deg); }
+  50% { transform: translate3d(-5px, -10px, 0) rotate(1deg); }
+}
+
+@keyframes homeAboutBadgeRight {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0.4deg); }
+  50% { transform: translate3d(5px, -8px, 0) rotate(-1deg); }
+}
+
+@keyframes homeAboutPencilPulse {
+  0%, 100% { transform: rotate(0deg) scale(1); box-shadow: 0 0 0 rgba(125, 179, 255, 0); }
+  45% { transform: rotate(-7deg) scale(1.06); box-shadow: 0 10px 28px rgba(95, 154, 255, 0.24); }
+  60% { transform: rotate(3deg) scale(1.03); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-about-showcase__card,
+  .home-about-showcase__card::before,
+  .home-about-showcase__logo,
+  .home-about-showcase__badge,
+  .home-about-showcase__pencil {
+    animation: none;
+  }
+}
+
+/* ── ADMIN DESIGN TOKENS (Vivid Arts admin panel) ──
+   Tailwind v4 reads custom utilities straight from this @theme block —
+   there's no tailwind.config.js in this project, so this replaces it. */
+@theme {
+  --color-va-blue: #2B8FE0;
+  --color-va-blue-2: #1a7acc;
+  --color-va-purple: #5B3FA8;
+  --color-va-purple-mid: #7B4FC8;
+  --color-va-dark: #12102A;
+  --color-va-dark2: #1E1848;
+  --color-va-dark3: #2A2660;
+  --color-va-bg: #F4F3FA;
+  --color-va-bg2: #EDEAF6;
+  --color-va-white: #FFFFFF;
+  --color-va-border: #DDD9F5;
+  --color-va-border2: #C8C2E8;
+  --color-va-text: #0D0D0D;
+  --color-va-text2: #2A2640;
+  --color-va-text3: #7A748F;
+  --color-va-success: #2D9E6E;
+  --color-va-success-bg: #E8F8F1;
+  --color-va-warn: #C97C1A;
+  --color-va-warn-bg: #FEF3E5;
+  --color-va-danger: #C9353B;
+  --color-va-danger-bg: #FEF0F0;
+  --color-va-info: #2563EB;
+  --color-va-info-bg: #EFF6FF;
+
+  --background-image-grad: linear-gradient(135deg, #2B8FE0 0%, #7B4FC8 55%, #5B3FA8 100%);
+  --background-image-grad-dark: linear-gradient(145deg, #12102A 0%, #1E1848 100%);
+  --background-image-grad-soft: linear-gradient(135deg, #EEF4FD 0%, #F0EBFA 100%);
+
+  --font-outfit: 'Outfit', sans-serif;
+  --font-sans: 'DM Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --radius-va: 10px;
+  --radius-va-sm: 6px;
+
+  --shadow-va: 0 2px 12px rgba(91,63,168,.07);
+  --shadow-va-md: 0 6px 24px rgba(91,63,168,.12);
+
+  --animate-toast: slideUp .25s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.notification-pop {
+  animation: notificationPop .22s cubic-bezier(.2,.8,.2,1);
+  transform-origin: top right;
+}
+
+.toast-progress {
+  animation: toastProgress 2.8s linear forwards;
+  transform-origin: left;
+}
+
+@keyframes notificationPop {
+  from { opacity: 0; transform: translateY(-8px) scale(.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toastProgress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+.Toastify__toast.app-notification {
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1px solid #e7e3f5;
+  border-radius: 16px;
+  background: rgba(255,255,255,.98);
+  color: #2a2640;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 18px 45px rgba(30,24,72,.18);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.Toastify__toast.app-notification--success { border-left: 4px solid #2d9e6e; }
+.Toastify__toast.app-notification--error { border-left: 4px solid #c9353b; }
+.Toastify__toast.app-notification--info { border-left: 4px solid #2b8fe0; }
+
+.notification-status-icon {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.notification-status-icon--success { color: #2d9e6e; background: #e8f8f1; }
+.notification-status-icon--error { color: #c9353b; background: #fef0f0; }
+.notification-status-icon--info { color: #2b8fe0; background: #eff6ff; }
+
+.app-notification .Toastify__toast-icon {
+  width: 40px;
+  margin-inline-end: 12px;
+}
+
+.app-notification .Toastify__close-button {
+  color: #7a748f;
+  opacity: .7;
+  align-self: center;
+}
+
+.app-notification .Toastify__progress-bar--success { background: linear-gradient(90deg, #2d9e6e, #57c995); }
+.app-notification .Toastify__progress-bar--error { background: linear-gradient(90deg, #c9353b, #ef6b70); }
+.app-notification .Toastify__progress-bar--info { background: linear-gradient(90deg, #2b8fe0, #7b4fc8); }
+
+.login-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: 52px 52px;
+  -webkit-mask-image: linear-gradient(to bottom, black, transparent 88%);
+  mask-image: linear-gradient(to bottom, black, transparent 88%);
+}
+
+.login-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(2px);
+  pointer-events: none;
+  animation: loginOrbFloat 10s ease-in-out infinite alternate;
+}
+
+.login-orb-one {
+  width: 420px;
+  height: 420px;
+  left: -170px;
+  top: 12%;
+  background: radial-gradient(circle, rgba(43,143,224,.24), transparent 68%);
+}
+
+.login-orb-two {
+  width: 520px;
+  height: 520px;
+  right: -160px;
+  top: -130px;
+  background: radial-gradient(circle, rgba(123,79,200,.28), transparent 67%);
+  animation-delay: -3s;
+}
+
+.login-orb-three {
+  width: 360px;
+  height: 360px;
+  left: 42%;
+  bottom: -180px;
+  background: radial-gradient(circle, rgba(92,209,255,.17), transparent 70%);
+  animation-delay: -6s;
+}
+
+.login-card-enter { animation: loginCardEnter .7s cubic-bezier(.2,.8,.2,1) both; }
+.login-copy-enter { animation: loginCopyEnter .8s .12s cubic-bezier(.2,.8,.2,1) both; }
+
+.login-art-card {
+  position: absolute;
+  width: 225px;
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255,255,255,.1), rgba(255,255,255,.035));
+  box-shadow: 0 24px 60px rgba(0,0,0,.24);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+.login-art-card-one {
+  left: 10px;
+  top: 12px;
+  transform: rotate(-4deg);
+  animation: loginCardFloatOne 5s ease-in-out infinite;
+}
+
+.login-art-card-two {
+  left: 250px;
+  top: 35px;
+  transform: rotate(4deg);
+  animation: loginCardFloatTwo 5.8s .5s ease-in-out infinite;
+}
+
+.login-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255,255,255,.35);
+  border-top-color: white;
+  border-radius: 999px;
+  animation: loginSpin .75s linear infinite;
+}
+
+.register-benefit-stage {
+  position: relative;
+  height: 310px;
+}
+
+.register-benefit-card {
+  position: absolute;
+  width: 250px;
+  height: 145px;
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255,255,255,.09), rgba(255,255,255,.035));
+  box-shadow: 0 24px 60px rgba(0,0,0,.24);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  opacity: 0;
+  transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
+}
+
+.register-benefit-card-1 { left: 4px; top: 8px; z-index: 2; }
+.register-benefit-card-2 { right: 4px; top: 22px; z-index: 1; }
+.register-benefit-card-3 { left: 18px; bottom: 4px; z-index: 1; }
+.register-benefit-card-4 { right: 14px; bottom: 0; z-index: 2; }
+
+.register-benefit-card--up {
+  animation:
+    registerBenefitEnter .55s var(--register-delay) cubic-bezier(.2,.8,.2,1) forwards,
+    registerBenefitFloatUp 5s calc(var(--register-delay) + .7s) ease-in-out infinite;
+}
+
+.register-benefit-card--down {
+  animation:
+    registerBenefitEnter .55s var(--register-delay) cubic-bezier(.2,.8,.2,1) forwards,
+    registerBenefitFloatDown 5.6s calc(var(--register-delay) + .7s) ease-in-out infinite;
+}
+
+.register-benefit-card:hover {
+  border-color: rgba(158,140,255,.35);
+  background: rgba(255,255,255,.07);
+  box-shadow: 0 28px 68px rgba(0,0,0,.32);
+}
+
+.register-match-message {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  animation: registerMessageIn .2s ease-out;
+}
+
+.password-strength-enter {
+  animation: registerMessageIn .2s ease-out;
+}
+
+.auth-prompt-backdrop {
+  animation: authBackdropIn .2s ease-out both;
+}
+
+.auth-prompt-card {
+  animation: authPromptIn .32s cubic-bezier(.2,.85,.25,1) both;
+}
+
+.admin-login-stage {
+  position: relative;
+  height: 265px;
+}
+
+.admin-login-float-card {
+  position: absolute;
+  width: 245px;
+  height: 145px;
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255,255,255,.09), rgba(255,255,255,.035));
+  box-shadow: 0 24px 60px rgba(0,0,0,.25);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+.admin-login-float-card-1 { left: 6px; top: 8px; z-index: 2; animation: adminFloatOne 5.2s ease-in-out infinite; }
+.admin-login-float-card-2 { left: 270px; top: 35px; z-index: 1; animation: adminFloatTwo 5.8s .4s ease-in-out infinite; }
+.admin-login-float-card-3 { left: 145px; top: 155px; z-index: 3; animation: adminFloatThree 6.2s .8s ease-in-out infinite; }
+
+@keyframes loginOrbFloat {
+  from { transform: translate3d(0,0,0) scale(1); }
+  to { transform: translate3d(45px,-25px,0) scale(1.12); }
+}
+
+@keyframes loginCardEnter {
+  from { opacity: 0; transform: translateY(24px) scale(.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes loginCopyEnter {
+  from { opacity: 0; transform: translateX(-28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes loginCardFloatOne {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-10px) rotate(-2deg); }
+}
+
+@keyframes loginCardFloatTwo {
+  0%, 100% { transform: translateY(0) rotate(4deg); }
+  50% { transform: translateY(12px) rotate(2deg); }
+}
+
+@keyframes loginSpin { to { transform: rotate(360deg); } }
+
+@keyframes registerBenefitEnter {
+  from { opacity: 0; transform: translateY(18px) rotate(var(--card-rotation)) scale(.96); }
+  to { opacity: 1; transform: translateY(0) rotate(var(--card-rotation)) scale(1); }
+}
+
+@keyframes registerBenefitFloatUp {
+  0%, 100% { transform: translateY(0) rotate(var(--card-rotation)); }
+  50% { transform: translateY(-10px) rotate(var(--card-rotation)); }
+}
+
+@keyframes registerBenefitFloatDown {
+  0%, 100% { transform: translateY(0) rotate(var(--card-rotation)); }
+  50% { transform: translateY(10px) rotate(var(--card-rotation)); }
+}
+
+@keyframes registerMessageIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes authBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes authPromptIn {
+  from { opacity: 0; transform: translateY(18px) scale(.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes adminFloatOne {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-10px) rotate(-2deg); }
+}
+
+@keyframes adminFloatTwo {
+  0%, 100% { transform: translateY(0) rotate(4deg); }
+  50% { transform: translateY(11px) rotate(2deg); }
+}
+
+@keyframes adminFloatThree {
+  0%, 100% { transform: translateY(0) rotate(-1deg); }
+  50% { transform: translateY(-8px) rotate(1deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+
+  .login-orb,
+  .login-card-enter,
+  .login-copy-enter,
+  .login-art-card,
+  .register-benefit-card,
+  .register-match-message,
+  .password-strength-enter,
+  .auth-prompt-backdrop,
+  .auth-prompt-card,
+  .admin-login-float-card,
+  .login-spinner {
+    animation: none;
+  }
+}
+
+/* Plain CSS vars too, for the couple of spots that reference var(--va-*) directly */
+:root {
+  --sidebar-w: 230px;
+  --topbar-h: 60px;
+  --va-bg2: var(--color-va-bg2);
+  --va-border: var(--color-va-border);
+  --va-text3: var(--color-va-text3);
+  --va-purple: var(--color-va-purple);
+}
+
+/* Scoped reset for the admin panel only — NOT applied to <body>,
+   so it never touches your landing page's own background/fonts. */
+.va-admin {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--color-va-bg);
+  color: var(--color-va-text);
+  min-height: 100vh;
+}
+
+/* Settings page components. Scoped to the admin shell so customer pages keep
+   their own visual language. */
+.va-admin .page-content {
+  width: 100%;
+  padding: 24px;
+}
+
+.va-admin .settings-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--color-va-border);
+  overflow: visible;
+}
+
+.va-admin .settings-tab {
+  flex: 0 0 auto;
+  padding: 10px 15px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  color: var(--color-va-text3);
+  font-size: 13px;
+  font-weight: 600;
+  transition: color .18s ease, border-color .18s ease;
+}
+
+.va-admin .settings-tab:hover {
+  color: var(--color-va-text);
+}
+
+.va-admin .settings-tab.active {
+  color: var(--color-va-purple);
+  border-bottom-color: var(--color-va-purple);
+}
+
+.va-admin .card {
+  overflow: hidden;
+  border: 1px solid var(--color-va-border);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: var(--shadow-va);
+}
+
+.va-admin .card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 52px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--color-va-border);
+}
+
+.va-admin .card-title {
+  color: var(--color-va-dark);
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.va-admin .card-body {
+  padding: 20px;
+}
+
+.va-admin .grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.va-admin .field {
+  margin-bottom: 16px;
+}
+
+.va-admin .field-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--color-va-text2);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.va-admin .field-input,
+.va-admin .field-textarea {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--color-va-border);
+  border-radius: 7px;
+  background: #fff;
+  padding: 9px 11px;
+  color: var(--color-va-text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+.va-admin .field-textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+.va-admin .field-input:focus,
+.va-admin .field-textarea:focus {
+  border-color: var(--color-va-purple-mid);
+  box-shadow: 0 0 0 3px rgba(123, 79, 200, .1);
+}
+
+.va-admin .field-hint {
+  margin-top: 6px;
+  color: var(--color-va-text3);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.va-admin .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  transition: transform .15s ease, opacity .15s ease, box-shadow .15s ease;
+}
+
+.va-admin .btn-fill {
+  background: var(--background-image-grad);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(91, 63, 168, .18);
+}
+
+.va-admin .btn-sm {
+  padding: 6px 11px;
+  font-size: 12px;
+}
+
+.va-admin .btn:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.va-admin .btn:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+.va-admin .toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--color-va-border);
+}
+
+.va-admin .toggle:last-child {
+  border-bottom: 0;
+}
+
+.va-admin .toggle-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.va-admin .toggle-label {
+  color: var(--color-va-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.va-admin .toggle-sub {
+  margin-top: 3px;
+  color: var(--color-va-text3);
+  font-size: 12px;
+}
+
+.va-admin .toggle-switch {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 22px;
+}
+
+.va-admin .toggle-switch input {
+  width: 0;
+  height: 0;
+  opacity: 0;
+}
+
+.va-admin .toggle-slider {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: var(--color-va-border2);
+  cursor: pointer;
+  transition: background .2s ease;
+}
+
+.va-admin .toggle-slider::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+  transition: transform .2s ease;
+}
+
+.va-admin .toggle-switch input:checked + .toggle-slider {
+  background: var(--color-va-purple);
+}
+
+.va-admin .toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(18px);
+}
+
+.va-admin .toggle-switch input:focus-visible + .toggle-slider {
+  outline: 2px solid var(--color-va-blue);
+  outline-offset: 2px;
+}
+
+.va-admin table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--color-va-text);
+  font-size: 12px;
+}
+
+.va-admin th,
+.va-admin td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--color-va-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.va-admin th {
+  background: var(--color-va-bg);
+  color: var(--color-va-text3);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.va-admin tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.va-admin .mb-16 {
+  margin-bottom: 16px;
+}
+
+.va-admin .alert {
+  border-radius: 8px;
+  padding: 11px 14px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.va-admin .alert-info {
+  border: 1px solid #bfdbfe;
+  background: var(--color-va-info-bg);
+  color: var(--color-va-info);
+}
+
+@media (max-width: 720px) {
+  .va-admin .grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .va-admin .grid-cols-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .va-admin .page-content {
+    padding: 16px;
+  }
+
+  .va-admin .settings-tabs {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .va-admin .grid-2 {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .va-admin .card-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .va-admin .card {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .va-admin .grid-cols-4 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@supports (height: 100dvh) {
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+
+  .h-screen {
+    height: 100dvh;
+  }
+}

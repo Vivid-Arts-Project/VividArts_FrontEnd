@@ -1,16 +1,42 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
+import Stepper from '../components/Stepper';
 
-const prices = { base: 3800, frame: 800, people: 500 }
-const bankOptions = ['Commercial Bank', 'Sampath Bank', 'BOC', 'HNB', "People's Bank", 'NTB', 'NSB', 'Pan Asia Bank', 'Union Bank', 'Seylan Bank', 'DFCC Bank', 'Standard Chartered', 'Citibank', 'HSBC', 'Amex',]
+// 💡 1. Notification function එක Import කරගන්න (path එක exact location එකට අනුව)
+import { showNotification } from './notifications';
+import Icon from '../components/Icon';
+import CommissionHeader from '../components/CommissionHeader';
+import { getCustomerToken, preparePaymentReturnSession } from '../authSession';
+import { trustCurrentNavigation } from '../router';
+import { saveBlob } from '../utils/download';
+
+const fallbackOrder = {
+  size: { id: 'A3', label: 'A3' },
+  frame: { id: 'classic', label: 'Classic' },
+  people: 1,
+  basePrice: 3500,
+  framePrice: 1800,
+  peoplePrice: 0,
+  deliveryPrice: 500,
+  deliveryMethod: 'courier',
+  urgentPrice: 0,
+  total: 5800,
+  deposit: 2900,
+}
 const currencies = [
   { code: 'LKR', label: 'LKR – Sri Lankan rupee', rate: 1 },
-
 ]
 
 function formatMoney(amount, code, rate) {
   const value = Math.round(amount * rate)
   return `${code} ${value.toLocaleString()}`
+}
+
+function formatTimelineDate(value) {
+  if (!value) return 'To be confirmed'
+  return new Date(`${value}T00:00:00`).toLocaleDateString('en-LK', {
+    day: 'numeric', month: 'short', year: 'numeric',
+  })
 }
 
 function submitCheckoutForm(actionUrl, fields) {
@@ -30,27 +56,36 @@ function submitCheckoutForm(actionUrl, fields) {
   form.submit()
 }
 
-export default function Payment({ onBack = () => {}, onComplete = () => {} }) {
+export default function Payment({ order, referencePhoto = null, onBack = () => {}, onComplete = () => {} }) {
+  const safeOrder = order || fallbackOrder
   const [currency] = useState(currencies[0])
-  const [method, setMethod] = useState('card')
-  const [bank, setBank] = useState(bankOptions[0])
   const [isProcessing, setIsProcessing] = useState(false)
+  const [checkoutMessage, setCheckoutMessage] = useState('')
   const [orderId, setOrderId] = useState(null);
+  const [paymentReturn] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return { status: params.get('payment'), orderId: params.get('order_id') };
+  });
   const [error, setError] = useState(() =>
-    new URLSearchParams(window.location.search).get('payment') === 'cancelled'
+    paymentReturn.status === 'cancelled'
       ? 'Payment was cancelled. You can try again when you are ready.'
       : null
   );
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState('pending');
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [timeline, setTimeline] = useState(null);
   const [successMessage, setSuccessMessage] = useState('Your deposit has been received.');
+  const [customerInfo, setCustomerInfo] = useState({
+    firstName: '', lastName: '', email: '', phone: '',
+    address: 'Colombo', city: 'Colombo', country: 'Sri Lanka',
+  });
 
-
- // Fetch prices on mount
+  // Fetch prices on mount
   useEffect(() => {
     api.getPrices()
       .then(data => {
         if (data.success) {
-          // Update prices if needed
           console.log('Prices loaded:', data.prices);
         }
       })
@@ -58,213 +93,253 @@ export default function Payment({ onBack = () => {}, onComplete = () => {} }) {
   }, []);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const returnedOrderId = params.get('order_id');
-    const paymentStatus = params.get('payment');
+    api.getTimelinePreview({
+      urgent: safeOrder.urgent === true,
+      urgentDeadline: safeOrder.urgent ? safeOrder.urgentDeadline : null,
+      people: safeOrder.people,
+      deliveryMethod: safeOrder.deliveryMethod,
+    })
+      .then((data) => {
+        if (data.success) setTimeline(data.timeline);
+      })
+      .catch((err) => console.error('Failed to load estimated timeline:', err));
+  }, [safeOrder.deliveryMethod, safeOrder.people, safeOrder.urgent, safeOrder.urgentDeadline]);
 
-    if (paymentStatus === 'cancelled') {
-      window.history.replaceState({}, document.title, window.location.pathname);
+  useEffect(() => {
+    const token = getCustomerToken();
+    if (!token) return;
+
+    api.getProfile(token)
+      .then((data) => {
+        const fullName = (data.full_name || data.username || '').trim();
+        const [firstName = '', ...lastNameParts] = fullName.split(/\s+/);
+        setCustomerInfo((previous) => ({
+          ...previous,
+          firstName,
+          lastName: lastNameParts.join(' '),
+          email: data.email || '',
+          phone: data.phone_number || '',
+          address: data.address && data.address !== 'N/A' ? data.address : previous.address,
+        }));
+      })
+      .catch((err) => console.error('Failed to load customer profile:', err));
+  }, []);
+
+  useEffect(() => {
+    const returnedOrderId = paymentReturn.orderId;
+    const returnedPaymentStatus = paymentReturn.status;
+
+    if (returnedPaymentStatus === 'cancelled') {
+      // Clear the query params synchronously so React StrictMode's second
+      // dev-mode effect invocation doesn't see them and fire this again.
+      trustCurrentNavigation();
+      // 💡 2. Payment cancel වුණොත් Warning/Error Toast එකක් පෙන්නන්න
+      showNotification('warning', 'Payment was cancelled. You can try again.');
       return;
     }
 
-    if (paymentStatus !== 'success' || !returnedOrderId) return;
+    if (returnedPaymentStatus !== 'success' || !returnedOrderId) return;
 
-    Promise.resolve()
-      .then(() => setIsProcessing(true))
-      .then(() => api.getPaymentStatus(returnedOrderId))
-      .then((result) => {
-        if (!result.success) {
-          throw new Error(result.error || 'Unable to read payment status');
+    let cancelled = false;
+
+    // Clear the query params synchronously (see comment above) before any
+    // async work, so a StrictMode double-invoke can't show this twice.
+    trustCurrentNavigation();
+
+    const confirmPayment = async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setOrderId(returnedOrderId);
+      setPaymentStatus('pending');
+      setSuccessMessage('Confirming your PayHere payment…');
+      setShowConfirmation(true);
+      setIsProcessing(true);
+      try {
+        if (import.meta.env.DEV) await api.confirmSandboxReturn(returnedOrderId);
+
+        for (let attempt = 0; attempt < 16 && !cancelled; attempt += 1) {
+          const result = await api.getPaymentStatus(returnedOrderId);
+          if (!result.success) throw new Error(result.error || 'Unable to read payment status');
+
+          const currentStatus = result.payment.status;
+          setOrderId(result.payment.orderId);
+          setPaymentStatus(currentStatus);
+
+          if (currentStatus === 'completed') {
+            const message = 'Your PayHere payment has been confirmed.';
+            setSuccessMessage(message);
+            showNotification('payment_success', message);
+            return;
+          }
+
+          if (currentStatus === 'failed') {
+            throw new Error('PayHere reported that this payment was unsuccessful.');
+          }
+
+          setSuccessMessage('Your payment was submitted. Waiting for PayHere confirmation…');
+          await new Promise((resolve) => window.setTimeout(resolve, 2000));
         }
 
-        setOrderId(result.payment.orderId)
-        setSuccessMessage(
-          result.payment.status === 'completed'
-            ? 'Your PayHere payment has been confirmed.'
-            : 'Your PayHere payment was submitted. We will confirm it as soon as PayHere sends the notification.'
-        )
-        setShowConfirmation(true);
-        window.history.replaceState({}, document.title, window.location.pathname);
-      })
-      .catch((err) => {
-        setError(err.message || 'Unable to check payment status. Please contact support.');
-      })
-      .finally(() => setIsProcessing(false));
-  }, []);
+        if (!cancelled) setSuccessMessage('PayHere is still confirming your payment. Keep this page open or return shortly.');
+      } catch (err) {
+        if (cancelled) return;
+        const errText = err.message || 'Unable to check payment status. Please contact support.';
+        setError(errText);
+        showNotification('error', errText);
+      } finally {
+        if (!cancelled) setIsProcessing(false);
+      }
+    };
+
+    confirmPayment();
+    return () => { cancelled = true; };
+  }, [paymentReturn.orderId, paymentReturn.status]);
+
+  const handleInvoiceDownload = async () => {
+    if (!orderId || paymentStatus !== 'completed' || isDownloading) return;
+    setIsDownloading(true);
+    try {
+      const invoice = await api.downloadInvoice(orderId);
+      saveBlob(invoice, `invoice-${orderId}.pdf`);
+    } catch (err) {
+      showNotification('error', err.message || 'Unable to download the invoice.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const handlePay = async () => {
+    if (isProcessing) return;
     setIsProcessing(true);
+    setCheckoutMessage('Creating your secure payment…');
     setError(null);
 
     try {
-      if (method === 'card') {
-        const result = await api.createPayhereCheckout({
-          currency: currency.code,
-          customer: {
-            firstName: 'Vivid',
-            lastName: 'Arts',
-            email: 'customer@example.com',
-            phone: '0771234567',
-            address: 'Colombo',
-            city: 'Colombo',
-            country: 'Sri Lanka'
-          }
-        });
-
-        if (!result.success || !result.checkoutUrl || !result.checkoutFields) {
-          throw new Error(result.error || 'Failed to start PayHere checkout');
-        }
-
-        setOrderId(result.orderId);
-        submitCheckoutForm(result.checkoutUrl, result.checkoutFields);
-        return;
-      }
-
-      // Step 1: Create order first if not exists
-      let currentOrderId = orderId;
-
-      if (!currentOrderId) {
-        const orderData = {
-          currency: currency.code,
-          paymentMethod: method,
-          bankDetails: method === 'bank' ? {
-            bankName: bank
-          } : null
-        };
-
-        const orderResult = await api.createPaymentOrder(orderData);
-        if (!orderResult.success) {
-          throw new Error(orderResult.error || 'Failed to create order');
-        }
-        currentOrderId = orderResult.payment.orderId;
-        setOrderId(currentOrderId);
-      }
-
-      // Step 2: Process payment
-      const paymentData = {
-        orderId: currentOrderId,
-        amount: dueAmount,
+      const result = await api.createPayhereCheckout({
         currency: currency.code,
-        paymentMethod: method,
-        ...(method === 'bank' && {
-          bankDetails: {
-            bankName: bank
-          }
-        })
-      };
+        order: {
+          sizeId: safeOrder.sizeId || safeOrder.size?.id,
+          frameId: safeOrder.frameId || safeOrder.frame?.id,
+          people: safeOrder.people,
+          deliveryMethod: safeOrder.deliveryMethod || 'courier',
+          deliveryAddress: safeOrder.deliveryMethod === 'courier' ? safeOrder.deliveryAddress : null,
+          urgent: safeOrder.urgent === true,
+          urgentDeadline: safeOrder.urgent ? safeOrder.urgentDeadline : null,
+          notes: safeOrder.notes || ''
+        },
+        customer: {
+          ...customerInfo,
+          address: safeOrder.deliveryMethod === 'courier' && safeOrder.deliveryAddress
+            ? safeOrder.deliveryAddress
+            : customerInfo.address,
+        }
+      });
 
-      const result = await api.processPayment(paymentData);
-
-      if (result.success) {
-        // Payment successful
-        setSuccessMessage('Your bank transfer has been recorded.');
-        setShowConfirmation(true);
-        setIsProcessing(false);
-        return;}
-
-      else {
-        setError(result.error || 'Payment failed');
+      if (!result.success || !result.checkoutUrl || !result.checkoutFields) {
+        throw new Error(result.error || 'Failed to start PayHere checkout');
       }
+
+      if (!result.commissionId) {
+        throw new Error('The commission was created without an order ID. Please contact support.');
+      }
+
+      if (referencePhoto) {
+        await api.uploadReferencePhotos(result.commissionId, [referencePhoto]);
+      }
+
+      setOrderId(result.orderId);
+      preparePaymentReturnSession(result.orderId);
+      setCheckoutMessage('Opening PayHere…');
+      submitCheckoutForm(result.checkoutUrl, result.checkoutFields);
     } catch (err) {
-      setError(err.message || 'Payment failed. Please try again.');
+      const errText = err.message || 'Payment failed. Please try again.';
+      setError(errText);
+      // 💡 5. PayHere Redirect වෙන්න කලින් error එකක් ආවොත් Toast එක පෙන්නන්න
+      showNotification('error', errText);
       console.error('Payment error:', err);
-    } finally {
+      setCheckoutMessage('');
       setIsProcessing(false);
     }
   };
 
-  const total = prices.base + prices.frame + prices.people
-  const dueAmount = Math.round(total * 0.5)
+  const total = safeOrder.total
+  const dueAmount = safeOrder.deposit
   const displayValue = (amount) => formatMoney(amount, currency.code, currency.rate)
 
   if (showConfirmation) {
     return (
-      <div className="max-w-[980px] mx-auto p-[18px]">
-        <div className="bg-white rounded-[18px] border border-black/10 text-[#222] text-center p-10">
-          <div className="text-[60px] mb-5">✅</div>
-          <h2 className="text-2xl font-medium text-gray-900 mb-2">Payment Successful!</h2>
-          <p className="text-[#b5b0d3]">
+      <div className="max-w-[980px] mx-auto px-[18px] py-7">
+        <CommissionHeader onBack={() => setShowConfirmation(false)} onHome={onComplete} />
+        <Stepper current={4} />
+
+        <div className="bg-white rounded-[18px] border border-black/10 text-[#222] text-center p-6 sm:p-10">
+          <div className="payment-success-check" role="img" aria-label="Payment completed successfully">
+            <svg viewBox="0 0 80 80" aria-hidden="true">
+              <circle className="payment-success-check__circle" cx="40" cy="40" r="32" />
+              <path className="payment-success-check__tick" d="M24 41.5l10.5 10.5L57 27.5" />
+            </svg>
+          </div>
+          <h2 className="text-xl sm:text-2xl font-medium text-gray-900 mb-2">
+            {paymentStatus === 'completed' ? 'Payment Successful!' : 'Payment Submitted'}
+          </h2>
+          <p className="text-[#4b5563]">
             {successMessage}
           </p>
-          <p className="text-[#b5b0d3] mt-[10px]">
+          <p className="text-[#4b5563] mt-[10px]">
             Order ID: {orderId || 'Processing...'}
           </p>
-          <button
-            className="border-none rounded-full px-6 py-[14px] cursor-pointer transition-all bg-gradient-to-br from-[#7f6cff] to-[#5cd1ff] text-white shadow-[0_18px_40px_rgba(92,209,255,0.22)] hover:-translate-y-px mt-5 px-[30px] py-3"
-            onClick={() => onComplete()}
-          >
-            Go to Dashboard
-          </button>
-          <button
-            className="border border-white/[0.16] rounded-full px-6 py-[14px] cursor-pointer transition-colors bg-transparent text-[#e7e3f5] hover:bg-white/[0.08] mt-[10px]"
-            onClick={() => setShowConfirmation(false)}
-          >
-            Back to Payment
-          </button>
+          {orderId && paymentStatus === 'completed' && (
+            <button
+              type="button"
+              onClick={handleInvoiceDownload}
+              disabled={isDownloading}
+              className="mt-[10px] inline-flex w-full min-w-0 items-center justify-center rounded-full border border-[#9fe3c5] bg-gradient-to-br from-[#f4fff9] to-[#eafff5] px-5 py-3 font-semibold text-[#087a57] shadow-[0_12px_28px_rgba(5,150,105,0.12)] transition-all hover:-translate-y-0.5 hover:border-[#50c894] hover:shadow-[0_18px_36px_rgba(5,150,105,0.2)] sm:w-auto sm:min-w-[230px] sm:px-[30px]"
+            >
+              {isDownloading ? 'Preparing invoice…' : 'Download Invoice (PDF)'}
+            </button>
+          )}
+          <br />
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <button
+              className="w-full min-w-0 rounded-full px-5 py-3 cursor-pointer transition-all border border-[#cfc8ff] bg-gradient-to-br from-[#f7f5ff] to-[#edf8ff] text-[#5a3fbb] font-semibold shadow-[0_12px_28px_rgba(91,63,168,0.12)] hover:-translate-y-0.5 hover:border-[#8b7cff] hover:shadow-[0_18px_36px_rgba(91,63,168,0.2)] sm:w-auto sm:min-w-[190px] sm:px-[30px]"
+              onClick={() => onComplete()}
+            >
+              Go to Home Page
+            </button>
+            <button
+              className="inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-full border border-[#cfc8ff] bg-gradient-to-br from-[#f7f5ff] to-[#edf8ff] px-5 py-3 font-semibold text-[#5a3fbb] shadow-[0_12px_28px_rgba(91,63,168,0.12)] transition-all hover:-translate-y-0.5 hover:border-[#8b7cff] hover:shadow-[0_18px_36px_rgba(91,63,168,0.2)] sm:w-auto sm:min-w-[190px] sm:px-[30px]"
+              onClick={() => setShowConfirmation(false)}
+            >
+              <Icon name="arrowLeft" size={18}/>
+              Back to Payment
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-
   return (
-    <div className="max-w-[980px] mx-auto p-[18px]">
-      <header className="h-[88px] max-[720px]:h-auto bg-white flex items-center justify-between px-14 max-[720px]:px-4 max-[720px]:py-[14px] border-b border-[#e7e2ff] mb-[18px] max-[720px]:flex-wrap">
-        <div className="flex items-center gap-4">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#4da3ff] to-[#7c3aed] flex items-center justify-center text-white text-2xl font-bold">M</div>
-            <span className="text-xl font-extrabold text-gray-900 tracking-[-0.5px]">VIVID ARTS</span>
-        </div>
+    <div className="max-w-[980px] mx-auto px-[18px] py-7">
+      <CommissionHeader onBack={onBack} onHome={onComplete} />
 
-        <nav className="flex gap-6 max-[720px]:hidden">
-            <a href="#" className="text-[#5a3fbb] text-base font-bold bg-[rgba(109,91,255,0.12)] px-[18px] py-[10px] rounded-full transition-colors hover:text-[#3c2ca8] hover:bg-[rgba(109,91,255,0.18)]">Gallery</a>
-            <a href="#" className="text-[#5a3fbb] text-base font-bold bg-[rgba(109,91,255,0.12)] px-[18px] py-[10px] rounded-full transition-colors hover:text-[#3c2ca8] hover:bg-[rgba(109,91,255,0.18)]">My Orders</a>
-        </nav>
-    </header>
-
-      <div className="bg-white border-b border-black/10 px-[22px] py-[18px] flex items-center justify-center rounded-[20px] mb-[18px]">
-        <div className="flex items-center gap-2 min-w-[105px]">
-          <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-xs font-semibold bg-[#534ab7] text-white">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          </div>
-          <span className="text-xs font-medium text-[#534ab7]">Upload & customise</span>
-        </div>
-        <div className="w-[54px] h-px bg-[#534ab7] mx-2"></div>
-        <div className="flex items-center gap-2 min-w-[105px]">
-          <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-xs font-semibold bg-[#534ab7] text-white">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          </div>
-          <span className="text-xs font-medium text-[#534ab7]">Review</span>
-        </div>
-        <div className="w-[54px] h-px bg-[#534ab7] mx-2"></div>
-        <div className="flex items-center gap-2 min-w-[105px]">
-          <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-xs font-semibold bg-[#534ab7] text-white outline outline-[3px] outline-[rgba(127,119,221,0.18)]">3</div>
-          <span className="text-xs font-medium text-[#534ab7]">Payment</span>
-        </div>
-        <div className="w-[54px] h-px bg-[#ddd] mx-2"></div>
-        <div className="flex items-center gap-2 min-w-[105px]">
-          <div className="w-[30px] h-[30px] rounded-full flex items-center justify-center text-xs font-semibold bg-[#e4e4f0] text-[#999]">4</div>
-          <span className="text-xs font-medium text-[#bbb]">Confirmation</span>
-        </div>
-      </div>
+      <Stepper current={3} />
 
       <main className="grid grid-cols-[1fr_340px] max-[720px]:grid-cols-1 gap-5 items-start">
         <div>
-          <div className="bg-white rounded-[18px] border border-black/10 p-6 mb-4 text-[#222]">
-            <div className="text-sm font-semibold text-[#1a1a2e] mb-[18px] flex items-center gap-2">
+          <div className="mb-4 rounded-[18px] border border-black/10 bg-white p-4 text-[#222] sm:p-6">
+            <div className="text-sm font-semibold text-[#1a1a2e] mb-[18px] flex items-center flex-wrap gap-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#7f77dd] shrink-0"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
               Payment method
-              <span className="ml-auto inline-flex items-center gap-1 bg-[#f2efff] text-[#534ab7] text-[11px] font-medium px-[10px] py-[3px] rounded-full">
+              <span className="ml-auto inline-flex items-center gap-1 bg-[#f2efff] text-[#534ab7] text-[11px] font-medium px-[10px] py-[3px] rounded-full whitespace-nowrap">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                 SSL secured
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-[10px] mb-[22px]">
-              <div
-                className={`border-[1.5px] rounded-xl px-[14px] py-[13px] flex items-center gap-[11px] cursor-pointer transition-colors bg-white hover:border-[#7f77dd] hover:bg-[#f8f7ff] ${method === 'card' ? 'border-[#534ab7] bg-[#f0efff]' : 'border-black/10'}`}
-                onClick={() => setMethod('card')}
-              >
-                <div className={`w-[38px] h-[38px] rounded-[10px] flex items-center justify-center text-[#534ab7] shrink-0 ${method === 'card' ? 'bg-[#e7e1ff]' : 'bg-[#f2f2fa]'}`}>
+            <div className="mb-[22px]">
+              <div className="border-[1.5px] rounded-xl px-[14px] py-[13px] flex items-center gap-[11px] bg-white border-[#534ab7] bg-[#f0efff]">
+                <div className="w-[38px] h-[38px] rounded-[10px] flex items-center justify-center text-[#534ab7] shrink-0 bg-[#e7e1ff]">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
                 </div>
                 <div>
@@ -272,34 +347,22 @@ export default function Payment({ onBack = () => {}, onComplete = () => {} }) {
                   <div className="text-[11px] text-[#8f8eab] mt-px">Visa, Mastercard</div>
                 </div>
               </div>
-              <div
-                className={`border-[1.5px] rounded-xl px-[14px] py-[13px] flex items-center gap-[11px] cursor-pointer transition-colors bg-white hover:border-[#7f77dd] hover:bg-[#f8f7ff] ${method === 'bank' ? 'border-[#534ab7] bg-[#f0efff]' : 'border-black/10'}`}
-                onClick={() => setMethod('bank')}
-              >
-                <div className={`w-[38px] h-[38px] rounded-[10px] flex items-center justify-center text-[#534ab7] shrink-0 ${method === 'bank' ? 'bg-[#e7e1ff]' : 'bg-[#f2f2fa]'}`}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M3 10h18M3 7l9-4 9 4M4 10v11M20 10v11M8 10v11M12 10v11M16 10v11"/></svg>
-                </div>
-                <div>
-                  <div className="text-[13px] font-medium text-[#1a1a2e]">Bank transfer</div>
-                  <div className="text-[11px] text-[#8f8eab] mt-px">Direct deposit</div>
-                </div>
-              </div>
             </div>
 
-            <div style={{ display: method === 'card' ? 'block' : 'none' }}>
+            <div>
               <div className="relative overflow-hidden bg-[#1b1546] rounded-[18px] px-6 py-[22px] mb-[22px] before:content-[''] before:absolute before:-top-10 before:-right-10 before:w-[130px] before:h-[130px] before:rounded-full before:bg-[rgba(127,119,221,0.18)] after:content-[''] after:absolute after:-bottom-[50px] after:left-0 after:w-[110px] after:h-[110px] after:rounded-full after:bg-[rgba(127,119,221,0.1)]">
                 <div className="w-[34px] h-[26px] rounded-md bg-[#ef9f27] mb-5"></div>
-                <div className="font-mono text-base tracking-[3px] text-white font-medium mb-4">Secure PayHere checkout</div>
-                <div className="flex justify-between items-end">
-                  <div>
-                    <div className="text-[10px] text-white/65 uppercase tracking-[1px] mb-[3px]">Provider</div>
-                    <div className="text-[13px] text-white font-medium">PayHere</div>
+                <div className="mb-4 font-mono text-sm font-medium tracking-[2px] text-white sm:text-base sm:tracking-[3px]">Secure PayHere checkout</div>
+                <div className="flex flex-wrap justify-between items-end gap-x-4 gap-y-3">
+                  <div className="shrink-0">
+                    <div className="text-[10px] text-white/65 uppercase tracking-[1px] mb-[3px] whitespace-nowrap">Provider</div>
+                    <div className="text-[13px] text-white font-medium whitespace-nowrap">PayHere</div>
                   </div>
-                  <div>
-                    <div className="text-[10px] text-white/65 uppercase tracking-[1px] mb-[3px]">Cards</div>
-                    <div className="text-[13px] text-white font-medium">Visa / Mastercard</div>
+                  <div className="shrink-0">
+                    <div className="text-[10px] text-white/65 uppercase tracking-[1px] mb-[3px] whitespace-nowrap">Cards</div>
+                    <div className="text-[13px] text-white font-medium whitespace-nowrap">Visa / Mastercard</div>
                   </div>
-                  <div className="text-white/60">
+                  <div className="text-white/60 hidden sm:block shrink-0 ml-auto">
                     <svg width="36" height="22" viewBox="0 0 36 22" fill="none" className="block"><circle cx="13" cy="11" r="10" fill="rgba(255,255,255,0.25)"/><circle cx="23" cy="11" r="10" fill="rgba(255,255,255,0.15)"/></svg>
                   </div>
                 </div>
@@ -310,31 +373,12 @@ export default function Payment({ onBack = () => {}, onComplete = () => {} }) {
               </p>
             </div>
 
-            <div style={{ display: method === 'bank' ? 'block' : 'none' }}>
-              <div className="relative flex items-center gap-[10px] text-[11px] text-[#8f8eab] my-4 before:content-[''] before:flex-1 before:h-px before:bg-black/10 after:content-[''] after:flex-1 after:h-px after:bg-black/10">select your bank</div>
-              <div className="grid grid-cols-3 gap-2">
-                {bankOptions.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    className={`border rounded-xl px-[10px] py-3 text-center cursor-pointer text-[11px] font-medium bg-white transition-colors inline-flex flex-col gap-[6px] hover:border-[#7f77dd] hover:text-[#534ab7] hover:bg-[#f0efff] ${bank === option ? 'border-[#534ab7] bg-[#f0efff] text-[#534ab7]' : 'border-black/10 text-[#5d5d72]'}`}
-                    onClick={() => setBank(option)}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#bbb] mx-auto mb-[5px] block"><path d="M3 21h18M3 10h18M3 7l9-4 9 4M4 10v11M20 10v11M8 10v11M12 10v11M16 10v11"/></svg>
-                    {option}
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-[#8f8eab] mt-[14px] text-center">
-                A transfer reference will be generated after you confirm this payment.
-              </p>
-            </div>
-
             {error && <div className="text-red-600 mb-3">{error}</div>}
             <button className="w-full bg-[#534ab7] text-white rounded-xl py-[14px] text-[15px] font-semibold cursor-pointer flex items-center justify-center gap-2 transition-all mt-2 hover:bg-[#3c3489] active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed" type="button" onClick={handlePay} disabled={isProcessing}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-              {isProcessing ? 'Processing…' : `Pay ${formatMoney(dueAmount, currency.code, currency.rate)} now`}
+              {isProcessing ? checkoutMessage || 'Opening PayHere…' : `Pay ${formatMoney(dueAmount, currency.code, currency.rate)} now`}
             </button>
+            {isProcessing && <p role="status" aria-live="polite" className="mt-2 text-center text-xs text-[#6b6b80]">Please keep this page open. You will be redirected automatically.</p>}
 
             <div className="flex gap-4 justify-center mt-[14px] flex-wrap">
               <div className="flex items-center gap-[5px] text-[11px] text-[#8f8eab]">
@@ -354,7 +398,7 @@ export default function Payment({ onBack = () => {}, onComplete = () => {} }) {
         </div>
 
         <div className="sticky top-5 max-[720px]:static">
-          <div className="bg-white rounded-[18px] border border-black/10 p-6 mb-4 text-[#222]">
+          <div className="mb-4 rounded-[18px] border border-black/10 bg-white p-4 text-[#222] sm:p-6">
             <div className="text-sm font-semibold text-[#1a1a2e] mb-[18px] flex items-center gap-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#7f77dd] shrink-0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               Order summary
@@ -365,15 +409,39 @@ export default function Payment({ onBack = () => {}, onComplete = () => {} }) {
               </div>
               <div>
                 <div className="text-sm font-medium">Pencil portrait commission</div>
-                <div className="text-xs text-[#6b6b80] mt-0.5">A3 · 2 subjects · Classic frame</div>
+                <div className="text-xs text-[#6b6b80] mt-0.5">
+                  {safeOrder.size.label} · {safeOrder.people} subject{safeOrder.people > 1 ? 's' : ''} · {safeOrder.frame.label} frame
+                </div>
               </div>
             </div>
 
             <div>
-              <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Base price (A3)</span><span className="font-medium">{displayValue(prices.base)}</span></div>
-              <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Classic frame</span><span className="font-medium">{displayValue(prices.frame)}</span></div>
-              <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">2nd subject</span><span className="font-medium">{displayValue(prices.people)}</span></div>
-              <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Delivery</span><span className="font-medium">Courier</span></div>
+              <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Base price ({safeOrder.size.label})</span><span className="font-medium">{displayValue(safeOrder.basePrice)}</span></div>
+              {safeOrder.framePrice > 0 && (
+                <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">{safeOrder.frame.label} frame</span><span className="font-medium">{displayValue(safeOrder.framePrice)}</span></div>
+              )}
+              {safeOrder.peoplePrice > 0 && (
+                <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Extra subjects</span><span className="font-medium">{displayValue(safeOrder.peoplePrice)}</span></div>
+              )}
+              {safeOrder.deliveryPrice > 0 && (
+                <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Delivery charge</span><span className="font-medium">{displayValue(safeOrder.deliveryPrice)}</span></div>
+              )}
+              {safeOrder.urgentPrice > 0 && (
+                <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Urgent order</span><span className="font-medium">{displayValue(safeOrder.urgentPrice)}</span></div>
+              )}
+              {safeOrder.urgent && safeOrder.urgentDeadline && (
+                <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Requested by</span><span className="font-medium">{new Date(`${safeOrder.urgentDeadline}T00:00:00`).toLocaleDateString('en-LK', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
+              )}
+              <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Delivery</span><span className="font-medium">{safeOrder.deliveryMethod === 'pickup' ? 'Pickup' : 'Courier'}</span></div>
+              {safeOrder.deliveryMethod === 'courier' && safeOrder.deliveryAddress && (
+                <div className="flex justify-between gap-4 py-2 border-b border-black/[0.06] text-[13px]"><span className="shrink-0 text-[#6b6b80]">Address</span><span className="text-right font-medium">{safeOrder.deliveryAddress}</span></div>
+              )}
+              {safeOrder.notes?.trim() && (
+                <div className="py-2 border-b border-black/[0.06] text-[13px]">
+                  <div className="text-[#6b6b80]">Special instructions</div>
+                  <div className="mt-1 whitespace-pre-wrap break-words font-medium leading-5">{safeOrder.notes.trim()}</div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-between items-center mt-[14px] pt-[14px] border-t-[1.5px] border-[rgba(83,74,183,0.18)]">
@@ -392,19 +460,19 @@ export default function Payment({ onBack = () => {}, onComplete = () => {} }) {
             </div>
           </div>
 
-          <div className="bg-white rounded-[18px] border border-black/10 p-6 mb-4 text-[#222]">
+          <div className="mb-4 rounded-[18px] border border-black/10 bg-white p-4 text-[#222] sm:p-6">
             <div className="text-sm font-semibold text-[#1a1a2e] flex items-center gap-2 mb-3">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#7f77dd] shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               Estimated timeline
             </div>
-            <div className="flex justify-between text-xs py-[5px]"><span className="text-[#6b6b80]">Queue position</span><span className="text-[#534ab7] font-medium">#3</span></div>
-            <div className="flex justify-between text-xs py-[5px]"><span className="text-[#6b6b80]">Sketching starts</span><span className="text-[#534ab7] font-medium">~3 days</span></div>
-            <div className="flex justify-between text-xs py-[5px]"><span className="text-[#6b6b80]">Delivery estimate</span><span className="text-[#534ab7] font-medium">7–10 working days</span></div>
+            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Queue position</span><span className="text-right text-[#534ab7] font-medium">{timeline ? `#${timeline.queuePosition} · ${timeline.queueType}` : 'Loading…'}</span></div>
+            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Sketching starts</span><span className="text-right text-[#534ab7] font-medium">{timeline ? formatTimelineDate(timeline.sketchingStart) : 'Loading…'}</span></div>
+            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Drawing period</span><span className="text-right text-[#534ab7] font-medium">{timeline ? `${timeline.drawingDays} days` : 'Loading…'}</span></div>
+            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Revision period</span><span className="text-right text-[#534ab7] font-medium">{timeline ? `${timeline.revisionDays} days` : 'Loading…'}</span></div>
+            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Estimated completion</span><span className="text-right text-[#534ab7] font-medium">{timeline ? formatTimelineDate(timeline.estimatedCompletion) : 'Loading…'}</span></div>
+            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Delivery estimate</span><span className="max-w-[190px] text-right text-[#534ab7] font-medium">{timeline?.deliveryEstimate || 'Loading…'}</span></div>
           </div>
 
-          <button type="button" className="border border-white/[0.16] rounded-full px-6 py-[14px] cursor-pointer transition-colors bg-transparent text-[#e7e3f5] hover:bg-white/[0.08] w-full mt-[18px]" onClick={onBack}>
-            ← Back to details
-          </button>
         </div>
       </main>
     </div>
