@@ -4,6 +4,7 @@ import Icon from '../components/Icon';
 import BrandLogo from '../components/BrandLogo';
 import { clearCustomerSession, CUSTOMER_AUTH_EVENT, getCustomerToken } from '../authSession';
 import { clearCommissionDraft } from '../commissionDraft';
+import { api } from '../api';
 
 const stats = [
   { value: "200+", label: "Portraits delivered" },
@@ -57,6 +58,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
   const [isSignedIn, setIsSignedIn] = useState(Boolean(getCustomerToken()));
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeNav, setActiveNav] = useState('home');
+  const [pendingOrderCount, setPendingOrderCount] = useState(0);
 
   useEffect(() => {
     clearCommissionDraft();
@@ -73,7 +75,9 @@ export default function LandingPage({ onNavigate = () => {} }) {
 
   useEffect(() => {
     const syncAuthentication = () => {
-      setIsSignedIn(Boolean(getCustomerToken()));
+      const signedIn = Boolean(getCustomerToken());
+      setIsSignedIn(signedIn);
+      if (!signedIn) setPendingOrderCount(0);
     };
     window.addEventListener(CUSTOMER_AUTH_EVENT, syncAuthentication);
 
@@ -81,6 +85,22 @@ export default function LandingPage({ onNavigate = () => {} }) {
       window.removeEventListener(CUSTOMER_AUTH_EVENT, syncAuthentication);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isSignedIn) return undefined;
+    let active = true;
+    const loadPendingOrders = () => api.getMyOrders()
+      .then(orders => {
+        if (active) setPendingOrderCount(orders.filter(order => order.paymentStatus === 'payment_pending').length);
+      })
+      .catch(() => {});
+    loadPendingOrders();
+    window.addEventListener('vividarts:pending-orders', loadPendingOrders);
+    return () => {
+      active = false;
+      window.removeEventListener('vividarts:pending-orders', loadPendingOrders);
+    };
+  }, [isSignedIn]);
 
   useEffect(() => {
     const revealItems = Array.from(document.querySelectorAll('[data-home-reveal]'));
@@ -106,6 +126,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
   const handleLogout = () => {
     clearCustomerSession();
     setIsSignedIn(false);
+    setPendingOrderCount(0);
     setMobileMenuOpen(false);
     // Optionally navigate to landing/home
     onNavigate('landing');
@@ -159,7 +180,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
                 <>
                   <button className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-[#c9c5d8] transition duration-300 hover:-translate-y-0.5 hover:bg-white/10 hover:text-white" onClick={() => onNavigate('profile')}><Icon name="user" size={15}/>My Account</button>
                   <button className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-[#aaa7bd] transition duration-300 hover:-translate-y-0.5 hover:bg-white/10 hover:text-white" onClick={handleLogout}><Icon name="power" size={15}/>Logout</button>
-                  <button className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-5 py-2.5 text-sm font-bold text-white shadow-[0_5px_18px_rgba(126,87,225,.38)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(126,87,225,.48)] focus:outline-none focus:ring-2 focus:ring-[#a78bfa]" onClick={() => onNavigate('orders')}><Icon name="orders" size={15}/>My Orders</button>
+                  <button className="relative inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-5 py-2.5 text-sm font-bold text-white shadow-[0_5px_18px_rgba(126,87,225,.38)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(126,87,225,.48)] focus:outline-none focus:ring-2 focus:ring-[#a78bfa]" onClick={() => onNavigate('orders')}><Icon name="orders" size={15}/>My Orders{pendingOrderCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#151326] bg-red-500 px-1 text-[10px] font-black text-white" aria-label={`${pendingOrderCount} incomplete orders`}>{pendingOrderCount}</span>}</button>
                 </>
               )}
             </div>
@@ -191,7 +212,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
                 <div className="grid grid-cols-3 gap-2">
                   <button className="rounded-xl border border-white/15 bg-white/[.07] px-4 py-3 text-sm font-bold" onClick={() => { setMobileMenuOpen(false); onNavigate('profile'); }}>My Account</button>
                   <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[.07] px-4 py-3 text-sm font-bold" onClick={handleLogout}><Icon name="power" size={16}/>Logout</button>
-                  <button className="rounded-xl bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-4 py-3 text-sm font-extrabold text-white" onClick={() => { setMobileMenuOpen(false); onNavigate('orders'); }}>My Orders</button>
+                  <button className="relative rounded-xl bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-4 py-3 text-sm font-extrabold text-white" onClick={() => { setMobileMenuOpen(false); onNavigate('orders'); }}>My Orders{pendingOrderCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#151326] bg-red-500 px-1 text-[10px] font-black text-white">{pendingOrderCount}</span>}</button>
                 </div>
               )}
             </div>

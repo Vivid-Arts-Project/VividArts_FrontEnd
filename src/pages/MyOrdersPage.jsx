@@ -5,6 +5,7 @@ import { startVisiblePolling } from '../utils/polling';
 import { saveBlob } from '../utils/download';
 
 const STATUS = {
+  payment_pending: ['Payment incomplete', 'Complete the deposit payment to confirm this order.'],
   in_queue: ['Order received', 'Your order is in the artist’s queue.'],
   sketching: ['Sketching', 'The artist is working on your portrait.'],
   waiting_for_feedback: ['Proof ready', 'Your proof is ready for review.'],
@@ -56,6 +57,7 @@ export default function MyOrdersPage({ onNavigate }) {
   const [sendingMessage, setSendingMessage] = useState('');
   const [revisionOrderId, setRevisionOrderId] = useState('');
   const [payingBalance, setPayingBalance] = useState('');
+  const [resumingPayment, setResumingPayment] = useState('');
 
   const loadOrders = useCallback(async () => {
     setError('');
@@ -158,6 +160,30 @@ export default function MyOrdersPage({ onNavigate }) {
     }
   };
 
+  const resumePayment = async (order) => {
+    if (resumingPayment) return;
+    setResumingPayment(order.id);
+    setNotice('');
+    try {
+      const checkout = await api.resumeOrderCheckout(order.id);
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = checkout.checkoutUrl;
+      Object.entries(checkout.checkoutFields).forEach(([name, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+    } catch (paymentError) {
+      setNotice(paymentError.message || 'Unable to continue the payment.');
+      setResumingPayment('');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#090816] font-sans text-white">
       <header className="border-b border-white/10 bg-[#0d0b1f]/95 backdrop-blur-xl">
@@ -196,17 +222,19 @@ export default function MyOrdersPage({ onNavigate }) {
 
         <div className="grid gap-6">
           {orders.map((order) => {
-            const [statusLabel, statusHelp] = STATUS[order.status] || [String(order.status || 'Unknown').replaceAll('_', ' '), 'The artist updated this order.'];
+            const displayStatus = order.paymentStatus === 'payment_pending' ? 'payment_pending' : order.status;
+            const [statusLabel, statusHelp] = STATUS[displayStatus] || [String(displayStatus || 'Unknown').replaceAll('_', ' '), 'The artist updated this order.'];
             const completedPayment = order.payments?.find(payment => payment.status === 'completed');
+            const paymentPending = order.paymentStatus === 'payment_pending';
             return (
-              <article key={order.id} className="overflow-hidden rounded-[26px] border border-white/[.1] bg-gradient-to-br from-[#151333] via-[#111025] to-[#102037] shadow-[0_22px_60px_rgba(0,0,0,.28)]">
+              <article key={order.id} className={`overflow-hidden rounded-[26px] bg-gradient-to-br from-[#151333] via-[#111025] to-[#102037] shadow-[0_22px_60px_rgba(0,0,0,.28)] ${paymentPending ? 'border border-red-400/55' : 'border border-white/[.1]'}`}>
                 <div className="flex flex-col gap-4 border-b border-white/[.08] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7">
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-[.15em] text-white/40">Placed {formatDate(order.createdAt)}</p>
                     <h3 className="mt-1 break-all font-mono text-sm font-bold sm:text-lg">Order #{order.id}</h3>
                   </div>
                   <div className="sm:text-right">
-                    <span className="inline-flex rounded-full border border-[#9b8df3]/25 bg-[#7868d8]/15 px-3 py-1.5 text-xs font-bold text-[#cec7ff]">{statusLabel}</span>
+                    <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold ${paymentPending ? 'border-red-400/40 bg-red-500/15 text-red-200' : 'border-[#9b8df3]/25 bg-[#7868d8]/15 text-[#cec7ff]'}`}>{paymentPending && <span className="h-2 w-2 rounded-full bg-red-400 shadow-[0_0_10px_rgba(248,113,113,.8)]"/>}{statusLabel}</span>
                     <p className="mt-1.5 text-xs text-white/45">{statusHelp}</p>
                   </div>
                 </div>
@@ -240,6 +268,11 @@ export default function MyOrdersPage({ onNavigate }) {
                         <span>{formatDate(payment.createdAt, true)}{payment.transactionId ? ` · Ref ${payment.transactionId}` : ''}</span>
                       </div>
                     ))}
+                    {paymentPending && (
+                      <button type="button" disabled={resumingPayment === order.id} onClick={() => resumePayment(order)} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-red-500 px-5 py-2.5 text-xs font-extrabold text-white shadow-[0_10px_24px_rgba(239,68,68,.25)] transition hover:bg-red-400 disabled:opacity-50">
+                        <Icon name="payments" size={16}/>{resumingPayment === order.id ? 'Opening payment…' : `Complete payment · ${formatMoney(order.payments?.[0]?.amount, order.currency)}`}
+                      </button>
+                    )}
                     {completedPayment?.providerOrderId && <button type="button" onClick={() => downloadInvoice(completedPayment.providerOrderId)} className="mt-3 inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/[.06] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/[.11]"><Icon name="download" size={15}/> Download invoice</button>}
                     {['approved', 'finished'].includes(order.workflowStatus || order.status) && order.balanceDue > 0 && (
                       <button type="button" disabled={payingBalance === order.id} onClick={() => payBalance(order)} className="mt-3 ml-2 inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-xs font-extrabold text-[#062b1b] transition hover:bg-emerald-400 disabled:opacity-50">
@@ -250,7 +283,13 @@ export default function MyOrdersPage({ onNavigate }) {
 
                   <aside className="min-w-0 rounded-2xl border border-white/[.08] bg-[#0a0918]/55 p-4 sm:p-5">
                     <h4 className="text-xs font-bold uppercase tracking-[.16em] text-[#aaa0f4]">Proof & updates</h4>
-                    {order.proof ? (
+                    {paymentPending ? (
+                      <div className="mt-3 rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-6 text-center">
+                        <Icon name="payments" size={24} className="mx-auto text-red-300"/>
+                        <p className="mt-3 text-sm font-bold text-red-100">Waiting for payment</p>
+                        <p className="mt-1 text-xs leading-5 text-white/45">Proof updates and artist chat will become available after the deposit is confirmed.</p>
+                      </div>
+                    ) : <>{order.proof ? (
                       <div className="mt-3">
                         <a href={order.proof.url} target="_blank" rel="noreferrer" className="flex h-72 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/20 p-2"><img src={order.proof.url} alt={`Proof for order ${order.id}`} className="h-full w-full object-contain"/></a>
                         <div className="mt-2 flex items-center justify-between gap-3 text-xs text-white/50"><span>Proof v{order.proof.version}</span><span className="capitalize">{String(order.proof.reviewStatus).replaceAll('_', ' ')}</span></div>
@@ -306,6 +345,7 @@ export default function MyOrdersPage({ onNavigate }) {
                         {sendingMessage === order.id ? 'Sending…' : revisionOrderId === order.id ? 'Submit change request' : 'Send message'}
                       </button>
                     </div>
+                    </>}
                   </aside>
                 </div>
                 <div className="flex flex-wrap gap-x-6 gap-y-1 border-t border-white/[.07] px-5 py-3 text-[11px] text-white/35 sm:px-7"><span>Last updated {formatDate(order.updatedAt, true)}</span>{order.approvedAt && <span>Approved {formatDate(order.approvedAt, true)}</span>}{order.completedAt && <span>Completed {formatDate(order.completedAt, true)}</span>}</div>

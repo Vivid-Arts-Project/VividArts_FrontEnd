@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import UploadPhotoPage from "./UploadPhotoPage";
 import CustomisePage from "./CustomisePage";
 import Payment from "./Payment";
@@ -29,6 +29,10 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
   const [isPaymentReturn] = useState(() => new URLSearchParams(window.location.search).has('payment'));
   const defaultStep = isPaymentReturn ? 'payment' : 'upload';
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [path]);
+
   function handlePhotoNext(data) {
     setPhotoData(data);
     setCommissionPhoto(data);
@@ -55,7 +59,18 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
     ? <CustomisePage photoData={photoData} initialOrder={order} onNext={handleCustomiseNext} onBack={() => navigate('/commission/upload')} onNavigate={onNavigate}/>
     : <Redirect to="/commission/upload" replace />;
   else if (path === '/commission/payment') page = order || isPaymentReturn
-    ? <Payment order={order} referencePhoto={photoData?.photo || null} onBack={() => navigate('/commission/customize')} onComplete={handlePaymentComplete} />
+    ? <Payment
+        order={order}
+        referencePhoto={photoData?.photo || null}
+        onBack={() => navigate('/commission/customize')}
+        onComplete={handlePaymentComplete}
+        onIncomplete={() => {
+          setPhotoData(null);
+          setOrder(null);
+          clearCommissionDraft();
+          onNavigate('orders');
+        }}
+      />
     : <Redirect to="/commission/upload" replace />;
   else page = <Redirect to="/commission/upload" replace />;
 
