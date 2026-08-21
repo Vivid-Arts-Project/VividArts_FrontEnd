@@ -86,9 +86,13 @@ export const api = {
     if (!response.ok) {
       const contentType = response.headers.get('content-type') || '';
       const error = contentType.includes('application/json') ? await response.json() : null;
-      throw new Error(error?.error || `Unable to download invoice (${response.status})`);
+      throw new Error(error?.error || error?.message || `Unable to download invoice (${response.status})`);
     }
-    return response.blob();
+    const invoice = await response.blob();
+    if (!invoice.type.toLowerCase().includes('pdf')) {
+      throw new Error('The server returned an invalid invoice file.');
+    }
+    return invoice;
   },
 
   // Get prices

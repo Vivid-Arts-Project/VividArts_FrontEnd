@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import Icon from '../components/Icon';
 import { startVisiblePolling } from '../utils/polling';
+import { saveBlob } from '../utils/download';
 
 const STATUS = {
   in_queue: ['Order received', 'Your order is in the artist’s queue.'],
@@ -127,12 +128,7 @@ export default function MyOrdersPage({ onNavigate }) {
     setNotice('');
     try {
       const blob = await api.downloadInvoice(providerOrderId);
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `invoice-${providerOrderId}.pdf`;
-      link.click();
-      URL.revokeObjectURL(url);
+      saveBlob(blob, `invoice-${providerOrderId}.pdf`);
     } catch (downloadError) {
       setNotice(downloadError.message || 'Unable to download the invoice.');
     }
@@ -256,7 +252,7 @@ export default function MyOrdersPage({ onNavigate }) {
                     <h4 className="text-xs font-bold uppercase tracking-[.16em] text-[#aaa0f4]">Proof & updates</h4>
                     {order.proof ? (
                       <div className="mt-3">
-                        <a href={order.proof.url} target="_blank" rel="noreferrer"><img src={order.proof.url} alt={`Proof for order ${order.id}`} className="max-h-72 w-full rounded-xl border border-white/10 bg-black/20 object-contain"/></a>
+                        <a href={order.proof.url} target="_blank" rel="noreferrer" className="flex h-72 items-center justify-center overflow-hidden rounded-xl border border-white/10 bg-black/20 p-2"><img src={order.proof.url} alt={`Proof for order ${order.id}`} className="h-full w-full object-contain"/></a>
                         <div className="mt-2 flex items-center justify-between gap-3 text-xs text-white/50"><span>Proof v{order.proof.version}</span><span className="capitalize">{String(order.proof.reviewStatus).replaceAll('_', ' ')}</span></div>
                         <p className="mt-1 text-[11px] text-white/35">Uploaded {formatDate(order.proof.uploadedAt, true)}{order.proof.reviewedAt ? ` · Reviewed ${formatDate(order.proof.reviewedAt, true)}` : ''}</p>
                         {order.proof.artistNote && <p className="mt-3 rounded-xl bg-white/[.05] px-3 py-2.5 text-xs leading-5 text-white/65">Artist note: {order.proof.artistNote}</p>}
@@ -265,7 +261,7 @@ export default function MyOrdersPage({ onNavigate }) {
                       </div>
                     ) : <p className="mt-3 rounded-xl border border-dashed border-white/10 px-4 py-5 text-center text-xs leading-5 text-white/40">No proof has been uploaded yet.</p>}
 
-                    {order.referencePhotos?.length > 0 && <><h5 className="mb-2 mt-5 text-[11px] font-bold uppercase tracking-[.13em] text-white/45">Reference photos</h5><div className="grid grid-cols-3 gap-2">{order.referencePhotos.map((photo, index) => <a key={photo.id} href={photo.url} target="_blank" rel="noreferrer"><img src={photo.url} alt={photo.fileName || `Reference ${index + 1}`} className="aspect-square w-full rounded-lg border border-white/10 object-cover"/></a>)}</div></>}
+                    {order.referencePhotos?.length > 0 && <><h5 className="mb-2 mt-5 text-[11px] font-bold uppercase tracking-[.13em] text-white/45">Reference photos</h5><div className="grid grid-cols-3 gap-2">{order.referencePhotos.map((photo, index) => <a key={photo.id} href={photo.url} target="_blank" rel="noreferrer" className="flex aspect-square items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-black/20 p-1"><img src={photo.url} alt={photo.fileName || `Reference ${index + 1}`} className="h-full w-full object-contain"/></a>)}</div></>}
 
                     <h5 className="mb-2 mt-5 text-[11px] font-bold uppercase tracking-[.13em] text-white/45">Chat</h5>
                     <div className="flex max-h-80 min-h-48 flex-col gap-2 overflow-y-auto rounded-xl bg-black/15 p-2.5">

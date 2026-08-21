@@ -44,7 +44,14 @@ export const uploadProof = (id, file) => {
 // ── Customers (for Clients page) ──────────────────────────────────────────────
 export const getCustomers = (page = 1, limit = 50) => sharedGet(`/admin/customers?page=${page}&limit=${limit}`);
 export const getPayments  = (page = 1, limit = 50) => sharedGet(`/payments?page=${page}&limit=${limit}`);
-export const invoiceUrl   = (payhereOrderId) => `${api.defaults.baseURL}/payments/${encodeURIComponent(payhereOrderId)}/invoice`;
+export const downloadInvoice = async (payhereOrderId) => {
+  const response = await api.get(`/payments/${encodeURIComponent(payhereOrderId)}/invoice`, { responseType: 'blob' });
+  const invoice = response.data;
+  if (!(invoice instanceof Blob) || !invoice.type.toLowerCase().includes('pdf')) {
+    throw new Error('The server returned an invalid invoice file.');
+  }
+  return invoice;
+};
 
 // Admin profile and settings
 export const getProfile          = ()     => api.get('/admin/me');

@@ -8,6 +8,7 @@ import Icon from '../components/Icon';
 import CommissionHeader from '../components/CommissionHeader';
 import { getCustomerToken, preparePaymentReturnSession } from '../authSession';
 import { trustCurrentNavigation } from '../router';
+import { saveBlob } from '../utils/download';
 
 const fallbackOrder = {
   size: { id: 'A3', label: 'A3' },
@@ -59,6 +60,7 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
   const safeOrder = order || fallbackOrder
   const [currency] = useState(currencies[0])
   const [isProcessing, setIsProcessing] = useState(false)
+  const [checkoutMessage, setCheckoutMessage] = useState('')
   const [orderId, setOrderId] = useState(null);
   const [paymentReturn] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -198,14 +200,7 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
     setIsDownloading(true);
     try {
       const invoice = await api.downloadInvoice(orderId);
-      const downloadUrl = URL.createObjectURL(invoice);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `invoice-${orderId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+      saveBlob(invoice, `invoice-${orderId}.pdf`);
     } catch (err) {
       showNotification('error', err.message || 'Unable to download the invoice.');
     } finally {
@@ -214,7 +209,9 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
   };
 
   const handlePay = async () => {
+    if (isProcessing) return;
     setIsProcessing(true);
+    setCheckoutMessage('Creating your secure payment…');
     setError(null);
 
     try {
@@ -252,6 +249,7 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
 
       setOrderId(result.orderId);
       preparePaymentReturnSession(result.orderId);
+      setCheckoutMessage('Opening PayHere…');
       submitCheckoutForm(result.checkoutUrl, result.checkoutFields);
     } catch (err) {
       const errText = err.message || 'Payment failed. Please try again.';
@@ -259,6 +257,7 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
       // 💡 5. PayHere Redirect වෙන්න කලින් error එකක් ආවොත් Toast එක පෙන්නන්න
       showNotification('error', errText);
       console.error('Payment error:', err);
+      setCheckoutMessage('');
       setIsProcessing(false);
     }
   };
@@ -377,8 +376,9 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
             {error && <div className="text-red-600 mb-3">{error}</div>}
             <button className="w-full bg-[#534ab7] text-white rounded-xl py-[14px] text-[15px] font-semibold cursor-pointer flex items-center justify-center gap-2 transition-all mt-2 hover:bg-[#3c3489] active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed" type="button" onClick={handlePay} disabled={isProcessing}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-              {isProcessing ? 'Processing…' : `Pay ${formatMoney(dueAmount, currency.code, currency.rate)} now`}
+              {isProcessing ? checkoutMessage || 'Opening PayHere…' : `Pay ${formatMoney(dueAmount, currency.code, currency.rate)} now`}
             </button>
+            {isProcessing && <p role="status" aria-live="polite" className="mt-2 text-center text-xs text-[#6b6b80]">Please keep this page open. You will be redirected automatically.</p>}
 
             <div className="flex gap-4 justify-center mt-[14px] flex-wrap">
               <div className="flex items-center gap-[5px] text-[11px] text-[#8f8eab]">

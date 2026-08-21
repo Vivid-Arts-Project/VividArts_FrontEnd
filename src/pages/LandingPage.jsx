@@ -315,22 +315,22 @@ export default function LandingPage({ onNavigate = () => {} }) {
         <section id="about" className="order-2 relative overflow-hidden border-y border-white/10">
           <div className="absolute left-1/2 top-1/2 h-[430px] w-[430px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#6d5bff]/10 blur-[110px]"/>
           <div className="relative mx-auto grid max-w-7xl gap-12 px-6 py-20 sm:px-8 lg:grid-cols-[.9fr_1.1fr] lg:items-center lg:py-24">
-            <div className="relative mx-auto min-h-[430px] w-full max-w-[480px]">
-              <div className="absolute inset-x-8 inset-y-0 rounded-[28px] border border-white/10 bg-gradient-to-br from-[#20204a] via-[#17152f] to-[#121025] shadow-[0_30px_80px_rgba(0,0,0,.35)]">
+            <div className="home-about-showcase relative mx-auto min-h-[430px] w-full max-w-[480px]">
+              <div className="home-about-showcase__card absolute inset-x-8 inset-y-0 rounded-[28px] border border-white/10 bg-gradient-to-br from-[#20204a] via-[#17152f] to-[#121025] shadow-[0_30px_80px_rgba(0,0,0,.35)]">
                 <div className="absolute inset-5 rounded-[20px] border border-white/[.08] bg-[radial-gradient(circle_at_50%_32%,rgba(147,197,253,.2),transparent_48%)]"/>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <BrandLogo size={230} full className="rounded-[20px] opacity-95 drop-shadow-[0_18px_30px_rgba(43,143,224,.18)]"/>
+                  <BrandLogo size={230} full className="home-about-showcase__logo rounded-[20px] opacity-95 drop-shadow-[0_18px_30px_rgba(43,143,224,.18)]"/>
                 </div>
                 <div className="absolute bottom-7 left-7 right-7 flex items-end justify-between">
                   <div><span className="block text-[10px] uppercase tracking-[.2em] text-white/35">Vivid Arts</span><strong className="mt-1 block font-outfit text-lg">Drawn with intention</strong></div>
-                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[.07] text-[#9ccfff]"><Icon name="pencil" size={22}/></span>
+                  <span className="home-about-showcase__pencil flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[.07] text-[#9ccfff]"><Icon name="pencil" size={22}/></span>
                 </div>
               </div>
-              <div className="absolute -left-1 top-10 rounded-2xl border border-white/10 bg-[#15132d]/90 px-4 py-3 shadow-xl backdrop-blur-xl">
+              <div className="home-about-showcase__badge home-about-showcase__badge--left absolute -left-1 top-10 rounded-2xl border border-white/10 bg-[#15132d]/90 px-4 py-3 shadow-xl backdrop-blur-xl">
                 <strong className="block text-lg text-white">100%</strong>
                 <span className="text-[11px] text-white/45">Hand-drawn</span>
               </div>
-              <div className="absolute -right-1 top-10 rounded-2xl border border-white/10 bg-[#15132d]/90 px-4 py-3 shadow-xl backdrop-blur-xl">
+              <div className="home-about-showcase__badge home-about-showcase__badge--right absolute -right-1 top-10 rounded-2xl border border-white/10 bg-[#15132d]/90 px-4 py-3 shadow-xl backdrop-blur-xl">
                 <strong className="block text-lg text-white">Sri Lanka</strong>
                 <span className="text-[11px] text-white/45">Made locally</span>
               </div>
