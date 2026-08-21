@@ -74,7 +74,7 @@ export default function CustomerNotificationsPage({ onNavigate }) {
     <div className="min-h-screen bg-[#090816] font-sans text-white">
       <header className="border-b border-white/10 bg-[#0d0b1f]/95 backdrop-blur-xl">
         <div className="mx-auto flex min-h-[82px] max-w-6xl items-center justify-between gap-5 px-4 sm:px-8">
-          <button type="button" onClick={() => onNavigate('landing')} className="flex items-center gap-2 text-sm font-bold text-white/70 transition hover:text-white"><Icon name="arrowLeft" size={18}/> Home</button>
+          <button type="button" onClick={() => onNavigate('landing')} className="group inline-flex items-center rounded-xl border border-[#a99bff]/45 bg-gradient-to-r from-[#318fe2] to-[#7354d6] px-5 py-3 text-sm font-bold text-white shadow-[0_10px_28px_rgba(79,91,215,.35)] transition-all duration-300 hover:-translate-y-0.5 hover:from-[#45a3ef] hover:to-[#8868e7] hover:shadow-[0_14px_34px_rgba(111,87,230,.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b8afff] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090816]"><Icon name="arrowLeft" size={18} className="mr-2 transition-transform duration-300 group-hover:-translate-x-1"/> Back to home</button>
           <div className="text-right"><p className="text-[11px] font-bold uppercase tracking-[.2em] text-[#a99bff]">Customer account</p><h1 className="mt-1 text-xl font-extrabold sm:text-2xl">Notifications</h1></div>
         </div>
       </header>

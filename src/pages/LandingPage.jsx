@@ -140,7 +140,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
   const navItemClass = (key) => `inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/10 hover:text-white ${activeNav === key ? 'bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,.04)]' : 'text-[#aaa7bd]'}`;
 
   return (
-    <div id="home" className="min-h-screen bg-[#0a0916] font-sans text-[#f5f4fb]">
+    <div id="home" className="landing-page min-h-screen font-sans text-[#f5f4fb]">
       <header className="sticky top-0 z-50 px-3 pt-3 sm:px-6 sm:pt-5">
         <div className="mx-auto flex min-h-[68px] max-w-[1440px] items-center gap-4 rounded-[32px] border border-white/[.13] bg-[#151326]/70 px-3 py-2.5 shadow-[0_20px_45px_rgba(0,0,0,.38)] backdrop-blur-[20px] sm:px-5 lg:px-6">
           <a href="#home" className="group flex shrink-0 items-center gap-3" aria-label="Vivid Arts home">
@@ -164,6 +164,9 @@ export default function LandingPage({ onNavigate = () => {} }) {
             </a>
             <button className={navItemClass('gallery')} onClick={() => { setActiveNav('gallery'); onNavigate('gallery'); }}>
               <Icon name="proofs" size={15} className={activeNav === 'gallery' ? 'text-[#a99bff]' : 'opacity-65'}/> Gallery
+            </button>
+            <button className={navItemClass('reviews')} onClick={() => { setActiveNav('reviews'); onNavigate('reviews'); }}>
+              <Icon name="rating" size={15} className={activeNav === 'reviews' ? 'text-[#a99bff]' : 'opacity-65'}/> Reviews
             </button>
           </nav>
 
@@ -199,9 +202,9 @@ export default function LandingPage({ onNavigate = () => {} }) {
         {mobileMenuOpen && (
           <div className="mx-auto mt-2 max-w-[1440px] rounded-[24px] border border-white/[.13] bg-[#151326]/90 px-4 pb-5 pt-4 shadow-[0_20px_45px_rgba(0,0,0,.38)] backdrop-blur-[20px] md:hidden">
             <nav className="grid grid-cols-2 gap-2 text-sm font-semibold text-[#d4d0e5]">
-              {[['Home', '#home', 'home', 'home'], ['About', '#about', 'info', 'about'], ['How It Works', '#how-it-works', 'orders', 'process'], ['Gallery', '#gallery', 'proofs', 'gallery']].map(([label, href, icon, key]) => (
-                href === '#gallery'
-                  ? <button key={href} className={`flex items-center justify-center gap-2 rounded-full border px-4 py-3 text-center transition ${activeNav === key ? 'border-white/15 bg-white/10 text-white' : 'border-white/[.08] bg-white/[.04] text-[#c5c1d2]'}`} onClick={() => { setActiveNav(key); setMobileMenuOpen(false); onNavigate('gallery'); }}><Icon name={icon} size={15} className="text-[#a99bff]"/>{label}</button>
+              {[['Home', '#home', 'home', 'home'], ['About', '#about', 'info', 'about'], ['How It Works', '#how-it-works', 'orders', 'process'], ['Reviews', '#reviews', 'rating', 'reviews'], ['Gallery', '#gallery', 'proofs', 'gallery']].map(([label, href, icon, key]) => (
+                href === '#gallery' || href === '#reviews'
+                  ? <button key={href} className={`flex items-center justify-center gap-2 rounded-full border px-4 py-3 text-center transition ${activeNav === key ? 'border-white/15 bg-white/10 text-white' : 'border-white/[.08] bg-white/[.04] text-[#c5c1d2]'}`} onClick={() => { setActiveNav(key); setMobileMenuOpen(false); onNavigate(key); }}><Icon name={icon} size={15} className="text-[#a99bff]"/>{label}</button>
                   : <a key={href} href={href} className={`flex items-center justify-center gap-2 rounded-full border px-4 py-3 text-center transition ${activeNav === key ? 'border-white/15 bg-white/10 text-white' : 'border-white/[.08] bg-white/[.04] text-[#c5c1d2]'}`} onClick={() => { setActiveNav(key); setMobileMenuOpen(false); }}><Icon name={icon} size={15} className="text-[#a99bff]"/>{label}</a>
               ))}
             </nav>
@@ -221,7 +224,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
       </header>
 
       <main className="flex flex-col">
-        <section className="order-1 mx-auto grid max-w-7xl gap-14 px-6 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-8 lg:py-20">
+        <section className="order-1 mx-auto grid w-full max-w-7xl gap-12 px-6 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-8 lg:py-20">
           <div>
             <span data-home-reveal className="home-text-reveal mb-4 inline-flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.2em] text-[#a78bfa]">
               <Icon name="pencil" size={16}/> Handcrafted Pencil Portraits
@@ -333,7 +336,7 @@ export default function LandingPage({ onNavigate = () => {} }) {
           </div>
         </section>
 
-        <section id="about" className="order-2 relative overflow-hidden border-y border-white/10">
+        <section id="about" className="order-2 relative overflow-hidden">
           <div className="absolute left-1/2 top-1/2 h-[430px] w-[430px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#6d5bff]/10 blur-[110px]"/>
           <div className="relative mx-auto grid max-w-7xl gap-12 px-6 py-20 sm:px-8 lg:grid-cols-[.9fr_1.1fr] lg:items-center lg:py-24">
             <div className="home-about-showcase relative mx-auto min-h-[430px] w-full max-w-[480px]">
@@ -396,6 +399,64 @@ export default function LandingPage({ onNavigate = () => {} }) {
           </div>
         </section>
       </main>
+
+      <footer className="relative mt-10 overflow-hidden border-t border-white/10 bg-[#090817] text-white">
+        <div className="pointer-events-none absolute -left-24 top-12 h-72 w-72 rounded-full bg-[#7659dc]/15 blur-[100px]"/>
+        <div className="pointer-events-none absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-[#2b8fe0]/10 blur-[110px]"/>
+
+        <div className="relative mx-auto max-w-7xl px-5 pb-8 pt-4 sm:px-8 lg:pt-6">
+          <div className="grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-[1.35fr_.8fr_.9fr_1.15fr] lg:gap-12">
+            <div>
+              <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="group flex items-center gap-3 text-left">
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#b9afff]/30 bg-white shadow-[0_10px_28px_rgba(93,78,210,.25)] transition group-hover:-translate-y-0.5"><BrandLogo size={50}/></span>
+                <span><strong className="block text-lg font-black tracking-[.12em]">VIVID ARTS</strong><span className="mt-1 block text-[9px] uppercase tracking-[.24em] text-white/35">Pencil portraits</span></span>
+              </button>
+              <p className="mt-5 max-w-sm text-sm leading-6 text-white/45">Meaningful photographs transformed into carefully handcrafted pencil portraits by a Sri Lankan artist.</p>
+              <span className="mt-5 inline-flex items-center gap-2 rounded-full border border-emerald-300/15 bg-emerald-400/[.08] px-3 py-2 text-[10px] font-bold uppercase tracking-[.12em] text-emerald-200"><Icon name="completed" size={14}/> Made locally with care</span>
+            </div>
+
+            <nav aria-label="Footer explore links">
+              <h3 className="text-xs font-extrabold uppercase tracking-[.18em] text-[#b8adff]">Explore</h3>
+              <div className="mt-5 grid gap-3 text-sm text-white/50">
+                <a href="#home" className="transition hover:translate-x-1 hover:text-white">Home</a>
+                <a href="#about" className="transition hover:translate-x-1 hover:text-white">About</a>
+                <a href="#how-it-works" className="transition hover:translate-x-1 hover:text-white">How it works</a>
+                <button type="button" onClick={() => onNavigate('gallery')} className="w-fit text-left transition hover:translate-x-1 hover:text-white">Gallery</button>
+                <button type="button" onClick={() => onNavigate('reviews')} className="w-fit text-left transition hover:translate-x-1 hover:text-white">Reviews</button>
+              </div>
+            </nav>
+
+            <nav aria-label="Customer links">
+              <h3 className="text-xs font-extrabold uppercase tracking-[.18em] text-[#b8adff]">Customer</h3>
+              <div className="mt-5 grid gap-3 text-sm text-white/50">
+                {isSignedIn ? <>
+                  <button type="button" onClick={() => onNavigate('profile')} className="w-fit text-left transition hover:translate-x-1 hover:text-white">My account</button>
+                  <button type="button" onClick={() => onNavigate('orders')} className="w-fit text-left transition hover:translate-x-1 hover:text-white">My orders</button>
+                  <button type="button" onClick={() => onNavigate('notifications')} className="w-fit text-left transition hover:translate-x-1 hover:text-white">Notifications</button>
+                </> : <>
+                  <button type="button" onClick={() => onNavigate('login')} className="w-fit text-left transition hover:translate-x-1 hover:text-white">Sign in</button>
+                  <button type="button" onClick={() => onNavigate('register')} className="w-fit text-left transition hover:translate-x-1 hover:text-white">Create account</button>
+                </>}
+                <button type="button" onClick={handleCommission} className="w-fit text-left transition hover:translate-x-1 hover:text-white">Start a commission</button>
+              </div>
+            </nav>
+
+            <div>
+              <h3 className="text-xs font-extrabold uppercase tracking-[.18em] text-[#b8adff]">Contact the studio</h3>
+              <div className="mt-5 grid gap-3">
+                <a href="tel:+94701013909" className="group flex items-center gap-3 rounded-xl border border-white/[.08] bg-white/[.035] p-3 transition hover:border-[#8f80e8]/35 hover:bg-white/[.06]"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#7666d8]/15 text-[#b8adff]"><Icon name="phone" size={17}/></span><span><small className="block text-[9px] uppercase tracking-[.14em] text-white/30">Call the studio</small><strong className="mt-0.5 block text-xs text-white/70 group-hover:text-white">070 101 3909</strong></span></a>
+                <a href="mailto:disnakainduwara7@gmail.com" className="group flex items-center gap-3 rounded-xl border border-white/[.08] bg-white/[.035] p-3 transition hover:border-[#8f80e8]/35 hover:bg-white/[.06]"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#2b8fe0]/15 text-[#8fcaff]"><Icon name="mail" size={17}/></span><span className="min-w-0"><small className="block text-[9px] uppercase tracking-[.14em] text-white/30">Email</small><strong className="mt-0.5 block break-all text-xs text-white/70 group-hover:text-white">disnakainduwara7@gmail.com</strong></span></a>
+                <p className="flex items-center gap-2 px-1 text-xs text-white/35"><Icon name="home" size={15} className="text-[#a99bff]"/> Sri Lanka · Island-wide service</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center justify-between gap-2 pt-3 text-center text-[11px] text-white/30 sm:flex-row sm:text-left">
+            <span>© {new Date().getFullYear()} Vivid Arts. All rights reserved.</span>
+            <span>Hand-drawn with intention · Made in Sri Lanka</span>
+          </div>
+        </div>
+      </footer>
 
       {showAuthPrompt && (
         <div

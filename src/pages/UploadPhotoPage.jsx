@@ -54,7 +54,7 @@ export default function UploadPhotoPage({ onNext, onBack = () => {}, initialPhot
   }
 
   return (
-    <div className="min-h-screen bg-[#0d0c1a] pb-16 font-sans text-white">
+    <div className="soft-navy-violet-bg min-h-screen pb-16 font-sans text-white">
       <div className="mx-auto max-w-[980px] px-[18px] py-7">
         <CommissionHeader onBack={onBack} onHome={onBack} />
         <Stepper current={1} />

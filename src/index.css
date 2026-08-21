@@ -50,6 +50,29 @@ a,
   scroll-margin-top: 88px;
 }
 
+.landing-page,
+.soft-navy-violet-bg {
+  background-color: #100f20;
+  background-image:
+    radial-gradient(circle at 16% 10%, rgba(103, 86, 190, 0.14), transparent 31rem),
+    radial-gradient(circle at 86% 34%, rgba(43, 143, 224, 0.09), transparent 34rem),
+    linear-gradient(180deg, #121126 0%, #0f0e20 58%, #111025 100%);
+}
+
+.landing-page h1,
+.landing-page h2,
+.landing-page h3,
+.landing-page nav,
+.landing-page button,
+.landing-page strong {
+  font-family: 'Outfit', sans-serif;
+}
+
+.landing-page h1,
+.landing-page h2 {
+  letter-spacing: -0.025em;
+}
+
 .home-about-showcase__card {
   isolation: isolate;
   animation: homeAboutCardFloat 6s ease-in-out infinite;
