@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../api';
 import Stepper from '../components/Stepper';
 
@@ -26,6 +26,10 @@ const fallbackOrder = {
 const currencies = [
   { code: 'LKR', label: 'LKR – Sri Lankan rupee', rate: 1 },
 ]
+const DEFAULT_CUSTOMER_INFO = {
+  firstName: '', lastName: '', email: '', phone: '',
+  address: 'Colombo', city: 'Colombo', country: 'Sri Lanka',
+};
 
 function formatMoney(amount, code, rate) {
   const value = Math.round(amount * rate)
@@ -56,11 +60,15 @@ function submitCheckoutForm(actionUrl, fields) {
   form.submit()
 }
 
-export default function Payment({ order, referencePhoto = null, onBack = () => {}, onComplete = () => {} }) {
+export default function Payment({ order, referencePhoto = null, onBack = () => {}, onComplete = () => {}, onIncomplete = () => {} }) {
+  const onIncompleteRef = useRef(onIncomplete);
   const safeOrder = order || fallbackOrder
   const [currency] = useState(currencies[0])
   const [isProcessing, setIsProcessing] = useState(false)
   const [checkoutMessage, setCheckoutMessage] = useState('')
+  const [isSavingDraft, setIsSavingDraft] = useState(false)
+  const checkoutPromiseRef = useRef(null)
+  const customerProfilePromiseRef = useRef(null)
   const [orderId, setOrderId] = useState(null);
   const [paymentReturn] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -76,10 +84,62 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [timeline, setTimeline] = useState(null);
   const [successMessage, setSuccessMessage] = useState('Your deposit has been received.');
-  const [customerInfo, setCustomerInfo] = useState({
-    firstName: '', lastName: '', email: '', phone: '',
-    address: 'Colombo', city: 'Colombo', country: 'Sri Lanka',
-  });
+  const [customerInfo, setCustomerInfo] = useState(DEFAULT_CUSTOMER_INFO);
+
+  useEffect(() => {
+    onIncompleteRef.current = onIncomplete;
+  }, [onIncomplete]);
+
+  const ensurePendingOrder = useCallback(async () => {
+    if (checkoutPromiseRef.current) return checkoutPromiseRef.current;
+
+    const pendingCheckout = (async () => {
+      setIsSavingDraft(true);
+      const checkoutCustomer = customerProfilePromiseRef.current
+        ? await customerProfilePromiseRef.current
+        : customerInfo;
+      const result = await api.createPaymentOrder({
+        currency: currency.code,
+        paymentMethod: 'card',
+        order: {
+          sizeId: safeOrder.sizeId || safeOrder.size?.id,
+          frameId: safeOrder.frameId || safeOrder.frame?.id,
+          people: safeOrder.people,
+          deliveryMethod: safeOrder.deliveryMethod || 'courier',
+          deliveryAddress: safeOrder.deliveryMethod === 'courier' ? safeOrder.deliveryAddress : null,
+          urgent: safeOrder.urgent === true,
+          urgentDeadline: safeOrder.urgent ? safeOrder.urgentDeadline : null,
+          notes: safeOrder.notes || '',
+        },
+        customer: {
+          ...checkoutCustomer,
+          address: safeOrder.deliveryMethod === 'courier' && safeOrder.deliveryAddress
+            ? safeOrder.deliveryAddress
+            : checkoutCustomer.address,
+        },
+      });
+
+      const commissionId = result.payment?.commissionId;
+      if (!result.success || !commissionId) {
+        throw new Error(result.error || 'Unable to save the pending order');
+      }
+      const pendingOrder = { commissionId, orderId: result.payment.orderId };
+      setOrderId(pendingOrder.orderId);
+      window.dispatchEvent(new Event('vividarts:pending-orders'));
+      if (referencePhoto) await api.uploadReferencePhotos(commissionId, [referencePhoto]);
+      return pendingOrder;
+    })();
+
+    checkoutPromiseRef.current = pendingCheckout;
+    try {
+      return await pendingCheckout;
+    } catch (draftError) {
+      checkoutPromiseRef.current = null;
+      throw draftError;
+    } finally {
+      setIsSavingDraft(false);
+    }
+  }, [currency.code, customerInfo, referencePhoto, safeOrder]);
 
   // Fetch prices on mount
   useEffect(() => {
@@ -107,23 +167,39 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
 
   useEffect(() => {
     const token = getCustomerToken();
-    if (!token) return;
+    if (!token) {
+      customerProfilePromiseRef.current = Promise.resolve(DEFAULT_CUSTOMER_INFO);
+      return;
+    }
 
-    api.getProfile(token)
+    customerProfilePromiseRef.current = api.getProfile(token)
       .then((data) => {
         const fullName = (data.full_name || data.username || '').trim();
         const [firstName = '', ...lastNameParts] = fullName.split(/\s+/);
-        setCustomerInfo((previous) => ({
-          ...previous,
+        const profile = {
+          ...DEFAULT_CUSTOMER_INFO,
           firstName,
           lastName: lastNameParts.join(' '),
           email: data.email || '',
           phone: data.phone_number || '',
-          address: data.address && data.address !== 'N/A' ? data.address : previous.address,
-        }));
+          address: data.address && data.address !== 'N/A' ? data.address : DEFAULT_CUSTOMER_INFO.address,
+        };
+        setCustomerInfo(profile);
+        return profile;
       })
-      .catch((err) => console.error('Failed to load customer profile:', err));
+      .catch((err) => {
+        console.error('Failed to load customer profile:', err);
+        return DEFAULT_CUSTOMER_INFO;
+      });
   }, []);
+
+  useEffect(() => {
+    if (paymentReturn.status) return;
+    ensurePendingOrder().catch((draftError) => {
+      const message = draftError.message || 'Unable to save your pending order.';
+      setError(message);
+    });
+  }, [ensurePendingOrder, paymentReturn.status]);
 
   useEffect(() => {
     const returnedOrderId = paymentReturn.orderId;
@@ -135,6 +211,7 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
       trustCurrentNavigation();
       // 💡 2. Payment cancel වුණොත් Warning/Error Toast එකක් පෙන්නන්න
       showNotification('warning', 'Payment was cancelled. You can try again.');
+      window.setTimeout(() => onIncompleteRef.current(), 0);
       return;
     }
 
@@ -215,39 +292,8 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
     setError(null);
 
     try {
-      const result = await api.createPayhereCheckout({
-        currency: currency.code,
-        order: {
-          sizeId: safeOrder.sizeId || safeOrder.size?.id,
-          frameId: safeOrder.frameId || safeOrder.frame?.id,
-          people: safeOrder.people,
-          deliveryMethod: safeOrder.deliveryMethod || 'courier',
-          deliveryAddress: safeOrder.deliveryMethod === 'courier' ? safeOrder.deliveryAddress : null,
-          urgent: safeOrder.urgent === true,
-          urgentDeadline: safeOrder.urgent ? safeOrder.urgentDeadline : null,
-          notes: safeOrder.notes || ''
-        },
-        customer: {
-          ...customerInfo,
-          address: safeOrder.deliveryMethod === 'courier' && safeOrder.deliveryAddress
-            ? safeOrder.deliveryAddress
-            : customerInfo.address,
-        }
-      });
-
-      if (!result.success || !result.checkoutUrl || !result.checkoutFields) {
-        throw new Error(result.error || 'Failed to start PayHere checkout');
-      }
-
-      if (!result.commissionId) {
-        throw new Error('The commission was created without an order ID. Please contact support.');
-      }
-
-      if (referencePhoto) {
-        await api.uploadReferencePhotos(result.commissionId, [referencePhoto]);
-      }
-
-      setOrderId(result.orderId);
+      const pendingOrder = await ensurePendingOrder();
+      const result = await api.resumeOrderCheckout(pendingOrder.commissionId);
       preparePaymentReturnSession(result.orderId);
       setCheckoutMessage('Opening PayHere…');
       submitCheckoutForm(result.checkoutUrl, result.checkoutFields);
@@ -260,6 +306,17 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
       setCheckoutMessage('');
       setIsProcessing(false);
     }
+  };
+
+  const handleHome = async () => {
+    if (!paymentReturn.status) {
+      try {
+        await ensurePendingOrder();
+      } catch (draftError) {
+        showNotification('error', draftError.message || 'Unable to save your pending order.');
+      }
+    }
+    onComplete();
   };
 
   const total = safeOrder.total
@@ -321,7 +378,7 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
 
   return (
     <div className="max-w-[980px] mx-auto px-[18px] py-7">
-      <CommissionHeader onBack={onBack} onHome={onComplete} />
+      <CommissionHeader onBack={onBack} onHome={handleHome} />
 
       <Stepper current={3} />
 
@@ -378,6 +435,7 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
               {isProcessing ? checkoutMessage || 'Opening PayHere…' : `Pay ${formatMoney(dueAmount, currency.code, currency.rate)} now`}
             </button>
+            {isSavingDraft && !isProcessing && <p role="status" className="mt-2 text-center text-xs text-[#6b6b80]">Saving this order to My Orders…</p>}
             {isProcessing && <p role="status" aria-live="polite" className="mt-2 text-center text-xs text-[#6b6b80]">Please keep this page open. You will be redirected automatically.</p>}
 
             <div className="flex gap-4 justify-center mt-[14px] flex-wrap">

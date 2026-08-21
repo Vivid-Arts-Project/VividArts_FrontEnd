@@ -180,14 +180,15 @@ export function DashboardPage({ onNav }) {
         </div>
         <div className="flex-1 min-w-0 max-w-[300px]">
           <div className={CARD}>
-            <div className={CARD_HEAD}><div className={CARD_TITLE}>Quick Stats</div></div>
+            <div className={CARD_HEAD}><div className={CARD_TITLE}>Quick Stats</div><span className="rounded-full bg-va-bg2 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-va-text3">All time</span></div>
             <div className={CARD_BODY}>
               {[
                 ['Avg. order value', orders.length ? `LKR ${Math.round(orders.reduce((sum, order) => sum + Number(order.totalPrice || 0), 0) / orders.length).toLocaleString()}` : '—'],
                 ['Revision requests', orders.filter(order => order.status === 'revision_requested').length],
-                ['Waiting approval', orders.filter(order => order.status === 'waiting_for_feedback').length],
-                ['Framed orders', orders.filter(order => order.frameType && order.frameType !== 'without_frame').length],
-                ['Courier orders', orders.filter(order => order.pickupOption === 'courier').length],
+                ['Awaiting proof approval', orders.filter(order => order.status === 'waiting_for_feedback').length],
+                ['Orders with a frame', orders.filter(order => order.frameType && order.frameType !== 'without_frame').length],
+                ['Courier delivery', orders.filter(order => order.pickupOption === 'courier').length],
+                ['Completed orders', orders.filter(order => order.status === 'done').length],
               ].map(([k,v]) => (
                 <div key={k} className={DP_ROW}><span className={DP_KEY}>{k}</span><span className={DP_VAL}>{v}</span></div>
               ))}

@@ -143,6 +143,12 @@ export const api = {
     });
   },
 
+  resumeOrderCheckout: async (orderId) => {
+    return fetchAPI(`${API_URL}/payments/orders/${encodeURIComponent(orderId)}/resume-checkout`, {
+      method: 'POST',
+    });
+  },
+
   reviewOrderProof: async (orderId, action, note = '') => {
     return fetchAPI(`${API_URL}/orders/${encodeURIComponent(orderId)}/proof-review`, {
       method: 'POST',

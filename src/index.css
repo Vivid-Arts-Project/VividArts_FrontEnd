@@ -423,7 +423,7 @@ a,
 }
 
 .admin-login-float-card-1 { left: 6px; top: 8px; z-index: 2; animation: adminFloatOne 5.2s ease-in-out infinite; }
-.admin-login-float-card-2 { left: 270px; top: 35px; z-index: 1; animation: adminFloatTwo 5.8s .4s ease-in-out infinite; }
+.admin-login-float-card-2 { left: 270px; top: -10px; z-index: 1; animation: adminFloatTwo 5.8s .4s ease-in-out infinite; }
 .admin-login-float-card-3 { left: 145px; top: 155px; z-index: 3; animation: adminFloatThree 6.2s .8s ease-in-out infinite; }
 
 @keyframes loginOrbFloat {
