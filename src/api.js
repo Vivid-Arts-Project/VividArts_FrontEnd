@@ -143,11 +143,48 @@ export const api = {
     });
   },
 
+  resumeOrderCheckout: async (orderId) => {
+    return fetchAPI(`${API_URL}/payments/orders/${encodeURIComponent(orderId)}/resume-checkout`, {
+      method: 'POST',
+    });
+  },
+
+  deleteIncompleteOrder: async (orderId) => {
+    return fetchAPI(`${API_URL}/orders/${encodeURIComponent(orderId)}`, {
+      method: 'DELETE',
+    });
+  },
+
   reviewOrderProof: async (orderId, action, note = '') => {
     return fetchAPI(`${API_URL}/orders/${encodeURIComponent(orderId)}/proof-review`, {
       method: 'POST',
       body: JSON.stringify({ action, note }),
     });
+  },
+
+  saveOrderReview: async (orderId, review, image, isEditing = false) => {
+    const form = new FormData();
+    form.append('rating', String(review.rating));
+    form.append('title', review.title);
+    form.append('comment', review.comment);
+    form.append('allowPublicImage', String(review.allowPublicImage));
+    if (image) form.append('reviewImage', image);
+    const response = await fetch(`${API_URL}/orders/${encodeURIComponent(orderId)}/review`, {
+      method: isEditing ? 'PATCH' : 'POST',
+      credentials: 'same-origin',
+      body: form,
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(data?.error || 'Unable to save your review');
+    return data;
+  },
+
+  deleteOrderReview: async (orderId) => {
+    return fetchAPI(`${API_URL}/orders/${encodeURIComponent(orderId)}/review`, { method: 'DELETE' });
+  },
+
+  getPublicReviews: async () => {
+    return fetchAPI(`${API_URL}/content/reviews`);
   },
 
   getCustomerNotifications: async () => {
