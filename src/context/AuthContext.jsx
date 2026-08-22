@@ -34,9 +34,11 @@ export function AuthProvider({ children }) {
 
   const register = async (formData) => {
     const res = await api.post('/admin/register', formData);
-    startAdminSession();
-    setAdmin(res.data.admin);
-    return res.data.admin;
+    if (res.data.approved && res.data.admin) {
+      startAdminSession();
+      setAdmin(res.data.admin);
+    }
+    return res.data;
   };
 
   const logout = useCallback(async () => {

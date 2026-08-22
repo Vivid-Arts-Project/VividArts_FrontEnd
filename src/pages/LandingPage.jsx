@@ -54,6 +54,7 @@ const gallery = [
 
 export default function LandingPage({ onNavigate = () => {} }) {
   const [websiteImages, setWebsiteImages] = useState([]);
+  const [studioContact, setStudioContact] = useState(null);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(Boolean(getCustomerToken()));
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -62,7 +63,8 @@ export default function LandingPage({ onNavigate = () => {} }) {
 
   useEffect(() => {
     clearCommissionDraft();
-    fetch('/api/content/gallery').then(r => r.ok ? r.json() : []).then(setWebsiteImages).catch(() => {});
+    fetch('/api/content/gallery?placement=home').then(r => r.ok ? r.json() : []).then(setWebsiteImages).catch(() => {});
+    fetch('/api/content/site-settings').then(r => r.ok ? r.json() : null).then(data => setStudioContact(data?.contact || null)).catch(() => {});
   }, []);
 
   const handleCommission = () => {
@@ -444,9 +446,9 @@ export default function LandingPage({ onNavigate = () => {} }) {
             <div>
               <h3 className="text-xs font-extrabold uppercase tracking-[.18em] text-[#b8adff]">Contact the studio</h3>
               <div className="mt-5 grid gap-3">
-                <a href="tel:+94701013909" className="group flex items-center gap-3 rounded-xl border border-white/[.08] bg-white/[.035] p-3 transition hover:border-[#8f80e8]/35 hover:bg-white/[.06]"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#7666d8]/15 text-[#b8adff]"><Icon name="phone" size={17}/></span><span><small className="block text-[9px] uppercase tracking-[.14em] text-white/30">Call the studio</small><strong className="mt-0.5 block text-xs text-white/70 group-hover:text-white">070 101 3909</strong></span></a>
-                <a href="mailto:disnakainduwara7@gmail.com" className="group flex items-center gap-3 rounded-xl border border-white/[.08] bg-white/[.035] p-3 transition hover:border-[#8f80e8]/35 hover:bg-white/[.06]"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#2b8fe0]/15 text-[#8fcaff]"><Icon name="mail" size={17}/></span><span className="min-w-0"><small className="block text-[9px] uppercase tracking-[.14em] text-white/30">Email</small><strong className="mt-0.5 block break-all text-xs text-white/70 group-hover:text-white">disnakainduwara7@gmail.com</strong></span></a>
-                <p className="flex items-center gap-2 px-1 text-xs text-white/35"><Icon name="home" size={15} className="text-[#a99bff]"/> Sri Lanka · Island-wide service</p>
+                {studioContact?.phone && <a href={`tel:${studioContact.phone.replace(/[^+\d]/g, '')}`} className="group flex items-center gap-3 rounded-xl border border-white/[.08] bg-white/[.035] p-3 transition hover:border-[#8f80e8]/35 hover:bg-white/[.06]"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#7666d8]/15 text-[#b8adff]"><Icon name="phone" size={17}/></span><span><small className="block text-[9px] uppercase tracking-[.14em] text-white/30">Call the studio</small><strong className="mt-0.5 block text-xs text-white/70 group-hover:text-white">{studioContact.phone}</strong></span></a>}
+                {studioContact?.email && <a href={`mailto:${studioContact.email}`} className="group flex items-center gap-3 rounded-xl border border-white/[.08] bg-white/[.035] p-3 transition hover:border-[#8f80e8]/35 hover:bg-white/[.06]"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#2b8fe0]/15 text-[#8fcaff]"><Icon name="mail" size={17}/></span><span className="min-w-0"><small className="block text-[9px] uppercase tracking-[.14em] text-white/30">Email</small><strong className="mt-0.5 block break-all text-xs text-white/70 group-hover:text-white">{studioContact.email}</strong></span></a>}
+                {studioContact?.address && <p className="flex items-center gap-2 px-1 text-xs text-white/35"><Icon name="home" size={15} className="text-[#a99bff]"/> {studioContact.address}</p>}
               </div>
             </div>
           </div>
