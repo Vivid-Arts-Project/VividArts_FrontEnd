@@ -495,6 +495,7 @@ export function PaymentsPage() {
           <thead>
             <tr>
               <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Reference</th>
+              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Order</th>
               <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Client</th>
               <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Purpose</th>
               <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Amount</th>
@@ -507,6 +508,7 @@ export function PaymentsPage() {
             {payments.map(payment => (
               <tr key={payment.paymentId} className="cursor-pointer transition-colors [&>td]:px-3.5 [&>td]:py-3 [&>td]:border-b [&>td]:border-va-border [&>td]:text-[13px] [&>td]:align-middle hover:[&>td]:bg-va-bg">
                 <td><span className={ORDER_ID_MONO}>{payment.transactionId || payment.payhereOrderId || `#${payment.paymentId}`}</span></td>
+                <td><div className="font-semibold">{payment.order_id ? `#${payment.order_id.slice(0, 8)}` : 'Unlinked'}</div><div className="text-[11px] text-va-text3">{payment.order?.productOption ? `${payment.order.productOption.paper_size} · ${payment.order.productOption.num_subjects} subject${Number(payment.order.productOption.num_subjects) === 1 ? '' : 's'}` : 'Order details unavailable'}</div></td>
                 <td>{payment.order?.customer?.full_name || payment.order?.customer?.username || 'Client'}</td>
                 <td><span className="text-xs bg-va-bg2 px-2 py-[3px] rounded font-semibold">{payment.paymentType === 'full' ? 'Balance' : 'Deposit'}</span></td>
                 <td><strong>{payment.currency} {Number(payment.amount || 0).toLocaleString()}</strong></td>

@@ -5,9 +5,9 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    // Bind explicitly to IPv4 and use Vite's standard development port.
-    // Port 3000 is inside a Windows-reserved range on this machine.
-    host: '127.0.0.1',
+    // PayHere sandbox credentials are approved for the localhost hostname.
+    // The API proxy remains pinned to IPv4 below to avoid Windows IPv6 issues.
+    host: 'localhost',
     port: 5173,
     strictPort: true,
     proxy: {

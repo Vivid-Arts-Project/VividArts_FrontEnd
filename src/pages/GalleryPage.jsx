@@ -4,7 +4,7 @@ import BrandLogo from '../components/BrandLogo';
 export default function GalleryPage({ onNavigate = () => {} }) {
   const [images, setImages] = useState([]);
   const [loadError, setLoadError] = useState('');
-  const loadImages = () => fetch('/api/content/gallery')
+  const loadImages = () => fetch('/api/content/gallery?placement=gallery')
     .then(response => {
       if (!response.ok) throw new Error('Unable to load the gallery.');
       return response.json();

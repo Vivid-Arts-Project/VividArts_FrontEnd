@@ -69,6 +69,13 @@ export const uploadAdminProfileImage = (file) => {
 export const updateBusiness      = (data) => api.patch('/admin/business', data);
 export const updateNotifications = (data) => api.patch('/admin/notifications', data);
 export const changePassword      = (data) => api.patch('/admin/password', data);
+export const getAdminRegistrationRequests = () => api.get('/admin/registration-requests');
+export const decideAdminRegistrationRequest = (id, decision, note = '') => api.patch(`/admin/registration-requests/${id}`, { decision, note });
+export const getAdministrators = () => api.get('/admin/administrators');
+export const setAdministratorStatus = (id, isActive) => api.patch(`/admin/administrators/${id}/status`, { isActive });
+export const removeAdministrator = (id) => api.delete(`/admin/administrators/${id}`);
+export const getSiteSettings = () => api.get('/admin/site-settings');
+export const updateSiteSettings = (data) => api.patch('/admin/site-settings', data);
 
 // Pricing configuration
 export const getPricing     = ()         => api.get('/admin/pricing');
@@ -79,6 +86,7 @@ export const getGalleryImages = () => api.get('/content/admin/gallery');
 export const saveGalleryImage = (id, data) => api.patch(`/content/admin/gallery/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } });
 export const addGalleryImage = (data) => api.post('/content/admin/gallery', data, { headers: { 'Content-Type': 'multipart/form-data' } });
 export const removeGalleryImage = (id) => api.delete(`/content/admin/gallery/${id}`);
+export const reorderGalleryImages = (orderedIds) => api.patch('/content/admin/gallery-order', { orderedIds });
 
 export const getReviews = (status = 'all', page = 1, limit = 50) => sharedGet(`/admin/reviews?status=${encodeURIComponent(status)}&page=${page}&limit=${limit}`);
 export const updateReview = async (id, data) => { const result = await api.patch(`/admin/reviews/${id}`, data); invalidateReviews(); return result; };

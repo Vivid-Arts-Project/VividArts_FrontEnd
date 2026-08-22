@@ -3,6 +3,9 @@ import {
   getProfile, updateProfile, updateBusiness,
   updateNotifications, changePassword, uploadAdminProfileImage,
   getPricing, updatePriceRow,
+  getAdminRegistrationRequests, decideAdminRegistrationRequest,
+  getAdministrators, setAdministratorStatus, removeAdministrator,
+  getSiteSettings, updateSiteSettings,
 } from '../api/adminApi';
 import { useAuth } from '../context/useAuth';
 import Icon from '../components/Icon';
@@ -64,13 +67,13 @@ export default function SettingsPage({ onToast }) {
       <style>{`@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }`}</style>
 
       <div className="settings-tabs">
-        {['profile', 'business', 'notifications', 'security', 'pricing'].map(t => (
+        {['profile', 'business', 'notifications', 'security', ...(admin?.isSuperAdmin ? ['pricing', 'adminRequests', 'availability'] : [])].map(t => (
           <button
             key={t}
             className={`settings-tab${tab === t ? ' active' : ''}`}
             onClick={() => setTab(t)}
           >
-            {{ profile: 'Profile', business: 'Business', notifications: 'Notifications', security: 'Security', pricing: 'Pricing Config' }[t]}
+            {{ profile: 'Profile', business: 'Business', notifications: 'Notifications', security: 'Security', pricing: 'Pricing Config', adminRequests: 'Admin Management', availability: 'Site Availability' }[t]}
           </button>
         ))}
       </div>
@@ -79,9 +82,62 @@ export default function SettingsPage({ onToast }) {
       {tab === 'business'      && <BusinessTab      key={admin?.updatedAt || admin?.id || 'loading'} admin={admin} loading={loading} onToast={onToast} onSaved={loadProfile}/>}
       {tab === 'notifications' && <NotificationsTab key={admin?.updatedAt || admin?.id || 'loading'} admin={admin} loading={loading} onToast={onToast} onSaved={loadProfile}/>}
       {tab === 'security'      && <SecurityTab                                      onToast={onToast}/>}
-      {tab === 'pricing'       && <PricingTab                                       onToast={onToast}/>}
+      {tab === 'pricing'       && admin?.isSuperAdmin && <PricingTab onToast={onToast}/>}
+      {tab === 'adminRequests' && admin?.isSuperAdmin && <AdminRequestsTab onToast={onToast}/>}
+      {tab === 'availability'  && admin?.isSuperAdmin && <SiteAvailabilityTab onToast={onToast}/>}
     </div>
   );
+}
+
+function AdminRequestsTab({ onToast }) {
+  const [requests, setRequests] = useState([]);
+  const [admins, setAdmins] = useState([]);
+  const [busy, setBusy] = useState('');
+  const load = useCallback(() => Promise.all([getAdminRegistrationRequests(), getAdministrators()]).then(([requestResponse, adminResponse]) => { setRequests(requestResponse.data); setAdmins(adminResponse.data); }).catch(() => onToast('Failed to load administrator management')), [onToast]);
+  useEffect(() => { load(); }, [load]);
+  const decide = async (request, decision) => {
+    const note = decision === 'rejected' ? window.prompt('Optional rejection reason:', '') || '' : '';
+    setBusy(request.id);
+    try { await decideAdminRegistrationRequest(request.id, decision, note); await load(); onToast(`Administrator request ${decision}`); }
+    catch (error) { onToast(error.response?.data?.error || 'Unable to update request'); }
+    finally { setBusy(''); }
+  };
+  const setStatus = async (admin, isActive) => {
+    setBusy(admin.id);
+    try { await setAdministratorStatus(admin.id, isActive); await load(); onToast(`Administrator ${isActive ? 'activated' : 'deactivated'}`); }
+    catch (error) { onToast(error.response?.data?.error || 'Unable to update administrator'); }
+    finally { setBusy(''); }
+  };
+  const remove = async admin => {
+    if (!window.confirm(`Permanently remove administrator ${admin.username}?`)) return;
+    setBusy(admin.id);
+    try { await removeAdministrator(admin.id); await load(); onToast('Administrator removed'); }
+    catch (error) { onToast(error.response?.data?.error || 'Unable to remove administrator'); }
+    finally { setBusy(''); }
+  };
+  return <div className="space-y-5"><div className="card"><div className="card-head"><div className="card-title">Administrator accounts</div></div><div className="card-body space-y-3">
+    {admins.map(admin => <div key={admin.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-va-border p-4"><div><strong>{admin.firstName || admin.username} {admin.lastName || ''}</strong><div className="text-xs text-va-text3">{admin.username} · {admin.email}</div></div><div className="flex items-center gap-2"><span className="rounded bg-va-bg2 px-2 py-1 text-xs font-semibold">{admin.isSuperAdmin ? 'Super admin' : admin.isActive ? 'Active' : 'Inactive'}</span>{!admin.isSuperAdmin && <><button disabled={busy === admin.id} className="btn btn-ghost btn-sm" onClick={() => setStatus(admin, !admin.isActive)}>{admin.isActive ? 'Deactivate' : 'Activate'}</button><button disabled={busy === admin.id} className="btn btn-ghost btn-sm text-red-600" onClick={() => remove(admin)}>Remove</button></>}</div></div>)}
+  </div></div><div className="card"><div className="card-head"><div className="card-title">Pending access requests</div></div><div className="card-body space-y-3">
+    {requests.map(request => <div key={request.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-va-border p-4"><div><strong>{request.firstName || request.username} {request.lastName || ''}</strong><div className="text-xs text-va-text3">{request.username} · {request.email} · requested {new Date(request.createdAt).toLocaleString()}</div>{request.decisionNote && <div className="mt-1 text-xs text-va-text3">Note: {request.decisionNote}</div>}</div><div className="flex items-center gap-2"><span className="rounded bg-va-bg2 px-2 py-1 text-xs font-semibold capitalize">{request.status}</span>{request.status === 'pending' && <><button disabled={busy === request.id} className="btn btn-fill btn-sm" onClick={() => decide(request, 'approved')}>Approve</button><button disabled={busy === request.id} className="btn btn-ghost btn-sm" onClick={() => decide(request, 'rejected')}>Reject</button></>}</div></div>)}
+    {!requests.length && <div className="py-8 text-center text-sm text-va-text3">No administrator requests.</div>}
+  </div></div></div>;
+}
+
+function SiteAvailabilityTab({ onToast }) {
+  const [settings, setSettings] = useState({ developmentMode: false, maintenanceMessage: '' });
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { getSiteSettings().then(response => setSettings(response.data)).catch(() => onToast('Failed to load site availability')); }, [onToast]);
+  const save = async () => {
+    setSaving(true);
+    try { const response = await updateSiteSettings(settings); setSettings(response.data.settings); onToast('Site availability updated'); }
+    catch (error) { onToast(error.response?.data?.error || 'Unable to update site availability'); }
+    finally { setSaving(false); }
+  };
+  return <div className="card"><div className="card-head"><div className="card-title">Customer site availability</div></div><div className="card-body">
+    <div className="flex items-center justify-between border-b border-va-border pb-4"><div><strong className="text-sm">On development</strong><p className="mt-1 text-xs text-va-text3">Blocks customer pages and APIs while keeping the admin workspace and PayHere callback available.</p></div><label className="toggle-switch"><input type="checkbox" checked={!!settings.developmentMode} onChange={event => setSettings(current => ({ ...current, developmentMode: event.target.checked }))}/><span className="toggle-slider"/></label></div>
+    <label className="mt-4 block"><span className="field-label">Customer message</span><textarea className="field-input min-h-24" maxLength={300} value={settings.maintenanceMessage || ''} onChange={event => setSettings(current => ({ ...current, maintenanceMessage: event.target.value }))}/></label>
+    <button className="btn btn-fill" disabled={saving || !settings.maintenanceMessage?.trim()} onClick={save}>{saving ? 'Saving…' : 'Save availability'}</button>
+  </div></div>;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

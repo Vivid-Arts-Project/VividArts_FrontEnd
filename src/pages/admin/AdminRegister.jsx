@@ -14,6 +14,7 @@ export default function AdminRegister() {
     firstName: '', lastName: '', email: '', phone: '',
   });
   const [error, setError]     = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -33,7 +34,7 @@ export default function AdminRegister() {
 
     setLoading(true);
     try {
-      await register({
+      const result = await register({
         username:  form.username,
         password:  form.password,
         firstName: form.firstName,
@@ -41,7 +42,8 @@ export default function AdminRegister() {
         email:     form.email,
         phone:     form.phone,
       });
-      navigate('/admin/dashboard', { replace: true });
+      if (result.approved) navigate('/admin/dashboard', { replace: true });
+      else setSuccess(result.message || 'Your request was submitted for super administrator approval.');
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
     } finally {
@@ -85,6 +87,7 @@ export default function AdminRegister() {
             <div className="mb-6 flex items-start justify-between"><div><span className="text-[10px] font-bold uppercase tracking-[.18em] text-[#9f91ff]">Administrator setup</span><h1 className="mt-2 font-outfit text-[28px] font-bold tracking-[-.02em]">Create admin account</h1><p className="mt-1.5 text-sm text-white/40">Set up secure access to Vivid Arts.</p></div><RoundBrandLogo size={52}/></div>
 
             {error && <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-400/20 bg-red-400/10 px-3.5 py-3 text-xs text-red-300"><Icon name="alert" size={17}/>{error}</div>}
+            {success && <div className="mb-4 rounded-xl border border-emerald-400/20 bg-emerald-400/10 px-3.5 py-3 text-sm text-emerald-200">{success} You will receive an email after a decision is made.</div>}
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
               <div className="grid gap-3 sm:grid-cols-2">
@@ -107,7 +110,7 @@ export default function AdminRegister() {
                 ].map(([label, key, visible, setVisible]) => <label key={key} className="block"><span className={labelCls}>{label}<span className="text-red-300"> *</span></span><span className={fieldCls}><Icon name="lock" size={17} className="text-white/30 group-focus-within:text-[#8da7ff]"/><input className="h-11 min-w-0 flex-1 border-none bg-transparent text-sm text-white outline-none placeholder:text-white/20" type={visible ? 'text' : 'password'} placeholder={key === 'password' ? 'Min 8 characters' : 'Repeat password'} value={form[key]} onChange={e => set(key, e.target.value)} required/><button type="button" onClick={() => setVisible(value => !value)} aria-label={visible ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`} className="flex h-8 w-8 items-center justify-center rounded-lg border-none bg-transparent text-white/30 cursor-pointer hover:bg-white/5 hover:text-white"><Icon name={visible ? 'eyeOff' : 'eye'} size={17}/></button></span></label>)}
               </div>
 
-              <button className="group flex h-[50px] w-full items-center justify-center gap-2 rounded-xl border-none bg-gradient-to-r from-[#2b8fe0] via-[#7161d8] to-[#7b4fc8] text-sm font-bold text-white shadow-[0_14px_35px_rgba(91,63,168,.36)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(91,63,168,.5)] disabled:cursor-wait disabled:opacity-70" type="submit" disabled={loading}>{loading ? <span className="login-spinner"/> : <>Create admin account <Icon name="arrowRight" size={17} className="transition-transform group-hover:translate-x-1"/></>}</button>
+              <button className="group flex h-[50px] w-full items-center justify-center gap-2 rounded-xl border-none bg-gradient-to-r from-[#2b8fe0] via-[#7161d8] to-[#7b4fc8] text-sm font-bold text-white shadow-[0_14px_35px_rgba(91,63,168,.36)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_42px_rgba(91,63,168,.5)] disabled:cursor-wait disabled:opacity-70" type="submit" disabled={loading || Boolean(success)}>{loading ? <span className="login-spinner"/> : <>Request administrator access <Icon name="arrowRight" size={17} className="transition-transform group-hover:translate-x-1"/></>}</button>
             </form>
 
             <p className="mt-5 text-center text-xs text-white/40">Already have an account? <Link to="/admin/login" className="font-bold text-[#9e91ff] no-underline hover:text-[#c0b7ff] hover:underline">Sign in</Link></p>
