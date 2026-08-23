@@ -4,6 +4,7 @@ import GalleryPage from './pages/GalleryPage';
 import CommissionFlow from './pages/CommissionFlow';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ProfilePage from './pages/ProfilePage';
 import MyOrdersPage from './pages/MyOrdersPage';
 import InvoicePage from './pages/InvoicePage';
@@ -24,6 +25,7 @@ const PATHS = {
   commission: '/commission',
   login: '/login',
   register: '/register',
+  forgotPassword: '/forgot-password',
   profile: '/profile',
   orders: '/my-orders',
   notifications: '/notifications',
@@ -64,6 +66,7 @@ function CustomerApp() {
     return <CommissionFlow onBack={() => navigateTo('landing')} onNavigate={navigateTo} />;
   }
   if (path === '/login') return <LoginPage onNavigate={navigateTo} />;
+  if (path === '/forgot-password') return <ForgotPasswordPage onNavigate={navigateTo} />;
   if (path === '/register') return isTrustedNavigation()
     ? <RegisterPage onNavigate={navigateTo} />
     : <Redirect to="/login" replace />;
