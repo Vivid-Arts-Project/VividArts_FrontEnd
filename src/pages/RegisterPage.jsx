@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Icon from '../components/Icon';
 import { showNotification } from './notifications';
 import RoundBrandLogo from '../components/RoundBrandLogo';
+import PasswordStrength from '../components/PasswordStrength';
 
 function RegisterPage({ onNavigate }) {
   const [fullName, setFullName] = useState('');
@@ -59,7 +60,7 @@ function RegisterPage({ onNavigate }) {
       const response = await fetch('/api/customers/register/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code: otp }),
+        body: JSON.stringify({ username, email, code: otp }),
       });
       const data = await readResponse(response);
       if (!response.ok) throw new Error(data.message || 'Unable to verify the code.');
@@ -102,15 +103,6 @@ function RegisterPage({ onNavigate }) {
   };
 
   const passwordsMatch = Boolean(password && confirmPassword && password === confirmPassword);
-  const passwordCharacterGroups = [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/]
-    .filter(pattern => pattern.test(password)).length;
-  const passwordStrength = !password
-    ? 0
-    : password.length >= 10 && passwordCharacterGroups >= 3
-      ? 3
-      : password.length >= 8 && passwordCharacterGroups >= 2
-        ? 2
-        : 1;
   const fieldClass = 'group flex items-center gap-3 rounded-xl border border-white/10 bg-white/[.055] px-4 transition focus-within:border-[#7b8cff] focus-within:bg-white/[.08] focus-within:shadow-[0_0_0_4px_rgba(99,102,241,.1)]';
 
   return (
@@ -220,20 +212,7 @@ function RegisterPage({ onNavigate }) {
                       <button type="button" onClick={() => field.toggle(previous => !previous)} className="flex h-8 w-8 items-center justify-center rounded-lg border-none bg-transparent text-[#77738e]" aria-label={field.visible ? `Hide ${field.label.toLowerCase()}` : `Show ${field.label.toLowerCase()}`}><Icon name={field.visible ? 'eyeOff' : 'eye'} size={18}/></button>
                     </span>
                   </label>
-                  {field.label === 'Password' && password && (
-                    <div
-                      className="password-strength-enter mt-2 grid grid-cols-3 gap-2"
-                      role="meter"
-                      aria-label="Password strength"
-                      aria-valuemin="0"
-                      aria-valuemax="3"
-                      aria-valuenow={passwordStrength}
-                    >
-                      <span className={`h-1.5 rounded-full transition-all duration-300 ${passwordStrength >= 1 ? 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,.35)]' : 'bg-white/10'}`}/>
-                      <span className={`h-1.5 rounded-full transition-all duration-300 ${passwordStrength >= 2 ? 'bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,.35)]' : 'bg-white/10'}`}/>
-                      <span className={`h-1.5 rounded-full transition-all duration-300 ${passwordStrength >= 3 ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.35)]' : 'bg-white/10'}`}/>
-                    </div>
-                  )}
+                  {field.label === 'Password' && <PasswordStrength password={password}/>}
                 </div>
               ))}
               {confirmPassword && <div className={`register-match-message ${passwordsMatch ? 'text-emerald-300' : 'text-red-300'}`}><Icon name={passwordsMatch ? 'completed' : 'alert'} size={16}/>{passwordsMatch ? 'Passwords match' : 'Passwords do not match'}</div>}
