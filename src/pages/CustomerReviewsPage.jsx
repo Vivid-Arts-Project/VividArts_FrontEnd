@@ -42,13 +42,13 @@ export default function CustomerReviewsPage({ onNavigate = () => {} }) {
       </header>
 
       <main>
-        <section className="relative overflow-hidden border-b border-white/10 px-5 py-16 sm:px-8 sm:py-20">
-          <div className="absolute left-1/2 top-0 h-[440px] w-[760px] -translate-x-1/2 rounded-full bg-[#6d5bff]/15 blur-[125px]"/>
+        <section className="relative overflow-hidden border-b border-white/10 px-4 py-8 sm:px-6 sm:py-10">
+          <div className="absolute left-1/2 top-0 h-[260px] w-[500px] -translate-x-1/2 rounded-full bg-[#6d5bff]/15 blur-[90px]"/>
           <div className="relative mx-auto max-w-7xl text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#a99bff]/20 bg-[#8b5cf6]/10 px-4 py-2 text-[10px] font-extrabold uppercase tracking-[.2em] text-[#bdb3ff]"><Icon name="rating" size={14}/> Verified customer reviews</span>
-            <h1 className="mx-auto mt-5 max-w-3xl font-outfit text-4xl font-extrabold leading-tight tracking-[-.03em] sm:text-5xl">Portraits people <span className="bg-gradient-to-r from-[#93c5fd] to-[#a78bfa] bg-clip-text text-transparent">treasure.</span></h1>
-            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#aaa6bd] sm:text-base">Honest feedback from customers whose commissioned portraits were completed by Vivid Arts.</p>
-            {!loading && reviews.length > 0 && <div className="mx-auto mt-8 flex w-fit items-center gap-5 rounded-2xl border border-white/10 bg-white/[.045] px-6 py-4"><div className="text-left"><strong className="text-3xl text-white">{average}</strong><div className="mt-1 flex gap-1 text-amber-300">{[1,2,3,4,5].map(star => <Icon key={star} name="rating" size={14}/>)}</div></div><span className="h-11 w-px bg-white/10"/><div className="text-left"><strong className="text-lg">{reviews.length}</strong><p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-white/40">Verified {reviews.length === 1 ? 'review' : 'reviews'}</p></div></div>}
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#a99bff]/20 bg-[#8b5cf6]/10 px-3 py-1 text-[9px] font-bold uppercase tracking-[.18em] text-[#bdb3ff]"><Icon name="rating" size={12}/> Verified customer reviews</span>
+            <h1 className="mx-auto mt-3 max-w-2xl font-outfit text-2xl font-extrabold leading-tight tracking-[-.025em] sm:text-3xl lg:text-[34px]">Portraits people <span className="bg-gradient-to-r from-[#93c5fd] to-[#a78bfa] bg-clip-text text-transparent">treasure.</span></h1>
+            <p className="mx-auto mt-2 max-w-xl text-xs leading-6 text-[#aaa6bd] sm:text-sm">Honest feedback from customers whose commissioned portraits were completed by Vivid Arts.</p>
+            {!loading && reviews.length > 0 && <div className="mx-auto mt-5 flex w-fit items-center gap-4 rounded-xl border border-white/10 bg-white/[.045] px-4 py-2.5 sm:px-5 sm:py-3"><div className="text-left"><strong className="text-2xl font-bold text-white">{average}</strong><div className="mt-0.5 flex gap-0.5 text-amber-300">{[1,2,3,4,5].map(star => <Icon key={star} name="rating" size={12}/>)}</div></div><span className="h-8 w-px bg-white/10"/><div className="text-left"><strong className="text-base font-bold">{reviews.length}</strong><p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-white/40">Verified {reviews.length === 1 ? 'review' : 'reviews'}</p></div></div>}
           </div>
         </section>
 

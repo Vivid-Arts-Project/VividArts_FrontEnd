@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import Icon from '../components/Icon';
+import OrderTracker from './OrderTracker';
 import { startVisiblePolling } from '../utils/polling';
 import { saveBlob } from '../utils/download';
 
@@ -367,6 +368,15 @@ export default function MyOrdersPage({ onNavigate }) {
                     <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-bold ${paymentPending ? 'border-red-400/40 bg-red-500/15 text-red-200' : 'border-[#9b8df3]/25 bg-[#7868d8]/15 text-[#cec7ff]'}`}>{paymentPending && <span className="h-2 w-2 rounded-full bg-red-400 shadow-[0_0_10px_rgba(248,113,113,.8)]"/>}{statusLabel}</span>
                     <p className="mt-1.5 text-xs text-white/45">{statusHelp}</p>
                   </div>
+                </div>
+
+                <div className="border-b border-white/[.07] px-5 py-4 sm:px-7 sm:py-5">
+                  <OrderTracker
+                    status={order.status}
+                    workflowStatus={order.workflowStatus}
+                    isPaymentPending={paymentPending}
+                    frameType={order.frameType}
+                  />
                 </div>
 
                 <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_340px]">

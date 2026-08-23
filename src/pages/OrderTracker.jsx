@@ -1,71 +1,228 @@
-// Admin Backend එකට ගැළපෙන Stages 6
-const STAGES = [
-  { key: 'in_queue', label: 'Order Received' },
-  { key: 'sketching', label: 'Sketching' },
-  { key: 'shading', label: 'Final Shading' },
-  { key: 'waiting_for_feedback', label: 'Proof Sent' },
-  { key: 'finished', label: 'Approved' },
-  { key: 'shipped', label: 'Shipped' },
-];
+import Icon from '../components/Icon';
 
-export default function OrderTracker({ currentStatus = 'in_queue' }) {
-  const currentIndex = STAGES.findIndex(s => s.key === currentStatus);
+export default function OrderTracker({
+  status = 'in_queue',
+  workflowStatus = null,
+  isPaymentPending = false,
+  frameType = 'without_frame',
+  className = '',
+}) {
+  const effectiveStatus = isPaymentPending ? 'payment_pending' : (workflowStatus || status);
+  const isRevision = effectiveStatus === 'revision_requested';
+  const hasFrame = Boolean(frameType && frameType !== 'without_frame');
+
+  // Dynamic Stages: If customer ordered a frame, include the dedicated "Framed" step before Done
+  const stages = [
+    {
+      key: 'in_queue',
+      label: 'Queued',
+      description: 'Order confirmed & queued',
+      icon: 'orders',
+      color: 'from-[#2b8fe0] to-[#3b82f6]',
+    },
+    {
+      key: 'sketching',
+      label: 'Sketching',
+      description: 'Pencil drawing in progress',
+      icon: 'pencil',
+      color: 'from-[#3b82f6] to-[#6366f1]',
+    },
+    {
+      key: 'waiting_for_feedback',
+      label: 'Proof Review',
+      description: 'Waiting for your approval',
+      icon: 'proofs',
+      color: 'from-[#6366f1] to-[#8b5cf6]',
+    },
+    {
+      key: 'approved',
+      label: 'Proof Approved',
+      description: hasFrame ? 'Approved — preparing framing' : 'Artwork approved & finalizing',
+      icon: 'completed',
+      color: 'from-[#8b5cf6] to-[#a855f7]',
+    },
+    ...(hasFrame
+      ? [
+          {
+            key: 'framed',
+            label: 'Framed',
+            description: 'Custom framing completed',
+            icon: 'proofs',
+            color: 'from-[#a855f7] to-[#ec4899]',
+          },
+        ]
+      : []),
+    {
+      key: 'done',
+      label: 'Completed',
+      description: 'Shipped / Ready for pickup',
+      icon: 'package',
+      color: 'from-[#10b981] to-[#059669]',
+    },
+  ];
+
+  const getStageIndex = (currentStatus) => {
+    const normalized = String(currentStatus || '').toLowerCase().trim();
+    if (normalized === 'payment_pending') return 0;
+    if (['shipped', 'done', 'completed'].includes(normalized)) return stages.length - 1;
+    if (hasFrame && normalized === 'framed') return 4;
+    if (['approved', 'finished', ...(hasFrame ? [] : ['framed'])].includes(normalized)) return 3;
+    if (['waiting_for_feedback', 'proof_sent'].includes(normalized)) return 2;
+    if (['sketching', 'shading', 'revision_requested', 'revision'].includes(normalized)) return 1;
+    return 0;
+  };
+
+  const currentIndex = getStageIndex(effectiveStatus);
+  const isDone = currentIndex === stages.length - 1 && ['shipped', 'done', 'completed'].includes(effectiveStatus);
+  
+  // Center-to-center percentage calculation
+  const totalStages = stages.length;
+  const progressRatio = isDone ? 1 : Math.max(0, Math.min(1, currentIndex / (totalStages - 1)));
+
+  // Center offset of first and last node
+  const halfColPercent = 100 / (2 * totalStages);
+  const trackWidthPercent = 100 - (2 * halfColPercent);
 
   return (
-    <div className="w-full my-6 p-5 bg-[#14122a] border border-white/10 rounded-xl">
-      <h4 className="text-xs font-bold text-[#a78bfa] uppercase tracking-wide mb-6">
-        Order Progress Status
-      </h4>
+    <div className={`overflow-hidden rounded-2xl border border-white/[.12] bg-gradient-to-br from-[#161435]/95 via-[#111027]/98 to-[#131f3b]/95 p-4 sm:p-6 shadow-[0_16px_50px_rgba(0,0,0,.35)] ${className}`}>
+      {/* Header Status Bar */}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-2 border-b border-white/[.08] pb-3.5">
+        <div className="flex items-center gap-2.5">
+          <span className={`flex h-2.5 w-2.5 rounded-full ${
+            isRevision
+              ? 'bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,1)]'
+              : effectiveStatus === 'waiting_for_feedback'
+              ? 'bg-[#a78bfa] shadow-[0_0_12px_rgba(167,139,250,1)] animate-ping'
+              : isDone
+              ? 'bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,1)]'
+              : 'bg-[#60a5fa] shadow-[0_0_10px_rgba(96,165,250,1)]'
+          } animate-pulse`}/>
+          <span className="text-xs font-extrabold uppercase tracking-[.18em] text-[#a99bff]">
+            Order Progress {hasFrame && <span className="text-white/45">· Framed Order</span>}
+          </span>
+        </div>
 
-      <div className="relative flex items-center justify-between">
-        {/* Background line */}
-        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-[2px] w-full bg-white/10 z-0" />
+        {/* Dynamic Context Badge */}
+        <div className="flex items-center gap-2">
+          {isPaymentPending ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-red-400/30 bg-red-500/15 px-3 py-1 text-[11px] font-bold text-red-200 shadow-[0_0_12px_rgba(239,68,68,.2)]">
+              Payment Incomplete
+            </span>
+          ) : isRevision ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-gradient-to-r from-amber-500/20 to-orange-500/20 px-3.5 py-1 text-[11px] font-bold text-amber-200 shadow-[0_0_16px_rgba(251,191,36,.3)] animate-pulse">
+              <Icon name="revisions" size={13} className="text-amber-300"/> Changes Requested — Artist modifying sketch
+            </span>
+          ) : effectiveStatus === 'waiting_for_feedback' ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#a78bfa]/50 bg-gradient-to-r from-[#6366f1]/25 to-[#8b5cf6]/25 px-3.5 py-1 text-[11px] font-bold text-[#e8e4ff] animate-pulse shadow-[0_0_16px_rgba(139,92,246,.35)]">
+              <Icon name="proofs" size={13} className="text-[#c4b5fd]"/> Proof Ready — Waiting for your approval
+            </span>
+          ) : effectiveStatus === 'approved' || effectiveStatus === 'finished' ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3.5 py-1 text-[11px] font-bold text-emerald-200 shadow-[0_0_14px_rgba(16,185,129,.25)]">
+              <Icon name="completed" size={13} className="text-emerald-300"/> Proof Approved {hasFrame ? '— Preparing custom frame' : '— Finalizing artwork'}
+            </span>
+          ) : effectiveStatus === 'framed' ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-400/40 bg-purple-500/15 px-3.5 py-1 text-[11px] font-bold text-purple-200 shadow-[0_0_14px_rgba(168,85,247,.25)]">
+              <Icon name="proofs" size={13} className="text-purple-300"/> Artwork Framed & Packaged
+            </span>
+          ) : isDone ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/50 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 px-3.5 py-1 text-[11px] font-bold text-emerald-300 shadow-[0_0_16px_rgba(16,185,129,.3)]">
+              <Icon name="completed" size={13} className="text-emerald-300"/> Order Completed
+            </span>
+          ) : (
+            <span className="text-xs font-semibold text-white/55">
+              Stage {currentIndex + 1} of {stages.length}: <strong className="text-white/90">{stages[currentIndex]?.label}</strong>
+            </span>
+          )}
+        </div>
+      </div>
 
-        {/* Active Progress line */}
+      {/* Progress Line Stepper Container */}
+      <div className="relative my-2 px-1 sm:px-3">
+        {/* Background Base Rail */}
         <div
-          className="absolute left-0 top-1/2 -translate-y-1/2 h-[2px] bg-emerald-500 transition-all duration-500 z-0"
+          className="absolute top-[18px] sm:top-[22px] -translate-y-1/2 h-2 sm:h-2.5 rounded-full bg-white/10 border border-white/[.08] shadow-inner z-0"
           style={{
-            width: `${
-              currentIndex >= 0
-                ? (currentIndex / (STAGES.length - 1)) * 100
-                : 0
-            }%`,
+            left: `${halfColPercent}%`,
+            right: `${halfColPercent}%`,
           }}
         />
 
-        {/* Step Circles */}
-        {STAGES.map((stage, index) => {
-          const isPassed = index < currentIndex;
-          const isActive = index === currentIndex;
+        {/* Dynamic Vibrant Colored Progress Line */}
+        <div
+          className="absolute top-[18px] sm:top-[22px] -translate-y-1/2 h-2 sm:h-2.5 rounded-full bg-gradient-to-r from-[#2b8fe0] via-[#7b4fc8] via-[#a855f7] to-[#10b981] shadow-[0_0_16px_rgba(139,92,246,.75),0_0_24px_rgba(16,185,129,.45)] transition-all duration-700 ease-out z-0"
+          style={{
+            left: `${halfColPercent}%`,
+            width: `${progressRatio * trackWidthPercent}%`,
+          }}
+        />
 
-          return (
-            <div key={stage.key} className="relative z-10 flex flex-col items-center">
-              <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-300 ${
-                  isPassed
-                    ? 'bg-emerald-500 text-black'
-                    : isActive
-                    ? 'bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] text-white ring-4 ring-purple-500/30 scale-110'
-                    : 'bg-[#0a0916] border border-white/20 text-gray-400'
-                }`}
-              >
-                {isPassed ? '✓' : index + 1}
+        {/* Stage Nodes Grid */}
+        <div className={`relative z-10 grid ${hasFrame ? 'grid-cols-6' : 'grid-cols-5'}`}>
+          {stages.map((stage, index) => {
+            const isPassed = index < currentIndex || (isDone && index === currentIndex);
+            const isCurrent = index === currentIndex && !isDone;
+
+            return (
+              <div key={stage.key} className="flex flex-col items-center text-center px-1">
+                {/* Node Disc */}
+                <div
+                  className={`relative flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-full text-xs font-extrabold transition-all duration-500 ${
+                    isPassed
+                      ? 'bg-gradient-to-br from-[#10b981] via-[#059669] to-[#047857] text-white shadow-[0_0_18px_rgba(16,185,129,.6)] ring-2 ring-[#34d399]'
+                      : isCurrent
+                      ? isRevision
+                        ? 'bg-gradient-to-r from-[#f59e0b] via-[#ea580c] to-[#d97706] text-white shadow-[0_0_22px_rgba(245,158,11,.85)] ring-4 ring-[#f59e0b]/40 scale-110'
+                        : 'bg-gradient-to-r from-[#2b8fe0] via-[#6366f1] to-[#8b5cf6] text-white shadow-[0_0_22px_rgba(99,102,241,.85)] ring-4 ring-[#8b5cf6]/40 scale-110'
+                      : 'border-2 border-white/15 bg-[#100e26] text-white/35 shadow-inner'
+                  }`}
+                >
+                  {isPassed ? (
+                    <span className="text-sm sm:text-base font-black text-white">✓</span>
+                  ) : (
+                    <Icon name={stage.icon} size={17} className={isCurrent ? 'text-white' : 'text-white/40'}/>
+                  )}
+
+                  {/* Pulsing halo ring on active step */}
+                  {isCurrent && (
+                    <span className={`absolute -inset-1.5 animate-ping rounded-full opacity-80 ${
+                      isRevision ? 'bg-amber-400/40' : 'bg-[#8b5cf6]/40'
+                    }`}/>
+                  )}
+                </div>
+
+                {/* Stage Title */}
+                <span
+                  className={`mt-3 block text-[10px] sm:text-xs font-bold leading-tight ${
+                    isCurrent
+                      ? isRevision
+                        ? 'text-amber-300 font-extrabold'
+                        : 'text-[#c4b5fd] font-extrabold'
+                      : isPassed
+                      ? 'text-white font-bold'
+                      : 'text-white/35 font-medium'
+                  }`}
+                >
+                  {stage.label}
+                </span>
+
+                {/* Subtitle / Description */}
+                <span
+                  className={`mt-1 hidden sm:block text-[9px] sm:text-[10px] leading-tight ${
+                    isCurrent
+                      ? isRevision
+                        ? 'text-amber-200/80 font-semibold'
+                        : 'text-[#a5b4fc]/85 font-medium'
+                      : isPassed
+                      ? 'text-emerald-300/70 font-medium'
+                      : 'text-white/20'
+                  }`}
+                >
+                  {isCurrent && isRevision ? 'Revision in progress' : stage.description}
+                </span>
               </div>
-
-              <span
-                className={`mt-2 text-[11px] font-medium whitespace-nowrap ${
-                  isActive
-                    ? 'text-[#a78bfa] font-bold'
-                    : isPassed
-                    ? 'text-emerald-400'
-                    : 'text-gray-400'
-                }`}
-              >
-                {stage.label}
-              </span>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </div>
   );
