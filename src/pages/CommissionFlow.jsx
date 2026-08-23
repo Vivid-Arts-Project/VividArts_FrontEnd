@@ -52,6 +52,13 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
     onBack();
   }
 
+  function handleGoToOrders() {
+    setPhotoData(null);
+    setOrder(null);
+    clearCommissionDraft();
+    onNavigate('orders');
+  }
+
   let page;
   if (path === '/commission' || path === '/commission/') page = <Redirect to={`/commission/${defaultStep}`} replace />;
   else if (path === '/commission/upload') page = <UploadPhotoPage initialPhotoData={photoData} onNext={handlePhotoNext} onBack={onBack} onNavigate={onNavigate}/>;
@@ -64,6 +71,8 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
         referencePhoto={photoData?.photo || null}
         onBack={() => navigate('/commission/customize')}
         onComplete={handlePaymentComplete}
+        onOrders={handleGoToOrders}
+        onNavigate={onNavigate}
         onIncomplete={() => {
           setPhotoData(null);
           setOrder(null);
