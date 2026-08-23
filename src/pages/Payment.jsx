@@ -60,7 +60,15 @@ function submitCheckoutForm(actionUrl, fields) {
   form.submit()
 }
 
-export default function Payment({ order, referencePhoto = null, onBack = () => {}, onComplete = () => {}, onIncomplete = () => {} }) {
+export default function Payment({
+  order,
+  referencePhoto = null,
+  onBack = () => {},
+  onComplete = () => {},
+  onIncomplete = () => {},
+  onOrders,
+  onNavigate,
+}) {
   const onIncompleteRef = useRef(onIncomplete);
   const safeOrder = order || fallbackOrder
   const [currency] = useState(currencies[0])
@@ -319,6 +327,16 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
     onComplete();
   };
 
+  const handleMyOrders = () => {
+    if (typeof onOrders === 'function') {
+      onOrders();
+    } else if (typeof onNavigate === 'function') {
+      onNavigate('orders');
+    } else {
+      window.location.href = '/my-orders';
+    }
+  };
+
   const total = safeOrder.total
   const dueAmount = safeOrder.deposit
   const displayValue = (amount) => formatMoney(amount, currency.code, currency.rate)
@@ -345,31 +363,24 @@ export default function Payment({ order, referencePhoto = null, onBack = () => {
           <p className="text-[#4b5563] mt-[10px]">
             Order ID: {orderId || 'Processing...'}
           </p>
-          {orderId && paymentStatus === 'completed' && (
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
             <button
               type="button"
-              onClick={handleInvoiceDownload}
-              disabled={isDownloading}
-              className="mt-[10px] inline-flex w-full min-w-0 items-center justify-center rounded-full border border-[#9fe3c5] bg-gradient-to-br from-[#f4fff9] to-[#eafff5] px-5 py-3 font-semibold text-[#087a57] shadow-[0_12px_28px_rgba(5,150,105,0.12)] transition-all hover:-translate-y-0.5 hover:border-[#50c894] hover:shadow-[0_18px_36px_rgba(5,150,105,0.2)] sm:w-auto sm:min-w-[230px] sm:px-[30px]"
+              className="inline-flex w-full min-w-0 items-center justify-center rounded-full border border-[#cfc8ff] bg-gradient-to-br from-[#f7f5ff] to-[#edf8ff] px-5 py-3 font-semibold text-[#5a3fbb] shadow-[0_12px_28px_rgba(91,63,168,0.12)] transition-all hover:-translate-y-0.5 hover:border-[#8b7cff] hover:shadow-[0_18px_36px_rgba(91,63,168,0.2)] cursor-pointer sm:w-auto sm:min-w-[210px] sm:px-[30px]"
+              onClick={handleMyOrders}
             >
-              {isDownloading ? 'Preparing invoice…' : 'Download Invoice (PDF)'}
+              Go to My Orders
             </button>
-          )}
-          <br />
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-            <button
-              className="w-full min-w-0 rounded-full px-5 py-3 cursor-pointer transition-all border border-[#cfc8ff] bg-gradient-to-br from-[#f7f5ff] to-[#edf8ff] text-[#5a3fbb] font-semibold shadow-[0_12px_28px_rgba(91,63,168,0.12)] hover:-translate-y-0.5 hover:border-[#8b7cff] hover:shadow-[0_18px_36px_rgba(91,63,168,0.2)] sm:w-auto sm:min-w-[190px] sm:px-[30px]"
-              onClick={() => onComplete()}
-            >
-              Go to Home Page
-            </button>
-            <button
-              className="inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-full border border-[#cfc8ff] bg-gradient-to-br from-[#f7f5ff] to-[#edf8ff] px-5 py-3 font-semibold text-[#5a3fbb] shadow-[0_12px_28px_rgba(91,63,168,0.12)] transition-all hover:-translate-y-0.5 hover:border-[#8b7cff] hover:shadow-[0_18px_36px_rgba(91,63,168,0.2)] sm:w-auto sm:min-w-[190px] sm:px-[30px]"
-              onClick={() => setShowConfirmation(false)}
-            >
-              <Icon name="arrowLeft" size={18}/>
-              Back to Payment
-            </button>
+            {orderId && paymentStatus === 'completed' && (
+              <button
+                type="button"
+                onClick={handleInvoiceDownload}
+                disabled={isDownloading}
+                className="inline-flex w-full min-w-0 items-center justify-center rounded-full border border-[#9fe3c5] bg-gradient-to-br from-[#f4fff9] to-[#eafff5] px-5 py-3 font-semibold text-[#087a57] shadow-[0_12px_28px_rgba(5,150,105,0.12)] transition-all hover:-translate-y-0.5 hover:border-[#50c894] hover:shadow-[0_18px_36px_rgba(5,150,105,0.2)] disabled:opacity-70 disabled:cursor-not-allowed sm:w-auto sm:min-w-[210px] sm:px-[30px]"
+              >
+                {isDownloading ? 'Preparing invoice…' : 'Download Invoice (PDF)'}
+              </button>
+            )}
           </div>
         </div>
       </div>

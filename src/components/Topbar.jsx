@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/useAuth';
 import Icon from './Icon';
 import { getAdminNotifications, markAdminNotificationRead, markAllAdminNotificationsRead } from '../api/adminApi';
@@ -33,6 +33,9 @@ export default function Topbar({ page, search, onSearch, onMenu }) {
   const location = useLocation();
   const [showNotif, setShowNotif] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [toastNotification, setToastNotification] = useState(null);
+  const initialLoadedRef = useRef(false);
+  const knownIdsRef = useRef(new Set());
   const meta = PAGE_META[page] || { title: page, bread: page };
   const unreadCount = notifications.filter(notification => !notification.is_read).length;
   const businessName = admin?.businessName || 'Vivid Arts';
@@ -40,18 +43,48 @@ export default function Topbar({ page, search, onSearch, onMenu }) {
   const loadNotifications = useCallback(async () => {
     try {
       const response = await getAdminNotifications();
-      setNotifications(response.data.notifications);
+      const list = Array.isArray(response?.data?.notifications) ? response.data.notifications : [];
+      setNotifications(list);
+
+      if (!initialLoadedRef.current) {
+        initialLoadedRef.current = true;
+        knownIdsRef.current = new Set(list.map(n => n.id));
+      } else {
+        const unreadNew = list
+          .filter(n => !n.is_read && !knownIdsRef.current.has(n.id))
+          .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+        list.forEach(n => knownIdsRef.current.add(n.id));
+
+        if (unreadNew.length > 0) {
+          setToastNotification(unreadNew[0]);
+        }
+      }
     } catch { /* The admin session guard handles authentication failures. */ }
   }, []);
 
   useEffect(() => {
-    const stopPolling = startVisiblePolling(loadNotifications, 30_000);
-    window.addEventListener('vividarts:admin-notifications', loadNotifications);
+    const stopPolling = startVisiblePolling(loadNotifications, 10_000);
+    const handleEvent = (event) => {
+      if (event?.detail) {
+        setToastNotification(event.detail);
+      }
+      loadNotifications();
+    };
+    window.addEventListener('vividarts:admin-notifications', handleEvent);
     return () => {
       stopPolling();
-      window.removeEventListener('vividarts:admin-notifications', loadNotifications);
+      window.removeEventListener('vividarts:admin-notifications', handleEvent);
     };
   }, [loadNotifications]);
+
+  useEffect(() => {
+    if (!toastNotification) return undefined;
+    const timer = setTimeout(() => {
+      setToastNotification(null);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [toastNotification]);
 
   const openHistory = async (notification) => {
     if (notification && !notification.is_read) {
@@ -61,6 +94,7 @@ export default function Topbar({ page, search, onSearch, onMenu }) {
       } catch { /* The history page can retry this update. */ }
     }
     setShowNotif(false);
+    setToastNotification(null);
     if (location.split(/[?#]/, 1)[0] === '/admin/notifications') return;
     navigate('/admin/notifications');
   };
@@ -82,15 +116,54 @@ export default function Topbar({ page, search, onSearch, onMenu }) {
             <div className="truncate text-[10px] text-va-text3 sm:text-xs">{businessName} / <span className="font-semibold text-va-purple">{meta.bread}</span></div>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+        <div className="relative flex shrink-0 items-center gap-1.5 sm:gap-2.5">
           <div className="hidden items-center gap-2 rounded-lg border border-va-border bg-va-bg px-3 py-[7px] text-[13px] text-va-text3 transition-colors focus-within:border-va-blue focus-within:bg-white sm:flex sm:w-[180px] lg:w-[220px]">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke="var(--va-text3)" strokeWidth="1.2"/><path d="M9.5 9.5L12 12" stroke="var(--va-text3)" strokeWidth="1.4" strokeLinecap="round"/></svg>
             <input placeholder="Search orders, clients…" value={search} onChange={event => onSearch(event.target.value)} className="w-full border-none bg-transparent font-sans text-[13px] text-va-text outline-none"/>
           </div>
-          <button type="button" aria-label="Notifications" aria-expanded={showNotif} className={`relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border transition-all ${showNotif ? 'border-va-purple bg-grad-soft text-va-purple shadow-[0_0_0_3px_rgba(91,63,168,0.08)]' : 'border-va-border bg-white text-va-text2 hover:border-va-border2 hover:bg-va-bg hover:text-va-purple'}`} onClick={() => setShowNotif(value => !value)}>
+          <button type="button" aria-label="Notifications" aria-expanded={showNotif} className={`relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border transition-all ${showNotif ? 'border-va-purple bg-grad-soft text-va-purple shadow-[0_0_0_3px_rgba(91,63,168,0.08)]' : 'border-va-border bg-white text-va-text2 hover:border-va-border2 hover:bg-va-bg hover:text-va-purple'}`} onClick={() => { setShowNotif(value => !value); setToastNotification(null); }}>
             <Icon name="bell" size={18}/>
             {unreadCount > 0 && <span className="absolute right-[3px] top-[2px] flex min-h-4 min-w-4 items-center justify-center rounded-full border-2 border-white bg-va-danger px-0.5 text-[8px] font-extrabold leading-none text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}
           </button>
+
+          {/* Admin New Notification Popup Toast */}
+          {toastNotification && !showNotif && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="notification-pop-toast fixed left-3 right-3 top-[68px] z-[320] flex items-start gap-3 rounded-2xl border border-va-border bg-white p-3.5 text-va-text shadow-[0_18px_50px_rgba(30,24,72,0.22)] transition-all sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+10px)] sm:w-[330px]"
+            >
+              <div className="absolute -top-1.5 right-3 hidden h-3 w-3 rotate-45 border-l border-t border-va-border bg-white sm:block"/>
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-grad text-white shadow-sm">
+                <Icon name={toastNotification.type === 'order' ? 'orders' : toastNotification.type === 'message' ? 'revisions' : 'info'} size={18} />
+              </div>
+              <div className="min-w-0 flex-1 cursor-pointer" onClick={() => openHistory(toastNotification)}>
+                <div className="flex items-center gap-1.5">
+                  <span className="flex h-2 w-2 rounded-full bg-va-blue animate-pulse" />
+                  <strong className="block truncate font-outfit text-xs font-bold text-va-text">
+                    {toastNotification.title || 'New Notification'}
+                  </strong>
+                </div>
+                <p className="mt-0.5 line-clamp-2 text-[11px] leading-4 text-va-text2">
+                  {toastNotification.message}
+                </p>
+                <span className="mt-1 block text-[9px] font-semibold uppercase tracking-wider text-va-purple">
+                  Just now · Click to view
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setToastNotification(null);
+                }}
+                className="shrink-0 rounded-lg p-1 text-va-text3 transition hover:bg-va-bg hover:text-va-text"
+                aria-label="Dismiss notification"
+              >
+                <span className="text-base leading-none">×</span>
+              </button>
+            </div>
+          )}
         </div>
       </header>
 

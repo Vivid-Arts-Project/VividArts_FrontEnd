@@ -87,7 +87,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
   const deliveryAddressRef = useRef(null);
   const urgentDeadlineRef = useRef(null);
 
-  const minimumUrgentDate = useMemo(() => dateInputValue(1), []);
+  const minimumUrgentDate = useMemo(() => dateInputValue(3), []);
   const maximumUrgentDate = useMemo(() => dateInputValue(7), []);
 
   useEffect(() => {
@@ -151,7 +151,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
     }
 
     if (urgent && (!urgentDeadline || urgentDeadline < minimumUrgentDate || urgentDeadline > maximumUrgentDate)) {
-      setUrgentDeadlineError("Please select a completion date within the next 7 days.");
+      setUrgentDeadlineError("Urgent orders take a minimum of 3 days. Please select a completion date between 3 and 7 days from today.");
       window.requestAnimationFrame(() => {
         urgentDeadlineRef.current?.focus({ preventScroll: true });
         urgentDeadlineRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -427,7 +427,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
                     When do you need your portrait?
                   </label>
                   <p className="mt-1 text-xs leading-5 text-[#806334]">
-                    Urgent orders are for portraits needed within one week. Choose a date from tomorrow through the next 7 days.
+                    Urgent orders take a minimum of 3 days to complete. Please choose a completion date between 3 and 7 days from today (tomorrow and the day after tomorrow are not available).
                   </p>
                   <input
                     id="urgent-deadline"

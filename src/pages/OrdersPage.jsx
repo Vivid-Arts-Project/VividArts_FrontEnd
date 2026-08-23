@@ -5,7 +5,7 @@ import { STATUS_ACTION_LABELS, STATUS_MAP } from '../components/statusConfig';
 import { getOrders, updateStatus, sendMessage, setLocation, uploadProof, referencePhotoDownloadUrl } from '../api/adminApi';
 import { useNavigate } from '../router';
 
-const STAGE_ORDER = ['in_queue','sketching','waiting_for_feedback','approved','framed','shipped','done'];
+const STAGE_ORDER = ['in_queue','sketching','waiting_for_feedback','approved','framed','done'];
 const BASE_STAGES = [
   { key: 'in_queue',             label: 'Queued'          },
   { key: 'sketching',            label: 'Sketching'       },
@@ -48,7 +48,6 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
   const stages = [
     ...BASE_STAGES,
     ...(order.frameType && order.frameType !== 'without_frame' ? [{ key: 'framed', label: 'Framed' }] : []),
-    ...(order.pickupOption === 'courier' ? [{ key: 'shipped', label: 'Shipped' }] : []),
     { key: 'done', label: 'Done' },
   ];
   const statusOptions = (order.allowedTransitions || [effectiveStatus])

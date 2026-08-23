@@ -14,7 +14,6 @@ const STATUS = {
   approved: ['Approved & finished', 'Your portrait is approved and finished. Please pay any remaining balance.'],
   finished: ['Approved & finished', 'Your portrait is approved and finished. Please pay any remaining balance.'],
   framed: ['Framed', 'Your portrait has been framed.'],
-  shipped: ['Shipped / ready', 'Your order is on its way or ready for pickup.'],
   done: ['Completed', 'Your order has been completed.'],
 };
 
@@ -201,6 +200,16 @@ export default function MyOrdersPage({ onNavigate }) {
     if (action === 'revision') {
       setRevisionOrderId(order.id);
       setNotice('');
+      window.setTimeout(() => {
+        const el = document.getElementById(`revision-box-${order.id}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        const textarea = document.getElementById(`revision-input-${order.id}`);
+        if (textarea) {
+          textarea.focus();
+        }
+      }, 60);
       return;
     }
     setReviewing(order.id);
@@ -355,7 +364,8 @@ export default function MyOrdersPage({ onNavigate }) {
           {orders.map((order) => {
             const displayStatus = order.paymentStatus === 'payment_pending' ? 'payment_pending' : order.status;
             const [statusLabel, statusHelp] = STATUS[displayStatus] || [String(displayStatus || 'Unknown').replaceAll('_', ' '), 'The artist updated this order.'];
-            const completedPayment = order.payments?.find(payment => payment.status === 'completed');
+            const completedPayments = (order.payments || []).filter(payment => payment.status === 'completed');
+            const latestCompletedPayment = completedPayments[completedPayments.length - 1];
             const paymentPending = order.paymentStatus === 'payment_pending';
             return (
               <article key={order.id} className={`overflow-hidden rounded-[26px] bg-gradient-to-br from-[#151333] via-[#111025] to-[#102037] shadow-[0_22px_60px_rgba(0,0,0,.28)] ${paymentPending ? 'border border-red-400/55' : 'border border-white/[.1]'}`}>
@@ -402,23 +412,48 @@ export default function MyOrdersPage({ onNavigate }) {
                       <Detail label="Balance due" value={formatMoney(order.balanceDue, order.currency)}/>
                       <Detail label="Payment plan" value={order.paymentType === 'full' ? 'Paid in full' : 'Advance payment'}/>
                     </dl>
-                    {(order.payments || []).map(payment => (
-                      <div key={payment.id} className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[.08] bg-[#0b0a1b]/60 px-4 py-3 text-xs text-white/60">
-                        <span><strong className="text-white/85">{formatMoney(payment.amount, payment.currency)}</strong> · {payment.method || 'Payment'} · <span className="capitalize">{payment.status}</span></span>
-                        <span>{formatDate(payment.createdAt, true)}{payment.transactionId ? ` · Ref ${payment.transactionId}` : ''}</span>
-                      </div>
-                    ))}
-                    {paymentPending && (
-                      <button type="button" disabled={resumingPayment === order.id} onClick={() => resumePayment(order)} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-red-500 px-5 py-2.5 text-xs font-extrabold text-white shadow-[0_10px_24px_rgba(239,68,68,.25)] transition hover:bg-red-400 disabled:opacity-50">
-                        <Icon name="payments" size={16}/>{resumingPayment === order.id ? 'Opening payment…' : `Complete payment · ${formatMoney(order.payments?.[0]?.amount, order.currency)}`}
-                      </button>
-                    )}
-                    {completedPayment?.providerOrderId && <button type="button" onClick={() => downloadInvoice(completedPayment.providerOrderId)} className="mt-3 inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/[.06] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/[.11]"><Icon name="download" size={15}/> Download invoice</button>}
-                    {['approved', 'finished'].includes(order.workflowStatus || order.status) && order.balanceDue > 0 && (
-                      <button type="button" disabled={payingBalance === order.id} onClick={() => payBalance(order)} className="mt-3 ml-2 inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-xs font-extrabold text-[#062b1b] transition hover:bg-emerald-400 disabled:opacity-50">
-                        {payingBalance === order.id ? 'Opening payment…' : `Pay balance · ${formatMoney(order.balanceDue, order.currency)}`}
-                      </button>
-                    )}
+                    {(order.payments || []).map((payment, index) => {
+                      const isDeposit = index === 0 && (order.payments.length > 1 || payment.paymentType === 'advance' || order.paymentType === 'advance');
+                      const paymentLabel = isDeposit ? 'Advance' : 'Total';
+                      const hasMultiplePayments = (order.payments || []).length > 1;
+                      return (
+                        <div key={payment.id} className="mt-3">
+                          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/[.08] bg-[#0b0a1b]/60 px-4 py-3 text-xs text-white/60">
+                            <span><strong className="text-white/85">{formatMoney(payment.amount, payment.currency)}</strong> · <span className="font-semibold text-white/75">{paymentLabel}</span> · <span className="capitalize">{payment.status}</span></span>
+                            <span>{formatDate(payment.createdAt, true)}{payment.transactionId ? ` · Ref ${payment.transactionId}` : ''}</span>
+                          </div>
+                          {payment.status === 'completed' && payment.providerOrderId && (
+                            <div className="mt-2 flex">
+                              <button
+                                type="button"
+                                onClick={() => downloadInvoice(payment.providerOrderId)}
+                                className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/[.06] px-4 py-2.5 text-xs font-bold text-white transition hover:bg-white/[.11]"
+                              >
+                                <Icon name="download" size={15}/> {hasMultiplePayments ? (isDeposit ? 'Download deposit invoice' : 'Download final invoice') : 'Download invoice'}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                      {paymentPending && (
+                        <button type="button" disabled={resumingPayment === order.id} onClick={() => resumePayment(order)} className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-5 py-2.5 text-xs font-extrabold text-white shadow-[0_10px_24px_rgba(239,68,68,.25)] transition hover:bg-red-400 disabled:opacity-50">
+                          <Icon name="payments" size={16}/>{resumingPayment === order.id ? 'Opening payment…' : `Complete payment · ${formatMoney(order.payments?.[0]?.amount, order.currency)}`}
+                        </button>
+                      )}
+                      {['approved', 'finished'].includes(order.workflowStatus || order.status) && order.balanceDue > 0 && (
+                        <button
+                          type="button"
+                          disabled={payingBalance === order.id}
+                          onClick={() => payBalance(order)}
+                          className="pay-balance-pulse inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400 px-5 py-2.5 text-xs font-extrabold text-[#042416] transition hover:brightness-110 disabled:opacity-50 disabled:animate-none"
+                        >
+                          <Icon name="payments" size={16}/>
+                          {payingBalance === order.id ? 'Opening payment…' : `Pay balance · ${formatMoney(order.balanceDue, order.currency)}`}
+                        </button>
+                      )}
+                    </div>
 
                     {(order.workflowStatus || order.status) === 'done' && (
                       <section className="mt-6 rounded-2xl border border-[#8f80e8]/20 bg-gradient-to-br from-[#7666d8]/12 to-[#2b8fe0]/8 p-4 sm:p-5">
@@ -465,7 +500,7 @@ export default function MyOrdersPage({ onNavigate }) {
                         );
                       }) : <p className="m-auto text-xs text-white/35">No messages for this order yet.</p>}
                     </div>
-                    <div className="mt-3 border-t border-white/[.08] pt-3">
+                    <div id={`revision-box-${order.id}`} className="mt-3 border-t border-white/[.08] pt-3 scroll-mt-6">
                       {revisionOrderId === order.id && (
                         <div className="mb-2 flex items-start justify-between gap-2 rounded-xl border border-[#9b8df3]/25 bg-[#7868d8]/15 px-3 py-2 text-[11px] leading-4 text-[#d8d2ff]">
                           <span>Describe the proof changes you need. Submitting will notify the artist and mark the proof for revision.</span>
@@ -473,6 +508,7 @@ export default function MyOrdersPage({ onNavigate }) {
                         </div>
                       )}
                       <textarea
+                        id={`revision-input-${order.id}`}
                         rows={3}
                         value={messageDrafts[order.id] || ''}
                         onChange={event => setMessageDrafts(drafts => ({ ...drafts, [order.id]: event.target.value }))}
