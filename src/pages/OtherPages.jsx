@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Badge from '../components/Badge';
 import Icon from '../components/Icon';
-import { getOrders, getCustomers, getPayments, downloadInvoice, uploadProof } from '../api/adminApi';
+import { getOrders, getCustomers, getPayments, downloadInvoice, uploadProof, getCalendarEvents } from '../api/adminApi';
 import { useNavigate } from '../router';
 import { saveBlob } from '../utils/download';
 import { startVisiblePolling } from '../utils/polling';
@@ -47,16 +47,84 @@ function RevenueChart({ orders }) {
   );
 }
 
+const localDateKey = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+function EventCalendar({ month, events, onMonthChange, onOpenOrders, compact = false, onExpand }) {
+  const year = month.getFullYear();
+  const monthIndex = month.getMonth();
+  const firstDay = new Date(year, monthIndex, 1);
+  const leading = firstDay.getDay();
+  const dayCount = new Date(year, monthIndex + 1, 0).getDate();
+  const cells = [...Array(leading).fill(null), ...Array.from({ length: dayCount }, (_, index) => index + 1)];
+  while (cells.length % 7) cells.push(null);
+  const todayKey = localDateKey(new Date());
+  const moveMonth = direction => onMonthChange(new Date(year, monthIndex + direction, 1));
+  return <div className={CARD}>
+    <div className={compact ? 'px-4 py-3 border-b border-va-border flex items-center justify-between' : CARD_HEAD}>
+      <div><div className={CARD_TITLE}>Order Event Calendar</div><div className="mt-0.5 text-[11px] text-va-text3">Urgent deadlines and scheduled dates</div></div>
+      <div className="flex items-center gap-2"><button type="button" onClick={() => moveMonth(-1)} className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM}`} aria-label="Previous month">←</button><strong className={`${compact ? 'min-w-[105px] text-xs' : 'min-w-[130px] text-sm'} text-center text-va-text`}>{month.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</strong><button type="button" onClick={() => moveMonth(1)} className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM}`} aria-label="Next month">→</button></div>
+    </div>
+    <div className={compact ? 'cursor-zoom-in p-3' : 'p-3 sm:p-5'} onClick={compact ? onExpand : undefined} role={compact ? 'button' : undefined} tabIndex={compact ? 0 : undefined} onKeyDown={compact ? event => { if (event.key === 'Enter' || event.key === ' ') onExpand(); } : undefined} aria-label={compact ? 'Open large event calendar' : undefined}>
+      <div className="mb-1 grid grid-cols-7">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(day => <div key={day} className="py-1 text-center text-[10px] font-bold uppercase tracking-wide text-va-text3">{day}</div>)}</div>
+      <div className="grid grid-cols-7 overflow-hidden rounded-lg border border-va-border bg-va-border gap-px">{cells.map((day, index) => {
+        if (!day) return <div key={`blank-${index}`} className={`${compact ? 'min-h-[38px]' : 'min-h-[82px]'} bg-va-bg/70`}/>;
+        const date = new Date(year, monthIndex, day);
+        const key = localDateKey(date);
+        const dayEvents = events.filter(event => event.date === key);
+        const hasUrgent = dayEvents.some(event => event.type === 'urgent');
+        const hasScheduled = dayEvents.some(event => event.type === 'scheduled');
+        const eventColor = hasUrgent && hasScheduled ? 'bg-gradient-to-br from-red-100 to-violet-100' : hasUrgent ? 'bg-red-100' : hasScheduled ? 'bg-violet-100' : 'bg-white';
+        return <div key={key} title={dayEvents.map(event => `${event.type === 'urgent' ? 'Urgent' : 'Scheduled'} · #${event.orderId.slice(0,8)}`).join('\n')} className={`${compact ? 'min-h-[38px] p-1' : 'min-h-[82px] p-1.5'} ${eventColor} ${key === todayKey ? 'ring-2 ring-inset ring-va-purple' : ''}`}>
+          <div className={`mb-1 text-[11px] font-bold ${key === todayKey ? 'text-va-purple' : 'text-va-text3'}`}>{day}</div>
+          {!compact && <div className="space-y-1">{dayEvents.slice(0, 3).map(event => <button type="button" key={`${event.type}-${event.orderId}`} onClick={onOpenOrders} title={`${event.customerName} · #${event.orderId.slice(0,8)}`} className={`block w-full truncate rounded px-1.5 py-1 text-left text-[9px] font-bold ${event.type === 'urgent' ? 'bg-white/70 text-va-danger' : 'bg-white/70 text-va-purple'}`}>{event.type === 'urgent' ? 'Urgent' : 'Scheduled'} · #{event.orderId.slice(0,4)}</button>)}{dayEvents.length > 3 && <div className="text-[9px] text-va-text3">+{dayEvents.length - 3} more</div>}</div>}
+        </div>;
+      })}</div>
+      <div className={`${compact ? 'mt-2' : 'mt-3'} flex flex-wrap gap-4 text-[11px] text-va-text3`}><span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-va-danger"/>Urgent deadline</span><span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-va-purple"/>Scheduled date</span>{compact && <span className="ml-auto font-semibold text-va-purple">Click to enlarge</span>}</div>
+    </div>
+  </div>;
+}
+
+function ActionRequiredCard({ orders, tomorrowEnd, onOpenOrders }) {
+  return <div className={CARD}>
+    <div className={CARD_HEAD}><div className={CARD_TITLE}>Action Required</div></div>
+    <div className="p-0">
+      {orders.slice(0, 3).map(order => <div key={order.id} className="flex items-center justify-between border-b border-va-border px-4 py-3">
+        <div><div className="text-[13px] font-semibold">#{order.id?.slice(0,8)} — {order.customer?.fullName}</div><div className="mt-0.5 text-xs text-va-text3">{order.isUrgent && order.urgentDeadline && new Date(`${order.urgentDeadline}T23:59:59`) <= tomorrowEnd ? <span className="inline-flex rounded-full bg-va-danger-bg px-2.5 py-[3px] text-[11px] font-bold text-va-danger">Urgent · due {new Date(`${order.urgentDeadline}T00:00:00`).toLocaleDateString()}</span> : <Badge status={order.status}/>}</div></div>
+        <button className={`${BTN_BASE} ${BTN_FILL} ${BTN_SM}`} onClick={onOpenOrders}>View</button>
+      </div>)}
+      {orders.length === 0 && <div className="flex items-center justify-center gap-2 p-5 text-[13px] text-va-text3"><Icon name="completed" size={18} className="text-va-success"/> No urgent actions needed.</div>}
+    </div>
+  </div>;
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // DASHBOARD PAGE
 // ══════════════════════════════════════════════════════════════════════════════
 export function DashboardPage({ onNav }) {
   const [orders, setOrders] = useState([]);
   const [clientCount, setClientCount] = useState(0);
+  const [calendarMonth, setCalendarMonth] = useState(() => { const date = new Date(); return new Date(date.getFullYear(), date.getMonth(), 1); });
+  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   useEffect(() => {
     getOrders().then(r => setOrders(r.data.orders)).catch(() => {});
     getCustomers().then(r => setClientCount((r.data.customers || []).length)).catch(() => {});
   }, []);
+  useEffect(() => {
+    let active = true;
+    const from = localDateKey(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1));
+    const to = localDateKey(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0));
+    getCalendarEvents(from, to).then(response => { if (active) setCalendarEvents(response.data.events || []); }).catch(() => { if (active) setCalendarEvents([]); });
+    return () => { active = false; };
+  }, [calendarMonth]);
+  useEffect(() => {
+    if (!calendarOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const close = event => { if (event.key === 'Escape') setCalendarOpen(false); };
+    window.addEventListener('keydown', close);
+    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener('keydown', close); };
+  }, [calendarOpen]);
 
   const counts = {
     active:   orders.filter(o => o.status !== 'done').length,
@@ -110,6 +178,26 @@ export function DashboardPage({ onNav }) {
         </div>
       </div>
 
+      <div className="mb-4"><ActionRequiredCard orders={actionOrders} tomorrowEnd={tomorrowEnd} onOpenOrders={() => onNav('orders')}/></div>
+
+      <div className="mb-4 flex flex-col items-stretch gap-3.5 lg:flex-row">
+        <div className="w-full max-w-[560px]"><EventCalendar compact month={calendarMonth} events={calendarEvents} onMonthChange={setCalendarMonth} onOpenOrders={() => onNav('orders')} onExpand={() => setCalendarOpen(true)}/></div>
+        <div className="w-full lg:max-w-[280px]">
+          <div className={`${CARD} h-full`}>
+            <div className={CARD_HEAD}><div className={CARD_TITLE}>Orders by Status</div></div>
+            <div className={CARD_BODY}>
+              <div className="py-4 text-center"><div className="bg-grad bg-clip-text font-outfit text-4xl font-extrabold text-transparent">{counts.active}</div><div className="mt-0.5 text-xs text-va-text3">active orders</div></div>
+              {[
+                ['bg-va-blue', 'Sketching', counts.sketch],
+                ['bg-va-purple', 'Proof Sent', counts.proof],
+                ['bg-va-warn', 'Revision', orders.filter(order => order.status === 'revision_requested').length],
+                ['bg-va-success', 'Approved & Finished', counts.approved],
+              ].map(([color, label, count]) => <div key={label} className="mb-2 flex items-center justify-between text-xs"><div className="flex items-center gap-1.5"><div className={`h-2.5 w-2.5 rounded-sm ${color}`}/>{label}</div><strong>{count}</strong></div>)}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="flex gap-3.5 mb-4">
         <div className="flex-1 min-w-0">
           <div className={CARD}>
@@ -125,59 +213,6 @@ export function DashboardPage({ onNav }) {
             </div>
           </div>
         </div>
-        <div className="flex-1 min-w-0 max-w-[280px]">
-          <div className={CARD}>
-            <div className={CARD_HEAD}><div className={CARD_TITLE}>Orders by Status</div></div>
-            <div className={CARD_BODY}>
-              <div className="text-center py-4">
-                <div className="text-4xl font-extrabold font-outfit bg-grad bg-clip-text text-transparent">{counts.active}</div>
-                <div className="text-xs text-va-text3 mt-0.5">active orders</div>
-              </div>
-              {[
-                ['bg-va-blue',    'Sketching',    counts.sketch],
-                ['bg-va-purple',  'Proof Sent',   counts.proof],
-                ['bg-va-warn',    'Revision',     orders.filter(order => order.status === 'revision_requested').length],
-                ['bg-va-success', 'Approved & Finished', counts.approved],
-              ].map(([color, label, count]) => (
-                <div key={label} className="flex items-center justify-between text-xs mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <div className={`w-2.5 h-2.5 rounded-sm ${color}`}/>
-                    {label}
-                  </div>
-                  <strong>{count}</strong>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex gap-3.5">
-        <div className="flex-1 min-w-0">
-          <div className={CARD}>
-            <div className={CARD_HEAD}><div className={CARD_TITLE}>Action Required</div></div>
-            <div className="p-0">
-              {actionOrders.slice(0,3).map(o => (
-                <div key={o.id} className="px-4 py-3 border-b border-va-border flex items-center justify-between">
-                  <div>
-                    <div className="text-[13px] font-semibold">#{o.id?.slice(0,8)} — {o.customer?.fullName}</div>
-                    <div className="text-xs text-va-text3 mt-0.5">
-                      {o.isUrgent && o.urgentDeadline && new Date(`${o.urgentDeadline}T23:59:59`) <= tomorrowEnd
-                        ? <span className="inline-flex rounded-full bg-va-danger-bg px-2.5 py-[3px] text-[11px] font-bold text-va-danger">Urgent · due {new Date(`${o.urgentDeadline}T00:00:00`).toLocaleDateString()}</span>
-                        : <Badge status={o.status}/>}
-                    </div>
-                  </div>
-                  <button className={`${BTN_BASE} ${BTN_FILL} ${BTN_SM}`} onClick={() => onNav('orders')}>View</button>
-                </div>
-              ))}
-              {actionOrders.length === 0 && (
-                <div className="p-5 text-va-text3 text-[13px] flex items-center justify-center gap-2">
-                  <Icon name="completed" size={18} className="text-va-success"/> No urgent actions needed.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
         <div className="flex-1 min-w-0 max-w-[300px]">
           <div className={CARD}>
             <div className={CARD_HEAD}><div className={CARD_TITLE}>Quick Stats</div><span className="rounded-full bg-va-bg2 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-va-text3">All time</span></div>
@@ -189,13 +224,17 @@ export function DashboardPage({ onNav }) {
                 ['Orders with a frame', orders.filter(order => order.frameType && order.frameType !== 'without_frame').length],
                 ['Courier delivery', orders.filter(order => order.pickupOption === 'courier').length],
                 ['Completed orders', orders.filter(order => order.status === 'done').length],
-              ].map(([k,v]) => (
-                <div key={k} className={DP_ROW}><span className={DP_KEY}>{k}</span><span className={DP_VAL}>{v}</span></div>
-              ))}
+              ].map(([key,value]) => <div key={key} className={DP_ROW}><span className={DP_KEY}>{key}</span><span className={DP_VAL}>{value}</span></div>)}
             </div>
           </div>
         </div>
       </div>
+      {calendarOpen && <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onMouseDown={event => { if (event.target === event.currentTarget) setCalendarOpen(false); }}>
+        <div role="dialog" aria-modal="true" aria-label="Large order event calendar" className="relative max-h-[94vh] w-full max-w-6xl overflow-y-auto rounded-va shadow-2xl">
+          <button type="button" onClick={() => setCalendarOpen(false)} className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-va-border bg-white text-xl text-va-text3 shadow" aria-label="Close calendar">×</button>
+          <EventCalendar month={calendarMonth} events={calendarEvents} onMonthChange={setCalendarMonth} onOpenOrders={() => { setCalendarOpen(false); onNav('orders'); }}/>
+        </div>
+      </div>}
     </div>
   );
 }

@@ -364,8 +364,6 @@ export default function MyOrdersPage({ onNavigate }) {
           {orders.map((order) => {
             const displayStatus = order.paymentStatus === 'payment_pending' ? 'payment_pending' : order.status;
             const [statusLabel, statusHelp] = STATUS[displayStatus] || [String(displayStatus || 'Unknown').replaceAll('_', ' '), 'The artist updated this order.'];
-            const completedPayments = (order.payments || []).filter(payment => payment.status === 'completed');
-            const latestCompletedPayment = completedPayments[completedPayments.length - 1];
             const paymentPending = order.paymentStatus === 'payment_pending';
             return (
               <article key={order.id} className={`overflow-hidden rounded-[26px] bg-gradient-to-br from-[#151333] via-[#111025] to-[#102037] shadow-[0_22px_60px_rgba(0,0,0,.28)] ${paymentPending ? 'border border-red-400/55' : 'border border-white/[.1]'}`}>
@@ -397,8 +395,9 @@ export default function MyOrdersPage({ onNavigate }) {
                       <Detail label="Subjects" value={`${order.subjectCount || 0} ${order.subjectCount === 1 ? 'person' : 'people'}`}/>
                       <Detail label="Frame" value={FRAME_LABELS[order.frameType] || String(order.frameType || '').replaceAll('_', ' ')}/>
                       <Detail label="Delivery" value={order.pickupOption === 'courier' ? 'Courier delivery' : 'Customer pickup'}/>
-                      <Detail label="Urgency" value={order.isUrgent ? 'Urgent order' : 'Standard order'}/>
-                      <Detail label="Requested deadline" value={order.isUrgent ? formatDate(order.urgentDeadline) : 'Not applicable'}/>
+                      <Detail label="Order type" value={order.isUrgent ? 'Urgent order' : order.isScheduled ? 'Scheduled order' : 'Standard order'}/>
+                      <Detail label="Requested date" value={order.isUrgent ? formatDate(order.urgentDeadline) : order.isScheduled ? formatDate(order.scheduledDate) : 'Not applicable'}/>
+                      <Detail label="Live queue position" value={order.queuePosition ? `#${order.queuePosition} · updates automatically` : order.workflowStatus === 'done' ? 'Completed' : order.paymentStatus === 'payment_pending' ? 'Waiting for deposit' : 'Currently in production'} accent={Boolean(order.queuePosition)}/>
                       {order.estimatedCompletionAt && <Detail label="Estimated completion" value={formatDate(order.estimatedCompletionAt)} accent/>}
                     </dl>
                     {order.deliveryAddress && <div className="mt-3"><Detail label="Delivery address" value={order.deliveryAddress}/></div>}

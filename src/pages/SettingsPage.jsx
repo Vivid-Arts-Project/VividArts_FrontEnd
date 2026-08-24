@@ -350,7 +350,7 @@ function NotificationsTab({ admin, loading, onToast, onSaved }) {
     { key: 'revisionRequested', label: 'Revision requested',   sub: 'Email when a client requests changes to an uploaded proof'   },
     { key: 'proofApproved',     label: 'Proof approved',       sub: 'Email when a client approves the watermarked proof'          },
     { key: 'paymentReceived',   label: 'Payment received',     sub: 'Email when PayHere or Stripe confirms a payment'             },
-    { key: 'deadlineReminders', label: 'Deadline reminders',   sub: "Email 2 days before any order's urgent deadline"            },
+    { key: 'deadlineReminders', label: 'Deadline reminders',   sub: 'Email reminders for urgent deadlines and scheduled-order dates' },
   ];
 
   return (
