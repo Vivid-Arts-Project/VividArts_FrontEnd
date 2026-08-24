@@ -149,6 +149,12 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
               </span>
             </div>
           )}
+          {order.isScheduled && (
+            <div className="flex justify-between items-start mb-2 text-xs">
+              <span className="text-va-text3">Scheduled date</span>
+              <span className="font-semibold text-right max-w-[60%] text-va-purple">{order.scheduledDate ? new Date(order.scheduledDate).toLocaleDateString() : 'Scheduled'}</span>
+            </div>
+          )}
           <div className="flex justify-between items-start mb-2 text-xs">
             <span className="text-va-text3">Payment</span>
             <span className="inline-flex items-center justify-end gap-1 font-semibold text-right max-w-[60%] text-va-success">
@@ -479,7 +485,9 @@ export default function OrdersPage({ search, onToast }) {
                       <td><strong>{o.currency} {parseFloat(o.totalPrice || 0).toLocaleString()}</strong></td>
                       <td>{o.isUrgent
                         ? <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-[3px] rounded-full whitespace-nowrap bg-va-danger-bg text-va-danger"><Icon name="alert" size={13}/>Urgent</span>
-                        : <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-[3px] rounded-full whitespace-nowrap bg-[#F0F0F8] text-[#555]">Normal</span>}
+                        : o.isScheduled
+                          ? <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-[3px] rounded-full whitespace-nowrap bg-[#eeecff] text-va-purple">Scheduled · {o.scheduledDate ? new Date(o.scheduledDate).toLocaleDateString() : 'date set'}</span>
+                          : <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-[3px] rounded-full whitespace-nowrap bg-[#F0F0F8] text-[#555]">Normal</span>}
                       </td>
                       <td><div className="flex flex-col items-start gap-1"><Badge status={o.status}/>{['approved', 'finished'].includes(o.status) && <span className="text-[10px] font-bold text-emerald-700">Ready for next step</span>}</div></td>
                       <td>

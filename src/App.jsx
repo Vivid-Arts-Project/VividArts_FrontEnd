@@ -10,6 +10,7 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import PrivateRoute from './components/PrivateRoute';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminRegister from './pages/admin/AdminRegister';
+import AdminRequestStatus from './pages/admin/AdminRequestStatus';
 import AdminApp from './pages/admin/AdminApp';
 import { isTrustedNavigation, useLocation } from './router';
 import { Redirect } from './RouterComponents';
@@ -19,6 +20,7 @@ export default function App() {
 
   let content;
   if (path === '/admin/login') content = <AdminLogin />;
+  else if (path === '/admin/request-status') content = <AdminRequestStatus />;
   else if (path === '/admin/register') content = isTrustedNavigation()
     ? <AdminRegister />
     : <Redirect to="/admin/login" replace />;

@@ -93,12 +93,13 @@ function AdminRequestsTab({ onToast }) {
   const [requests, setRequests] = useState([]);
   const [admins, setAdmins] = useState([]);
   const [busy, setBusy] = useState('');
+  const [rejectingRequest, setRejectingRequest] = useState(null);
+  const [rejectionNote, setRejectionNote] = useState('');
   const load = useCallback(() => Promise.all([getAdminRegistrationRequests(), getAdministrators()]).then(([requestResponse, adminResponse]) => { setRequests(requestResponse.data); setAdmins(adminResponse.data); }).catch(() => onToast('Failed to load administrator management')), [onToast]);
   useEffect(() => { load(); }, [load]);
   const decide = async (request, decision) => {
-    const note = decision === 'rejected' ? window.prompt('Optional rejection reason:', '') || '' : '';
     setBusy(request.id);
-    try { await decideAdminRegistrationRequest(request.id, decision, note); await load(); onToast(`Administrator request ${decision}`); }
+    try { await decideAdminRegistrationRequest(request.id, decision, decision === 'rejected' ? rejectionNote.trim() : ''); await load(); onToast(`Administrator request ${decision}`); setRejectingRequest(null); setRejectionNote(''); }
     catch (error) { onToast(error.response?.data?.error || 'Unable to update request'); }
     finally { setBusy(''); }
   };
@@ -118,9 +119,11 @@ function AdminRequestsTab({ onToast }) {
   return <div className="space-y-5"><div className="card"><div className="card-head"><div className="card-title">Administrator accounts</div></div><div className="card-body space-y-3">
     {admins.map(admin => <div key={admin.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-va-border p-4"><div><strong>{admin.firstName || admin.username} {admin.lastName || ''}</strong><div className="text-xs text-va-text3">{admin.username} · {admin.email}</div></div><div className="flex items-center gap-2"><span className="rounded bg-va-bg2 px-2 py-1 text-xs font-semibold">{admin.isSuperAdmin ? 'Super admin' : admin.isActive ? 'Active' : 'Inactive'}</span>{!admin.isSuperAdmin && <><button disabled={busy === admin.id} className="btn btn-ghost btn-sm" onClick={() => setStatus(admin, !admin.isActive)}>{admin.isActive ? 'Deactivate' : 'Activate'}</button><button disabled={busy === admin.id} className="btn btn-ghost btn-sm text-red-600" onClick={() => remove(admin)}>Remove</button></>}</div></div>)}
   </div></div><div className="card"><div className="card-head"><div className="card-title">Pending access requests</div></div><div className="card-body space-y-3">
-    {requests.map(request => <div key={request.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-va-border p-4"><div><strong>{request.firstName || request.username} {request.lastName || ''}</strong><div className="text-xs text-va-text3">{request.username} · {request.email} · requested {new Date(request.createdAt).toLocaleString()}</div>{request.decisionNote && <div className="mt-1 text-xs text-va-text3">Note: {request.decisionNote}</div>}</div><div className="flex items-center gap-2"><span className="rounded bg-va-bg2 px-2 py-1 text-xs font-semibold capitalize">{request.status}</span>{request.status === 'pending' && <><button disabled={busy === request.id} className="btn btn-fill btn-sm" onClick={() => decide(request, 'approved')}>Approve</button><button disabled={busy === request.id} className="btn btn-ghost btn-sm" onClick={() => decide(request, 'rejected')}>Reject</button></>}</div></div>)}
+    {requests.map(request => <div key={request.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-va-border p-4"><div><strong>{request.firstName || request.username} {request.lastName || ''}</strong><div className="text-xs text-va-text3">{request.username} · {request.email} · requested {new Date(request.createdAt).toLocaleString()}</div>{request.decisionNote && <div className="mt-1 text-xs text-va-text3">Note: {request.decisionNote}</div>}</div><div className="flex items-center gap-2"><span className="rounded bg-va-bg2 px-2 py-1 text-xs font-semibold capitalize">{request.status}</span>{request.status === 'pending' && <><button disabled={busy === request.id} className="btn btn-fill btn-sm" onClick={() => decide(request, 'approved')}>Approve</button><button disabled={busy === request.id} className="btn btn-ghost btn-sm" onClick={() => { setRejectingRequest(request); setRejectionNote(''); }}>Reject</button></>}</div></div>)}
     {!requests.length && <div className="py-8 text-center text-sm text-va-text3">No administrator requests.</div>}
-  </div></div></div>;
+  </div></div>
+  {rejectingRequest && <div className="fixed inset-0 z-[300] flex items-center justify-center bg-[#100d29]/65 px-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="reject-admin-title" onMouseDown={event => { if (event.target === event.currentTarget && !busy) { setRejectingRequest(null); setRejectionNote(''); } }}><div className="w-full max-w-md overflow-hidden rounded-[22px] border border-[#ded9f5] bg-white shadow-[0_28px_80px_rgba(31,24,78,.35)]"><div className="border-b border-va-border bg-gradient-to-r from-[#f7f5ff] to-[#eef7ff] px-6 py-5"><div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600"><Icon name="alert" size={20}/></span><div><h2 id="reject-admin-title" className="font-outfit text-lg font-bold text-va-text">Reject administrator request?</h2><p className="mt-1 text-xs leading-5 text-va-text3">{rejectingRequest.firstName || rejectingRequest.username} will not be able to access the administrator workspace.</p></div></div></div><form className="px-6 py-5" onSubmit={event => { event.preventDefault(); decide(rejectingRequest, 'rejected'); }}><label className="block"><span className="field-label">Reason <span className="font-normal text-va-text3">(optional)</span></span><textarea autoFocus className="field-input min-h-28 resize-y" maxLength={500} value={rejectionNote} onChange={event => setRejectionNote(event.target.value)} placeholder="Add a short reason for the applicant…"/></label><div className="-mt-2 mb-5 text-right text-[11px] text-va-text3">{rejectionNote.length}/500</div><div className="flex justify-end gap-3 border-t border-va-border pt-4"><button type="button" className="btn btn-ghost px-5 py-2.5" disabled={Boolean(busy)} onClick={() => { setRejectingRequest(null); setRejectionNote(''); }}>Cancel</button><button type="submit" className="inline-flex items-center gap-2 rounded-lg border border-transparent bg-red-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-red-700 disabled:cursor-wait disabled:opacity-60" disabled={busy === rejectingRequest.id}><Icon name={busy === rejectingRequest.id ? 'pending' : 'alert'} size={15}/>{busy === rejectingRequest.id ? 'Rejecting…' : 'Reject request'}</button></div></form></div></div>}
+  </div>;
 }
 
 function SiteAvailabilityTab({ onToast }) {
@@ -347,7 +350,7 @@ function NotificationsTab({ admin, loading, onToast, onSaved }) {
     { key: 'revisionRequested', label: 'Revision requested',   sub: 'Email when a client requests changes to an uploaded proof'   },
     { key: 'proofApproved',     label: 'Proof approved',       sub: 'Email when a client approves the watermarked proof'          },
     { key: 'paymentReceived',   label: 'Payment received',     sub: 'Email when PayHere or Stripe confirms a payment'             },
-    { key: 'deadlineReminders', label: 'Deadline reminders',   sub: "Email 2 days before any order's urgent deadline"            },
+    { key: 'deadlineReminders', label: 'Deadline reminders',   sub: 'Email reminders for urgent deadlines and scheduled-order dates' },
   ];
 
   return (
@@ -387,8 +390,18 @@ function NotificationsTab({ admin, loading, onToast, onSaved }) {
 function SecurityTab({ onToast }) {
   const [form, setForm]   = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [saving, setSaving] = useState(false);
+  const [visible, setVisible] = useState({ currentPassword: false, newPassword: false, confirmPassword: false });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const passwordField = (key, label, placeholder, autoComplete) => (
+    <div className="field">
+      <label className="field-label">{label}</label>
+      <div className="relative">
+        <input className="field-input pr-11" type={visible[key] ? 'text' : 'password'} placeholder={placeholder} autoComplete={autoComplete} value={form[key]} onChange={e => set(key, e.target.value)}/>
+        <button type="button" className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md border-0 bg-transparent text-va-text3 hover:bg-va-bg2 hover:text-va-text" onClick={() => setVisible(value => ({ ...value, [key]: !value[key] }))} aria-label={visible[key] ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}><Icon name={visible[key] ? 'eyeOff' : 'eye'} size={17}/></button>
+      </div>
+    </div>
+  );
 
   const handleSave = async () => {
     if (form.newPassword !== form.confirmPassword) {
@@ -411,10 +424,11 @@ function SecurityTab({ onToast }) {
     <div className="card">
       <div className="card-head"><div className="card-title">Change Password</div></div>
       <div className="card-body">
-        <div className="field"><label className="field-label">Current Password</label><input className="field-input" type="password" placeholder="Enter current password" value={form.currentPassword} onChange={e => set('currentPassword', e.target.value)}/></div>
-        <div className="field"><label className="field-label">New Password</label><input className="field-input" type="password" placeholder="Minimum 8 characters" value={form.newPassword} onChange={e => set('newPassword', e.target.value)}/></div>
-        <div className="field"><label className="field-label">Confirm New Password</label><input className="field-input" type="password" placeholder="Repeat new password" value={form.confirmPassword} onChange={e => set('confirmPassword', e.target.value)}/></div>
-        <button className="btn btn-fill" style={{ padding: '9px 20px' }} onClick={handleSave} disabled={saving}>
+        {passwordField('currentPassword', 'Current Password', 'Enter current password', 'current-password')}
+        {passwordField('newPassword', 'New Password', 'Minimum 8 characters', 'new-password')}
+        {passwordField('confirmPassword', 'Confirm New Password', 'Repeat new password', 'new-password')}
+        {form.confirmPassword && <div className={`mb-4 flex items-center gap-1.5 text-xs font-semibold ${form.newPassword === form.confirmPassword ? 'text-emerald-600' : 'text-red-600'}`}><Icon name={form.newPassword === form.confirmPassword ? 'completed' : 'alert'} size={15}/>{form.newPassword === form.confirmPassword ? 'Passwords match' : 'Passwords do not match'}</div>}
+        <button className="btn btn-fill" style={{ padding: '9px 20px' }} onClick={handleSave} disabled={saving || !form.currentPassword || !form.newPassword || form.newPassword !== form.confirmPassword}>
           {saving ? 'Updating…' : 'Update password'}
         </button>
       </div>

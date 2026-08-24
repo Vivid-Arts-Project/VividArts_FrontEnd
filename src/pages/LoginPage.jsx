@@ -125,6 +125,8 @@ function LoginPage({ onNavigate }) {
                 </span>
               </label>
 
+              <div className="-mt-2 text-right"><button type="button" onClick={() => onNavigate('forgotPassword')} className="border-none bg-transparent text-xs font-semibold text-[#bca8ff] hover:text-white">Forgot password?</button></div>
+
               {message && (
                 <div className={`flex items-center gap-2 rounded-xl border px-3.5 py-3 text-xs ${!isError ? 'border-emerald-400/20 bg-emerald-400/10 text-emerald-300' : 'border-red-400/20 bg-red-400/10 text-red-300'}`}>
                   <Icon name={!isError ? 'completed' : 'alert'} size={17}/>{message}

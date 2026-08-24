@@ -5,6 +5,7 @@ import { useAuth } from '../../context/useAuth';
 import RoundBrandLogo from '../../components/RoundBrandLogo';
 import Icon from '../../components/Icon';
 import PasswordStrength from '../../components/PasswordStrength';
+import { ADMIN_REQUEST_TOKEN_KEY } from './AdminRequestStatus';
 
 export default function AdminRegister() {
   const { register } = useAuth();
@@ -44,7 +45,11 @@ export default function AdminRegister() {
         phone:     form.phone,
       });
       if (result.approved) navigate('/admin/dashboard', { replace: true });
-      else setSuccess(result.message || 'Your request was submitted for super administrator approval.');
+      else {
+        localStorage.setItem(ADMIN_REQUEST_TOKEN_KEY, result.requestToken);
+        sessionStorage.setItem(ADMIN_REQUEST_TOKEN_KEY, result.requestToken);
+        navigate('/admin/request-status', { replace: true });
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
     } finally {

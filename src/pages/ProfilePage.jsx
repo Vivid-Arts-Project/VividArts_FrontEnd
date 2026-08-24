@@ -14,6 +14,9 @@ function ProfilePage({ onNavigate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [passwordVisible, setPasswordVisible] = useState({ currentPassword: false, newPassword: false, confirmPassword: false });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const avatarInputRef = useRef(null);
 
   useEffect(() => {
@@ -122,6 +125,20 @@ function ProfilePage({ onNavigate }) {
   const onAvatarSelected = (ev) => {
     const f = ev.target.files?.[0];
     if (f) uploadImage(f);
+  };
+
+  const handlePasswordChange = async event => {
+    event.preventDefault();
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) return;
+    setIsChangingPassword(true); setMessage('');
+    try {
+      const response = await fetch('/api/customers/password', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin', body: JSON.stringify(passwordForm) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Unable to update password.');
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setMessageType('success'); setMessage(data.message);
+    } catch (error) { setMessageType('error'); setMessage(error.message || 'Unable to update password.'); }
+    finally { setIsChangingPassword(false); }
   };
 
   if (!user) {
@@ -411,6 +428,15 @@ function ProfilePage({ onNavigate }) {
                   Click <strong>Edit profile</strong> above to modify your contact details.
                 </div>
               )}
+            </form>
+            <form onSubmit={handlePasswordChange} className="mt-8 border-t border-white/10 pt-7">
+              <h2 className="font-outfit text-xl font-bold text-white">Change Password</h2>
+              <p className="mt-1 text-xs text-white/50">Use at least 8 characters for your new password.</p>
+              <div className="mt-5 space-y-4">
+                {[['currentPassword','Current password','current-password'],['newPassword','New password','new-password'],['confirmPassword','Confirm new password','new-password']].map(([key,label,autoComplete]) => <label key={key} className="block"><span className="mb-2 block text-xs font-bold text-white/70">{label}</span><span className="flex items-center rounded-xl border border-white/10 bg-white/[.04] px-4 focus-within:border-[#8e7ce5]"><input className="h-12 min-w-0 flex-1 border-none bg-transparent text-sm text-white outline-none" type={passwordVisible[key] ? 'text' : 'password'} autoComplete={autoComplete} value={passwordForm[key]} onChange={e => setPasswordForm(value => ({ ...value, [key]: e.target.value }))} required/><button type="button" className="flex h-8 w-8 items-center justify-center rounded-lg bg-transparent text-white/40 hover:bg-white/5 hover:text-white" onClick={() => setPasswordVisible(value => ({ ...value, [key]: !value[key] }))} aria-label={passwordVisible[key] ? `Hide ${label}` : `Show ${label}`}><Icon name={passwordVisible[key] ? 'eyeOff' : 'eye'} size={17}/></button></span></label>)}
+              </div>
+              {passwordForm.confirmPassword && <div className={`mt-3 flex items-center gap-2 text-xs font-semibold ${passwordForm.newPassword === passwordForm.confirmPassword ? 'text-emerald-300' : 'text-red-300'}`}><Icon name={passwordForm.newPassword === passwordForm.confirmPassword ? 'completed' : 'alert'} size={16}/>{passwordForm.newPassword === passwordForm.confirmPassword ? 'Passwords match' : 'Passwords do not match'}</div>}
+              <button className="mt-5 rounded-xl bg-gradient-to-r from-[#2d91df] to-[#8b5cf6] px-6 py-3 text-xs font-bold text-white disabled:opacity-50" disabled={isChangingPassword || passwordForm.newPassword.length < 8 || passwordForm.newPassword !== passwordForm.confirmPassword}>{isChangingPassword ? 'Updating…' : 'Update password'}</button>
             </form>
           </div>
 

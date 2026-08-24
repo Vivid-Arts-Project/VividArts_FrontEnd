@@ -4,6 +4,7 @@ import { Link } from '../../RouterComponents';
 import { useAuth } from '../../context/useAuth';
 import RoundBrandLogo from '../../components/RoundBrandLogo';
 import Icon from '../../components/Icon';
+import { ADMIN_REQUEST_TOKEN_KEY } from './AdminRequestStatus';
 
 export default function AdminLogin() {
   const { login } = useAuth();
@@ -24,6 +25,12 @@ export default function AdminLogin() {
       await login(form.username, form.password);
       navigate('/admin/dashboard', { replace: true });
     } catch (err) {
+      if (err.response?.data?.requestToken && ['ADMIN_APPROVAL_PENDING', 'ADMIN_REQUEST_REJECTED'].includes(err.response.data.code)) {
+        localStorage.setItem(ADMIN_REQUEST_TOKEN_KEY, err.response.data.requestToken);
+        sessionStorage.setItem(ADMIN_REQUEST_TOKEN_KEY, err.response.data.requestToken);
+        navigate('/admin/request-status', { replace: true });
+        return;
+      }
       setError(err.response?.data?.error || 'Login failed. Check your credentials.');
     } finally {
       setLoading(false);

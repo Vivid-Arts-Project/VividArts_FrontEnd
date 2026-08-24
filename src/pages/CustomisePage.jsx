@@ -15,6 +15,7 @@ const FALLBACK_CATALOG = {
   },
   deliveryPrice: 500,
   urgentPrice: 500,
+  scheduledPrice: 200,
 };
 
 const SIZE_DIMS = { A4: "210 × 297 mm", A3: "297 × 420 mm" };
@@ -26,6 +27,10 @@ function asPrice(value, fallback = 0) {
 
 function fmt(value) {
   return `LKR ${asPrice(value).toLocaleString("en-LK")}`;
+}
+
+function formatTimelineDate(value) {
+  return value ? new Date(`${value}T00:00:00`).toLocaleDateString("en-LK", { day: "numeric", month: "short", year: "numeric" }) : "To be confirmed";
 }
 
 function dateInputValue(daysFromToday) {
@@ -67,6 +72,7 @@ function normalizeCatalog(data) {
     frames,
     deliveryPrice: asPrice(data?.deliveryPrice, FALLBACK_CATALOG.deliveryPrice),
     urgentPrice: asPrice(data?.urgentPrice, FALLBACK_CATALOG.urgentPrice),
+    scheduledPrice: asPrice(data?.scheduledPrice, FALLBACK_CATALOG.scheduledPrice),
   };
 }
 
@@ -82,13 +88,25 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
   const [urgentDeadline, setUrgentDeadline] = useState(initialOrder?.urgentDeadline ?? "");
   const [urgentDeadlineError, setUrgentDeadlineError] = useState("");
   const [urgentAvailability, setUrgentAvailability] = useState(null);
+  const [scheduled, setScheduled] = useState(initialOrder?.scheduled ?? false);
+  const [scheduledDate, setScheduledDate] = useState(initialOrder?.scheduledDate ?? "");
+  const [scheduledDateError, setScheduledDateError] = useState("");
+  const [timelineResult, setTimelineResult] = useState(null);
   const [selectionError, setSelectionError] = useState("");
   const [catalog, setCatalog] = useState(FALLBACK_CATALOG);
   const deliveryAddressRef = useRef(null);
   const urgentDeadlineRef = useRef(null);
+  const scheduledDateRef = useRef(null);
 
   const minimumUrgentDate = useMemo(() => dateInputValue(3), []);
   const maximumUrgentDate = useMemo(() => dateInputValue(7), []);
+  const minimumScheduledDate = useMemo(() => {
+    const days = 7 + Math.max(1, Number(people)) + 2 + (frameId === "premium" ? 1 : 0)
+      + (deliveryMethod === "courier" ? 3 : 0) + 2;
+    return dateInputValue(days);
+  }, [deliveryMethod, frameId, people]);
+  const timelineKey = [sizeId, frameId, people, deliveryMethod, urgent, urgentDeadline, scheduled, scheduledDate].join('|');
+  const timeline = timelineResult?.key === timelineKey ? timelineResult.timeline : null;
 
   useEffect(() => {
     let active = true;
@@ -102,6 +120,22 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
       window.removeEventListener("focus", loadLivePrices);
     };
   }, []);
+
+  useEffect(() => {
+    if (!sizeId || !frameId || !deliveryMethod || (urgent && !urgentDeadline) || (scheduled && !scheduledDate)) {
+      return undefined;
+    }
+    let active = true;
+    const timer = window.setTimeout(() => {
+      api.getTimelinePreview({
+        urgent, urgentDeadline: urgent ? urgentDeadline : null,
+        scheduled, scheduledDate: scheduled ? scheduledDate : null,
+        people, frameId, deliveryMethod,
+      }).then((data) => { if (active && data.success) setTimelineResult({ key: timelineKey, timeline: data.timeline }); })
+        .catch((error) => console.error("Failed to load estimated timeline:", error));
+    }, 200);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [deliveryMethod, frameId, people, scheduled, scheduledDate, sizeId, timelineKey, urgent, urgentDeadline]);
 
   useEffect(() => {
     let active = true;
@@ -124,8 +158,9 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
 
   const total = useMemo(
     () => (size?.price ?? 0) + (frame?.price ?? 0) + Math.max(0, people - 1) * extraPersonPrice
-      + (deliveryMethod === "courier" ? catalog.deliveryPrice : 0) + (urgent ? catalog.urgentPrice : 0),
-    [size?.price, frame?.price, people, extraPersonPrice, deliveryMethod, catalog.deliveryPrice, catalog.urgentPrice, urgent]
+      + (deliveryMethod === "courier" ? catalog.deliveryPrice : 0) + (urgent ? catalog.urgentPrice : 0)
+      + (scheduled ? catalog.scheduledPrice : 0),
+    [size?.price, frame?.price, people, extraPersonPrice, deliveryMethod, catalog.deliveryPrice, catalog.urgentPrice, catalog.scheduledPrice, urgent, scheduled]
   );
   const deposit = Math.round(total * 0.5);
 
@@ -159,7 +194,17 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
       return;
     }
 
+    if (scheduled && (!scheduledDate || scheduledDate < minimumScheduledDate || timeline?.feasible === false)) {
+      setScheduledDateError(timeline?.unavailableReason || `Please select a date on or after ${new Date(`${minimumScheduledDate}T00:00:00`).toLocaleDateString("en-LK")}.`);
+      window.requestAnimationFrame(() => {
+        scheduledDateRef.current?.focus({ preventScroll: true });
+        scheduledDateRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      return;
+    }
+
     setUrgentDeadlineError("");
+    setScheduledDateError("");
     setDeliveryAddressError("");
     onNext({
       sizeId,
@@ -170,6 +215,8 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
       deliveryAddress: deliveryMethod === "courier" ? deliveryAddress.trim() : null,
       urgent,
       urgentDeadline: urgent ? urgentDeadline : null,
+      scheduled,
+      scheduledDate: scheduled ? scheduledDate : null,
       size,
       frame,
       basePrice: size.price,
@@ -178,6 +225,8 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
       peoplePrice: Math.max(0, people - 1) * extraPersonPrice,
       deliveryPrice: deliveryMethod === "courier" ? catalog.deliveryPrice : 0,
       urgentPrice: urgent ? catalog.urgentPrice : 0,
+      scheduledPrice: scheduled ? catalog.scheduledPrice : 0,
+      timeline,
       total,
       deposit,
     });
@@ -407,6 +456,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
               disabled={urgentAvailability?.available === false && !urgent}
               onChange={(event) => {
                 setUrgent(event.target.checked);
+                if (event.target.checked) { setScheduled(false); setScheduledDate(""); setScheduledDateError(""); }
                 setUrgentDeadlineError("");
               }}
               className="sr-only"
@@ -447,6 +497,34 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
                   {urgentDeadlineError && <p id="urgent-deadline-error" className="mt-2 text-xs font-semibold text-[#c2412d]">{urgentDeadlineError}</p>}
                 </div>
               </div>
+            </div>
+          )}
+
+          <label className={`group relative mt-5 flex cursor-pointer items-center justify-between gap-4 overflow-hidden rounded-2xl border-2 p-4 transition-all duration-300 sm:p-5 ${scheduled ? "border-[#6366f1] bg-gradient-to-r from-[#f5f3ff] to-[#eef2ff] shadow-[0_14px_30px_rgba(99,102,241,0.16)]" : "border-[#d9d3ff] bg-gradient-to-r from-[#fbfaff] to-[#f5f7ff] hover:-translate-y-0.5 hover:border-[#a9a3f5]"}`}>
+            <span className="relative flex min-w-0 items-center gap-3.5">
+              <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${scheduled ? "bg-[#6366f1] text-white" : "bg-[#ebe9ff] text-[#5a3fbb]"}`}>
+                <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18"/><path d="M8 14h3M13 14h3M8 18h3"/></svg>
+              </span>
+              <span className="min-w-0">
+                <span className="mb-1 flex flex-wrap items-center gap-2"><strong className="text-base font-extrabold text-[#29253b]">Scheduled order</strong><span className="rounded-full bg-[#6366f1] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-white">Specific date</span></span>
+                <span className="block text-sm font-medium text-[#67607f]">Reserve a suitable queue position for <strong className="text-[#5a3fbb]">+ {fmt(catalog.scheduledPrice)}</strong></span>
+                <span className="mt-1 block text-xs font-semibold text-[#77708f]">Maximum one scheduled reservation per 15-day production period.</span>
+              </span>
+            </span>
+            <span className={`relative h-7 w-12 shrink-0 rounded-full border transition-all ${scheduled ? "border-[#5145cd] bg-[#6366f1]" : "border-[#c9c6d7] bg-white"}`}><span className={`absolute top-0.5 h-5 w-5 rounded-full shadow-sm transition-all ${scheduled ? "left-[25px] bg-white" : "left-0.5 bg-[#aaa6bd]"}`}/></span>
+            <input type="checkbox" checked={scheduled} onChange={(event) => {
+              setScheduled(event.target.checked);
+              if (event.target.checked) { setUrgent(false); setUrgentDeadline(""); setUrgentDeadlineError(""); }
+              setScheduledDateError("");
+            }} className="sr-only"/>
+          </label>
+
+          {scheduled && (
+            <div className="mt-3 rounded-2xl border-2 border-[#d9d3ff] bg-gradient-to-br from-[#fbfaff] to-[#f1f4ff] p-4 sm:p-5">
+              <label htmlFor="scheduled-date" className="block text-sm font-extrabold text-[#29253b]">When must the portrait reach you?</label>
+              <p className="mt-1 text-xs leading-5 text-[#6b6885]">We include drawing, 2 revision days, optional delivery and premium framing, plus a 2-day tolerance. Availability is checked against the live queue.</p>
+              <input id="scheduled-date" ref={scheduledDateRef} type="date" min={minimumScheduledDate} value={scheduledDate} onChange={(event) => { setScheduledDate(event.target.value); setScheduledDateError(""); }} aria-invalid={Boolean(scheduledDateError || timeline?.feasible === false)} className={`mt-3 w-full rounded-xl border bg-white px-4 py-3 text-sm font-semibold text-[#29253b] outline-none focus:ring-4 ${(scheduledDateError || timeline?.feasible === false) ? "border-[#dc5d48] focus:ring-[#dc5d48]/10" : "border-[#aaa3ef] focus:border-[#6366f1] focus:ring-[#6366f1]/10"}`}/>
+              {(scheduledDateError || timeline?.unavailableReason) && <p className="mt-2 text-xs font-semibold text-[#c2412d]">{scheduledDateError || timeline.unavailableReason}</p>}
             </div>
           )}
 
@@ -492,6 +570,8 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
               </div>
               {urgent && <div className="flex justify-between border-t border-[#e7e5f1] py-2.5 text-sm"><dt className="text-[#6b6885]">Urgent order</dt><dd className="font-semibold">{fmt(catalog.urgentPrice)}</dd></div>}
               {urgent && urgentDeadline && <div className="flex justify-between border-t border-[#e7e5f1] py-2.5 text-sm"><dt className="text-[#6b6885]">Requested by</dt><dd className="font-semibold">{new Date(`${urgentDeadline}T00:00:00`).toLocaleDateString("en-LK", { day: "numeric", month: "short", year: "numeric" })}</dd></div>}
+              {scheduled && <div className="flex justify-between border-t border-[#e7e5f1] py-2.5 text-sm"><dt className="text-[#6b6885]">Scheduled order</dt><dd className="font-semibold">{fmt(catalog.scheduledPrice)}</dd></div>}
+              {scheduled && scheduledDate && <div className="flex justify-between border-t border-[#e7e5f1] py-2.5 text-sm"><dt className="text-[#6b6885]">Required date</dt><dd className="font-semibold">{formatTimelineDate(scheduledDate)}</dd></div>}
               {notes.trim() && <div className="border-t border-[#e7e5f1] py-2.5 text-sm"><dt className="text-[#6b6885]">Special instructions</dt><dd className="mt-1 whitespace-pre-wrap break-words font-semibold leading-5">{notes.trim()}</dd></div>}
             </dl>
 
@@ -513,6 +593,22 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
             >
               Continue to payment →
             </button>
+          </section>
+
+          <section className="rounded-[18px] bg-white p-6 text-[#1b1830] shadow-xl sm:p-7">
+            <h2 className="flex items-center gap-2 text-base font-bold"><span className="text-[#6366f1]">◷</span> Estimated timeline</h2>
+            {!timeline ? <p className="mt-3 text-xs leading-5 text-[#6b6885]">Select the size, frame, delivery and order type to see the live queue estimate.</p> : (
+              <div className="mt-3">
+                <div className="flex justify-between gap-3 py-1.5 text-xs"><span className="text-[#6b6885]">Queue position</span><span className="text-right font-semibold text-[#534ab7]">#{timeline.queuePosition} · {timeline.queueType}</span></div>
+                <div className="flex justify-between gap-3 py-1.5 text-xs"><span className="text-[#6b6885]">Sketching starts</span><span className="text-right font-semibold text-[#534ab7]">{formatTimelineDate(timeline.sketchingStart)}</span></div>
+                <div className="flex justify-between gap-3 py-1.5 text-xs"><span className="text-[#6b6885]">Drawing period</span><span className="text-right font-semibold text-[#534ab7]">{timeline.drawingDays} days</span></div>
+                <div className="flex justify-between gap-3 py-1.5 text-xs"><span className="text-[#6b6885]">Revision period</span><span className="text-right font-semibold text-[#534ab7]">{timeline.revisionDays} days</span></div>
+                {timeline.frameDays > 0 && <div className="flex justify-between gap-3 py-1.5 text-xs"><span className="text-[#6b6885]">Premium framing</span><span className="text-right font-semibold text-[#534ab7]">{timeline.frameDays} day</span></div>}
+                {timeline.toleranceDays > 0 && <div className="flex justify-between gap-3 py-1.5 text-xs"><span className="text-[#6b6885]">Schedule tolerance</span><span className="text-right font-semibold text-[#534ab7]">{timeline.toleranceDays} days</span></div>}
+                <div className="flex justify-between gap-3 py-1.5 text-xs"><span className="text-[#6b6885]">Estimated completion</span><span className="text-right font-semibold text-[#534ab7]">{formatTimelineDate(timeline.estimatedCompletion)}</span></div>
+                <div className="flex justify-between gap-3 py-1.5 text-xs"><span className="text-[#6b6885]">Delivery estimate</span><span className="max-w-[180px] text-right font-semibold text-[#534ab7]">{timeline.deliveryEstimate}</span></div>
+              </div>
+            )}
           </section>
 
          

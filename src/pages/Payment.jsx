@@ -4,7 +4,6 @@ import Stepper from '../components/Stepper';
 
 // 💡 1. Notification function එක Import කරගන්න (path එක exact location එකට අනුව)
 import { showNotification } from './notifications';
-import Icon from '../components/Icon';
 import CommissionHeader from '../components/CommissionHeader';
 import { getCustomerToken, preparePaymentReturnSession } from '../authSession';
 import { trustCurrentNavigation } from '../router';
@@ -34,13 +33,6 @@ const DEFAULT_CUSTOMER_INFO = {
 function formatMoney(amount, code, rate) {
   const value = Math.round(amount * rate)
   return `${code} ${value.toLocaleString()}`
-}
-
-function formatTimelineDate(value) {
-  if (!value) return 'To be confirmed'
-  return new Date(`${value}T00:00:00`).toLocaleDateString('en-LK', {
-    day: 'numeric', month: 'short', year: 'numeric',
-  })
 }
 
 function submitCheckoutForm(actionUrl, fields) {
@@ -90,7 +82,6 @@ export default function Payment({
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('pending');
   const [isDownloading, setIsDownloading] = useState(false);
-  const [timeline, setTimeline] = useState(null);
   const [successMessage, setSuccessMessage] = useState('Your deposit has been received.');
   const [customerInfo, setCustomerInfo] = useState(DEFAULT_CUSTOMER_INFO);
 
@@ -117,6 +108,8 @@ export default function Payment({
           deliveryAddress: safeOrder.deliveryMethod === 'courier' ? safeOrder.deliveryAddress : null,
           urgent: safeOrder.urgent === true,
           urgentDeadline: safeOrder.urgent ? safeOrder.urgentDeadline : null,
+          scheduled: safeOrder.scheduled === true,
+          scheduledDate: safeOrder.scheduled ? safeOrder.scheduledDate : null,
           notes: safeOrder.notes || '',
         },
         customer: {
@@ -159,19 +152,6 @@ export default function Payment({
       })
       .catch(err => console.error('Failed to load prices:', err));
   }, []);
-
-  useEffect(() => {
-    api.getTimelinePreview({
-      urgent: safeOrder.urgent === true,
-      urgentDeadline: safeOrder.urgent ? safeOrder.urgentDeadline : null,
-      people: safeOrder.people,
-      deliveryMethod: safeOrder.deliveryMethod,
-    })
-      .then((data) => {
-        if (data.success) setTimeline(data.timeline);
-      })
-      .catch((err) => console.error('Failed to load estimated timeline:', err));
-  }, [safeOrder.deliveryMethod, safeOrder.people, safeOrder.urgent, safeOrder.urgentDeadline]);
 
   useEffect(() => {
     const token = getCustomerToken();
@@ -501,6 +481,12 @@ export default function Payment({
               {safeOrder.urgent && safeOrder.urgentDeadline && (
                 <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Requested by</span><span className="font-medium">{new Date(`${safeOrder.urgentDeadline}T00:00:00`).toLocaleDateString('en-LK', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
               )}
+              {safeOrder.scheduledPrice > 0 && (
+                <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px]"><span className="text-[#6b6b80]">Scheduled order</span><span className="font-medium">{displayValue(safeOrder.scheduledPrice)}</span></div>
+              )}
+              {safeOrder.scheduled && safeOrder.scheduledDate && (
+                <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px]"><span className="text-[#6b6b80]">Required date</span><span className="font-medium">{new Date(`${safeOrder.scheduledDate}T00:00:00`).toLocaleDateString('en-LK', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
+              )}
               <div className="flex justify-between items-center py-2 border-b border-black/[0.06] text-[13px] last:border-b-0"><span className="text-[#6b6b80]">Delivery</span><span className="font-medium">{safeOrder.deliveryMethod === 'pickup' ? 'Pickup' : 'Courier'}</span></div>
               {safeOrder.deliveryMethod === 'courier' && safeOrder.deliveryAddress && (
                 <div className="flex justify-between gap-4 py-2 border-b border-black/[0.06] text-[13px]"><span className="shrink-0 text-[#6b6b80]">Address</span><span className="text-right font-medium">{safeOrder.deliveryAddress}</span></div>
@@ -527,19 +513,6 @@ export default function Payment({
               <span className="text-xs font-medium text-[#534ab7]">Due now (50% deposit)</span>
               <span className="text-base font-semibold text-[#534ab7]">{displayValue(dueAmount)}</span>
             </div>
-          </div>
-
-          <div className="mb-4 rounded-[18px] border border-black/10 bg-white p-4 text-[#222] sm:p-6">
-            <div className="text-sm font-semibold text-[#1a1a2e] flex items-center gap-2 mb-3">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#7f77dd] shrink-0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              Estimated timeline
-            </div>
-            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Queue position</span><span className="text-right text-[#534ab7] font-medium">{timeline ? `#${timeline.queuePosition} · ${timeline.queueType}` : 'Loading…'}</span></div>
-            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Sketching starts</span><span className="text-right text-[#534ab7] font-medium">{timeline ? formatTimelineDate(timeline.sketchingStart) : 'Loading…'}</span></div>
-            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Drawing period</span><span className="text-right text-[#534ab7] font-medium">{timeline ? `${timeline.drawingDays} days` : 'Loading…'}</span></div>
-            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Revision period</span><span className="text-right text-[#534ab7] font-medium">{timeline ? `${timeline.revisionDays} days` : 'Loading…'}</span></div>
-            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Estimated completion</span><span className="text-right text-[#534ab7] font-medium">{timeline ? formatTimelineDate(timeline.estimatedCompletion) : 'Loading…'}</span></div>
-            <div className="flex justify-between gap-3 text-xs py-[5px]"><span className="text-[#6b6b80]">Delivery estimate</span><span className="max-w-[190px] text-right text-[#534ab7] font-medium">{timeline?.deliveryEstimate || 'Loading…'}</span></div>
           </div>
 
         </div>

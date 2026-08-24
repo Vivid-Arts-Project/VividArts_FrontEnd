@@ -28,6 +28,7 @@ const invalidateReviews = () => {
 
 // ── Orders ────────────────────────────────────────────────────────────────────
 export const getOrders    = (page = 1, limit = 50) => sharedGet(`/admin/orders?page=${page}&limit=${limit}`);
+export const getCalendarEvents = (from, to) => sharedGet(`/admin/calendar-events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`, 5_000);
 export const getOrder     = (id)        => sharedGet(`/admin/orders/${id}`, 500);
 export const updateStatus = async (id, status) => { const result = await api.patch(`/admin/orders/${id}/status`, { status }); invalidateOrders(); return result; };
 export const setLocation  = async (id, loc) => { const result = await api.patch(`/admin/orders/${id}/location`, { artistLocation: loc }); invalidateOrders(); return result; };
