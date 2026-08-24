@@ -8,6 +8,11 @@ const formatTime = (value) => value
   ? new Date(value).toLocaleString('en-LK', { dateStyle: 'medium', timeStyle: 'short' })
   : '';
 
+const cleanTitle = (title) => String(title || '')
+  .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}\u{FE0F}\u{200D}]/gu, '')
+  .replace(/\s+/g, ' ')
+  .trim();
+
 const iconForStatus = (status) => ({
   sketching: 'pencil',
   waiting_for_feedback: 'approval',
@@ -98,7 +103,7 @@ export default function CustomerNotificationsPage({ onNavigate }) {
               {visible.map(notification => (
                 <article key={notification.id} className={`flex gap-3 px-4 py-4 transition-colors sm:px-5 ${notification.isRead ? 'bg-white' : 'bg-blue-50/50'}`}>
                   <button type="button" aria-label={`Mark ${notification.title} as read`} onClick={() => markRead(notification)} className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${notification.isRead ? 'bg-va-bg text-va-text3' : 'bg-grad text-white shadow-sm'}`}><Icon name={iconForStatus(notification.status)} size={19}/></button>
-                  <button type="button" className="min-w-0 flex-1 text-left" onClick={() => markRead(notification)}><span className="flex flex-wrap items-center gap-2"><strong className="text-sm">{notification.title}</strong>{!notification.isRead && <span className="rounded-full bg-va-blue px-2 py-0.5 text-[9px] font-extrabold uppercase text-white">New</span>}</span><span className="mt-1 block text-xs leading-5 text-va-text2">{notification.message}</span><span className="mt-1.5 block text-[11px] text-va-text3">{formatTime(notification.createdAt)}{notification.orderId ? ` · Order #${String(notification.orderId).slice(0, 8)}` : ''}</span></button>
+                  <button type="button" className="min-w-0 flex-1 text-left" onClick={() => markRead(notification)}><span className="flex flex-wrap items-center gap-2"><strong className="text-sm">{cleanTitle(notification.title)}</strong>{!notification.isRead && <span className="rounded-full bg-va-blue px-2 py-0.5 text-[9px] font-extrabold uppercase text-white">New</span>}</span><span className="mt-1 block text-xs leading-5 text-va-text2">{notification.message}</span><span className="mt-1.5 block text-[11px] text-va-text3">{formatTime(notification.createdAt)}{notification.orderId ? ` · Order #${String(notification.orderId).slice(0, 8)}` : ''}</span></button>
                   <button type="button" aria-label={`Delete ${notification.title}`} title="Delete notification" onClick={() => remove(notification)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-200 bg-white text-va-danger transition hover:bg-va-danger-bg"><Icon name="trash" size={16}/></button>
                 </article>
               ))}
