@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import Icon from '../components/Icon';
+import CustomerHeader from '../components/CustomerHeader';
 import OrderTracker from './OrderTracker';
 import { startVisiblePolling } from '../utils/polling';
 import { saveBlob } from '../utils/download';
@@ -15,6 +16,7 @@ const STATUS = {
   finished: ['Approved & finished', 'Your portrait is approved and finished. Please pay any remaining balance.'],
   framed: ['Framed', 'Your portrait has been framed.'],
   done: ['Completed', 'Your order has been completed.'],
+  cancelled: ['Cancelled', 'This order was cancelled by the studio. Its payment and activity history remains available.'],
 };
 
 const FRAME_LABELS = {
@@ -50,8 +52,8 @@ function Detail({ label, value, accent = false }) {
 function DeleteOrderModal({ order, busy, onClose, onConfirm }) {
   if (!order) return null;
   return (
-    <div className="fixed inset-0 z-[500] flex items-center justify-center bg-[#05040d]/80 px-4 py-8 backdrop-blur-md" onMouseDown={event => { if (event.target === event.currentTarget && !busy) onClose(); }}>
-      <div role="dialog" aria-modal="true" aria-labelledby="delete-order-title" className="w-full max-w-md rounded-[26px] border border-red-300/20 bg-gradient-to-br from-[#21152c] via-[#141126] to-[#101b2b] p-6 shadow-[0_35px_100px_rgba(0,0,0,.65)] sm:p-7">
+    <div className="fixed inset-0 z-[1000] isolate flex items-center justify-center bg-[#05040d]/80 px-4 py-8 backdrop-blur-md" onMouseDown={event => { if (event.target === event.currentTarget && !busy) onClose(); }}>
+      <div role="dialog" aria-modal="true" aria-labelledby="delete-order-title" className="relative z-10 w-full max-w-md overflow-hidden rounded-[26px] border border-red-300/20 bg-gradient-to-br from-[#21152c] via-[#141126] to-[#101b2b] p-6 shadow-[0_35px_100px_rgba(0,0,0,.65)] sm:p-7">
         <div className="flex h-13 w-13 items-center justify-center rounded-2xl border border-red-300/20 bg-red-500/15 text-red-200">
           <Icon name="trash" size={24}/>
         </div>
@@ -59,9 +61,9 @@ function DeleteOrderModal({ order, busy, onClose, onConfirm }) {
         <p className="mt-2 text-sm leading-6 text-white/55">
           Order <strong className="text-white/85">#{order.id.slice(0, 8)}</strong> has not been paid. Deleting it will permanently remove the saved order and its uploaded reference photos.
         </p>
-        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button type="button" disabled={busy} onClick={onClose} className="rounded-xl border border-white/15 bg-white/[.06] px-5 py-3 text-sm font-bold text-white transition hover:bg-white/[.11] disabled:opacity-50">Keep order</button>
-          <button type="button" disabled={busy} onClick={onConfirm} className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-300/25 bg-red-500 px-5 py-3 text-sm font-extrabold text-white shadow-[0_10px_25px_rgba(239,68,68,.2)] transition hover:-translate-y-0.5 hover:bg-red-400 disabled:cursor-wait disabled:opacity-50"><Icon name="trash" size={17}/>{busy ? 'Deleting…' : 'Delete order'}</button>
+        <div className="mt-6 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
+          <button type="button" disabled={busy} onClick={onClose} className="order-2 inline-flex min-w-0 items-center justify-center whitespace-nowrap rounded-xl border border-white/15 bg-white/[.06] px-4 py-3 text-sm font-bold text-white transition hover:bg-white/[.11] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#a99bff] disabled:cursor-not-allowed disabled:opacity-50 sm:order-1">Keep order</button>
+          <button type="button" disabled={busy} onClick={onConfirm} className="order-1 inline-flex min-w-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-red-300/25 bg-red-500 px-4 py-3 text-sm font-extrabold text-white shadow-[0_10px_25px_rgba(239,68,68,.2)] transition hover:-translate-y-0.5 hover:bg-red-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-wait disabled:opacity-50 sm:order-2"><Icon name="trash" size={17}/>{busy ? 'Deleting…' : 'Delete order'}</button>
         </div>
       </div>
     </div>
@@ -316,6 +318,7 @@ export default function MyOrdersPage({ onNavigate }) {
       const result = await api.deleteIncompleteOrder(deleteOrder.id);
       setDeleteOrder(null);
       setNotice(result.message || 'Incomplete order deleted.');
+      window.dispatchEvent(new CustomEvent('vividarts:pending-orders', { detail: { delta: -1 } }));
       await loadOrders();
     } catch (deleteError) {
       setNotice(deleteError.message || 'Unable to delete this order.');
@@ -326,17 +329,7 @@ export default function MyOrdersPage({ onNavigate }) {
 
   return (
     <div className="min-h-screen bg-[#090816] font-sans text-white">
-      <header className="border-b border-white/10 bg-[#0d0b1f]/95 backdrop-blur-xl">
-        <div className="mx-auto flex min-h-[82px] max-w-7xl items-center justify-between gap-6 px-4 sm:px-8">
-          <button type="button" onClick={() => onNavigate('landing')} className="group inline-flex items-center rounded-xl border border-[#a99bff]/45 bg-gradient-to-r from-[#318fe2] to-[#7354d6] px-5 py-3 text-sm font-bold text-white shadow-[0_10px_28px_rgba(79,91,215,.35)] transition-all duration-300 hover:-translate-y-0.5 hover:from-[#45a3ef] hover:to-[#8868e7] hover:shadow-[0_14px_34px_rgba(111,87,230,.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b8afff] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090816]">
-            <Icon name="arrowLeft" size={18} className="mr-2 transition-transform duration-300 group-hover:-translate-x-1"/> Back to home
-          </button>
-          <div className="text-right">
-            <p className="text-[11px] font-bold uppercase tracking-[.2em] text-[#a99bff]">Customer account</p>
-            <h1 className="mt-1 text-xl font-extrabold sm:text-2xl">My Orders</h1>
-          </div>
-        </div>
-      </header>
+      <CustomerHeader onNavigate={onNavigate} active="orders"/>
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-8 sm:py-12">
         <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -397,12 +390,13 @@ export default function MyOrdersPage({ onNavigate }) {
                       <Detail label="Delivery" value={order.pickupOption === 'courier' ? 'Courier delivery' : 'Customer pickup'}/>
                       <Detail label="Order type" value={order.isUrgent ? 'Urgent order' : order.isScheduled ? 'Scheduled order' : 'Standard order'}/>
                       <Detail label="Requested date" value={order.isUrgent ? formatDate(order.urgentDeadline) : order.isScheduled ? formatDate(order.scheduledDate) : 'Not applicable'}/>
-                      <Detail label="Live queue position" value={order.queuePosition ? `#${order.queuePosition} · updates automatically` : order.workflowStatus === 'done' ? 'Completed' : order.paymentStatus === 'payment_pending' ? 'Waiting for deposit' : 'Currently in production'} accent={Boolean(order.queuePosition)}/>
+                      <Detail label="Live queue position" value={order.queuePosition ? `#${order.queuePosition} · updates automatically` : order.workflowStatus === 'done' ? 'Completed' : order.workflowStatus === 'cancelled' ? 'Cancelled' : order.paymentStatus === 'payment_pending' ? 'Waiting for deposit' : 'Currently in production'} accent={Boolean(order.queuePosition)}/>
                       {order.estimatedCompletionAt && <Detail label="Estimated completion" value={formatDate(order.estimatedCompletionAt)} accent/>}
                     </dl>
                     {order.deliveryAddress && <div className="mt-3"><Detail label="Delivery address" value={order.deliveryAddress}/></div>}
                     {order.artistLocation && <div className="mt-3"><Detail label="Pickup location" value={order.artistLocation}/></div>}
                     {order.customerNote && <div className="mt-3"><Detail label="Your instructions" value={order.customerNote}/></div>}
+                    {order.workflowStatus === 'cancelled' && <div className="mt-3"><Detail label="Cancellation reason" value={order.cancellationReason || 'Contact the studio for details.'}/></div>}
 
                     <h4 id={`payment-${order.id}`} className="mb-3 mt-6 scroll-mt-6 text-xs font-bold uppercase tracking-[.16em] text-[#aaa0f4]">Payment</h4>
                     <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -436,7 +430,7 @@ export default function MyOrdersPage({ onNavigate }) {
                       );
                     })}
                     <div className="mt-3 flex flex-wrap items-center gap-2.5">
-                      {paymentPending && (
+                      {paymentPending && order.workflowStatus !== 'cancelled' && (
                         <button type="button" disabled={resumingPayment === order.id} onClick={() => resumePayment(order)} className="inline-flex items-center gap-2 rounded-xl bg-red-500 px-5 py-2.5 text-xs font-extrabold text-white shadow-[0_10px_24px_rgba(239,68,68,.25)] transition hover:bg-red-400 disabled:opacity-50">
                           <Icon name="payments" size={16}/>{resumingPayment === order.id ? 'Opening payment…' : `Complete payment · ${formatMoney(order.payments?.[0]?.amount, order.currency)}`}
                         </button>
@@ -479,7 +473,7 @@ export default function MyOrdersPage({ onNavigate }) {
                         <p className="mt-1 text-[11px] text-white/35">Uploaded {formatDate(order.proof.uploadedAt, true)}{order.proof.reviewedAt ? ` · Reviewed ${formatDate(order.proof.reviewedAt, true)}` : ''}</p>
                         {order.proof.artistNote && <p className="mt-3 rounded-xl bg-white/[.05] px-3 py-2.5 text-xs leading-5 text-white/65">Artist note: {order.proof.artistNote}</p>}
                         {order.proof.revisionNote && <p className="mt-3 rounded-xl bg-white/[.05] px-3 py-2.5 text-xs leading-5 text-white/65">Revision request: {order.proof.revisionNote}</p>}
-                        {order.status === 'waiting_for_feedback' && <div className="mt-3 grid grid-cols-2 gap-2"><button type="button" disabled={reviewing === order.id || sendingMessage === order.id} onClick={() => reviewProof(order, 'approve')} className="rounded-xl bg-emerald-500 px-3 py-2.5 text-xs font-extrabold text-[#062b1b] disabled:opacity-50">Approve</button><button type="button" disabled={reviewing === order.id || sendingMessage === order.id} onClick={() => reviewProof(order, 'revision')} className={`rounded-xl border px-3 py-2.5 text-xs font-bold disabled:opacity-50 ${revisionOrderId === order.id ? 'border-[#9b8df3]/60 bg-[#7868d8]/25 text-[#ddd8ff]' : 'border-white/15 bg-white/[.06]'}`}>Request changes</button></div>}
+                        {order.status === 'waiting_for_feedback' && <><div className={`mt-3 grid gap-2 ${order.proof.revisionRequestsRemaining > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}><button type="button" disabled={reviewing === order.id || sendingMessage === order.id} onClick={() => reviewProof(order, 'approve')} className="rounded-xl bg-emerald-500 px-3 py-2.5 text-xs font-extrabold text-[#062b1b] disabled:opacity-50">Approve</button>{order.proof.revisionRequestsRemaining > 0 && <button type="button" disabled={reviewing === order.id || sendingMessage === order.id} onClick={() => reviewProof(order, 'revision')} className={`rounded-xl border px-3 py-2.5 text-xs font-bold disabled:opacity-50 ${revisionOrderId === order.id ? 'border-[#9b8df3]/60 bg-[#7868d8]/25 text-[#ddd8ff]' : 'border-white/15 bg-white/[.06]'}`}>Request changes</button>}</div><p className="mt-2 text-[10px] leading-4 text-white/35">{order.proof.revisionRequestsRemaining > 0 ? `${order.proof.revisionRequestsRemaining} of 2 included revision requests remaining` : 'Both included revision requests have been used. Contact the studio if more changes are needed.'}</p></>}
                       </div>
                     ) : <p className="mt-3 rounded-xl border border-dashed border-white/10 px-4 py-5 text-center text-xs leading-5 text-white/40">No proof has been uploaded yet.</p>}
 
@@ -499,7 +493,7 @@ export default function MyOrdersPage({ onNavigate }) {
                         );
                       }) : <p className="m-auto text-xs text-white/35">No messages for this order yet.</p>}
                     </div>
-                    <div id={`revision-box-${order.id}`} className="mt-3 border-t border-white/[.08] pt-3 scroll-mt-6">
+                    {order.workflowStatus !== 'cancelled' && <div id={`revision-box-${order.id}`} className="mt-3 border-t border-white/[.08] pt-3 scroll-mt-6">
                       {revisionOrderId === order.id && (
                         <div className="mb-2 flex items-start justify-between gap-2 rounded-xl border border-[#9b8df3]/25 bg-[#7868d8]/15 px-3 py-2 text-[11px] leading-4 text-[#d8d2ff]">
                           <span>Describe the proof changes you need. Submitting will notify the artist and mark the proof for revision.</span>
@@ -509,6 +503,7 @@ export default function MyOrdersPage({ onNavigate }) {
                       <textarea
                         id={`revision-input-${order.id}`}
                         rows={3}
+                        maxLength={revisionOrderId === order.id ? 1000 : 2000}
                         value={messageDrafts[order.id] || ''}
                         onChange={event => setMessageDrafts(drafts => ({ ...drafts, [order.id]: event.target.value }))}
                         onKeyDown={event => {
@@ -528,13 +523,13 @@ export default function MyOrdersPage({ onNavigate }) {
                       >
                         {sendingMessage === order.id ? 'Sending…' : revisionOrderId === order.id ? 'Submit change request' : 'Send message'}
                       </button>
-                    </div>
+                    </div>}
                     </>}
                   </aside>
                 </div>
                 <div className="flex flex-col gap-3 border-t border-white/[.07] px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-7">
                   <div className="flex flex-wrap gap-x-6 gap-y-1 text-[11px] text-white/35"><span>Last updated {formatDate(order.updatedAt, true)}</span>{order.approvedAt && <span>Approved {formatDate(order.approvedAt, true)}</span>}{order.completedAt && <span>Completed {formatDate(order.completedAt, true)}</span>}</div>
-                  {paymentPending && <button type="button" onClick={() => setDeleteOrder(order)} className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-lg border border-red-400/25 bg-red-500/10 px-3 py-2 text-[11px] font-bold text-red-200 transition hover:border-red-300/45 hover:bg-red-500/20 sm:self-auto"><Icon name="trash" size={14}/> Delete incomplete order</button>}
+                  {paymentPending && order.workflowStatus !== 'cancelled' && <button type="button" onClick={() => setDeleteOrder(order)} className="inline-flex shrink-0 items-center justify-center gap-2 self-start rounded-lg border border-red-400/25 bg-red-500/10 px-3 py-2 text-[11px] font-bold text-red-200 transition hover:border-red-300/45 hover:bg-red-500/20 sm:self-auto"><Icon name="trash" size={14}/> Delete incomplete order</button>}
                 </div>
               </article>
             );

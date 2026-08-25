@@ -13,8 +13,8 @@ const fetchAPI = async (url, options = {}) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || `HTTP error! status: ${response.status}`);
+      const error = await response.json().catch(() => null);
+      throw new Error(error?.error || error?.message || `HTTP error! status: ${response.status}`);
     }
 
     return await response.json();
@@ -35,14 +35,6 @@ export const api = {
     });
   },
 
-  // Create PayHere checkout payload
-  createPayhereCheckout: async (data) => {
-    return fetchAPI(`${API_URL}/payments/create-payhere-checkout`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
   uploadReferencePhotos: async (commissionId, files) => {
     const formData = new FormData();
     files.forEach((file) => formData.append('referencePhotos', file));
@@ -56,14 +48,6 @@ export const api = {
       throw new Error(error?.error || `Reference photo upload failed (${response.status})`);
     }
     return response.json();
-  },
-
-  // Process payment
-  processPayment: async (data) => {
-    return fetchAPI(`${API_URL}/payments/process`, {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
   },
 
   // Get payment status

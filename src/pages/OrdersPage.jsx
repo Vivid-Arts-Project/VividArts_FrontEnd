@@ -5,7 +5,7 @@ import { STATUS_ACTION_LABELS, STATUS_MAP } from '../components/statusConfig';
 import { getOrders, updateStatus, sendMessage, setLocation, uploadProof, referencePhotoDownloadUrl } from '../api/adminApi';
 import { useNavigate } from '../router';
 
-const STAGE_ORDER = ['in_queue','sketching','waiting_for_feedback','approved','framed','done'];
+const STAGE_ORDER = ['in_queue','sketching','waiting_for_feedback','approved','framed','shipped','done'];
 const BASE_STAGES = [
   { key: 'in_queue',             label: 'Queued'          },
   { key: 'sketching',            label: 'Sketching'       },
@@ -44,10 +44,12 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
   }, [proofPreviewUrl]);
 
   const effectiveStatus = order.status === 'finished' ? 'approved' : order.status;
+  const canUploadProof = ['sketching', 'revision_requested'].includes(order.status);
   const curIdx = STAGE_ORDER.indexOf(effectiveStatus);
   const stages = [
     ...BASE_STAGES,
     ...(order.frameType && order.frameType !== 'without_frame' ? [{ key: 'framed', label: 'Framed' }] : []),
+    ...(order.pickupOption === 'courier' ? [{ key: 'shipped', label: 'Shipped' }] : []),
     { key: 'done', label: 'Done' },
   ];
   const statusOptions = (order.allowedTransitions || [effectiveStatus])
@@ -231,9 +233,9 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
               </div>
             </>
           ) : <div className="mb-3 text-xs text-va-text3">No proof has been uploaded for this order yet.</div>}
-          <div className="rounded-lg border border-blue-200 bg-va-info-bg px-3 py-2.5 text-xs text-va-info">Uploading sends the proof to the customer and changes the order to waiting for feedback.</div>
-          <label className="mt-3 block cursor-pointer overflow-hidden rounded-lg border-[1.5px] border-dashed border-va-border2 bg-va-bg text-center transition-all hover:border-va-blue hover:bg-va-info-bg">
-            <input type="file" accept="image/jpeg,image/png" className="hidden" disabled={uploadingProof} onChange={handleProofFileChange}/>
+          <div className="rounded-lg border border-blue-200 bg-va-info-bg px-3 py-2.5 text-xs text-va-info">{canUploadProof ? 'Uploading sends the proof to the customer and changes the order to waiting for feedback.' : 'Proof upload becomes available while sketching or after a customer revision request.'}</div>
+          {canUploadProof && <label className="mt-3 block cursor-pointer overflow-hidden rounded-lg border-[1.5px] border-dashed border-va-border2 bg-va-bg text-center transition-all hover:border-va-blue hover:bg-va-info-bg">
+            <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingProof} onChange={handleProofFileChange}/>
             {proofPreviewUrl ? (
               <>
                 <div className="flex h-[clamp(280px,48vw,560px)] w-full items-center justify-center bg-white p-3">
@@ -248,11 +250,11 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
               <div className="px-3.5 py-5">
                 <Icon name="upload" size={26} className="mx-auto mb-1.5 text-va-purple"/>
                 <div className="text-xs font-semibold text-va-text">{order.proofImagePath ? 'Choose a replacement proof' : 'Choose proof image'}</div>
-                <div className="mt-1 text-[11px] text-va-text3">JPG or PNG · Max 10 MB</div>
+                <div className="mt-1 text-[11px] text-va-text3">JPG, PNG or WebP · Max 10 MB</div>
               </div>
             )}
-          </label>
-          {proofFile && <button className={`${BTN_BASE} ${BTN_FILL} mt-2 w-full py-[9px] text-[13px]`} disabled={uploadingProof} onClick={handleProofUpload}>{uploadingProof ? 'Uploading…' : 'Upload and send proof'}</button>}
+          </label>}
+          {canUploadProof && proofFile && <button className={`${BTN_BASE} ${BTN_FILL} mt-2 w-full py-[9px] text-[13px]`} disabled={uploadingProof} onClick={handleProofUpload}>{uploadingProof ? 'Uploading…' : 'Upload and send proof'}</button>}
         </div>
 
         {/* Update Status */}
@@ -342,6 +344,7 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
               className="flex-1 mb-0 px-2.5 py-2 text-xs border border-va-border rounded-lg font-sans text-va-text bg-va-bg outline-none transition-colors focus:border-va-blue focus:bg-white"
               placeholder="Message to customer…"
               value={chatMsg}
+              maxLength={2000}
               onChange={e => setChatMsg(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
             />
@@ -351,9 +354,9 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
 
         {/* Cancel */}
         <div className="pb-0 border-b-0">
-          <button type="button" className={`${BTN_BASE} ${BTN_DANGER} w-full py-[9px] text-[13px]`} onClick={onCancel}>
+          {onCancel && <button type="button" className={`${BTN_BASE} ${BTN_DANGER} w-full py-[9px] text-[13px]`} onClick={onCancel}>
             Cancel order
-          </button>
+          </button>}
         </div>
       </div>
     </div>
@@ -385,8 +388,9 @@ export default function OrdersPage({ search, onToast }) {
   const filtered = orders.filter(o => {
     const matchSearch = !search || [o.id, o.customer?.fullName, o.customer?.email].join(' ').toLowerCase().includes(search.toLowerCase());
     const matchFilter =
-      filter === 'active' ? o.status !== 'done' :
+      filter === 'active' ? !['done', 'cancelled'].includes(o.status) :
       filter === 'completed' ? o.status === 'done' :
+      filter === 'cancelled' ? o.status === 'cancelled' :
       filter === 'sketch' ? o.status === 'sketching' :
       filter === 'proof'  ? o.status === 'waiting_for_feedback' :
       filter === 'revision' ? o.status === 'revision_requested' :
@@ -434,19 +438,20 @@ export default function OrdersPage({ search, onToast }) {
 
         {/* Table */}
         <div className="bg-white border border-va-border rounded-va shadow-va overflow-hidden">
-          <div className="px-5 py-4 border-b border-va-border flex items-center justify-between">
-            <div className="font-outfit text-sm font-bold text-va-text">{filter === 'completed' ? 'Completed Orders' : 'Active Production Queue'}</div>
-            <div className="flex gap-1.5 flex-wrap">
-              {[['active','Active'],['sketch','Sketching'],['proof','Proof Sent'],['revision','Revision'],['approved','Approved'],['completed','Done']].map(([f, l]) => (
-                <div
+          <div className="flex flex-col gap-3 border-b border-va-border px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
+            <div className="font-outfit text-sm font-bold text-va-text">{filter === 'completed' ? 'Completed Orders' : filter === 'cancelled' ? 'Cancelled Orders' : 'Active Production Queue'}</div>
+            <div className="flex gap-1.5 overflow-x-auto pb-1 sm:flex-wrap sm:pb-0 custom-scrollbar">
+              {[['active','Active'],['sketch','Sketching'],['proof','Proof Sent'],['revision','Revision'],['approved','Approved'],['completed','Done'],['cancelled','Cancelled']].map(([f, l]) => (
+                <button
+                  type="button"
                   key={f}
-                  className={`text-xs font-semibold px-3 py-[5px] rounded-full border cursor-pointer transition-all ${filter === f ? 'border-va-blue bg-va-info-bg text-va-blue' : 'border-va-border bg-white text-va-text3 hover:border-va-border2 hover:text-va-text'}`}
+                  className={`text-xs font-semibold px-3 py-[5px] rounded-full border cursor-pointer whitespace-nowrap transition-all ${filter === f ? 'border-va-blue bg-va-info-bg text-va-blue font-bold' : 'border-va-border bg-white text-va-text3 hover:border-va-border2 hover:text-va-text'}`}
                   onClick={() => setFilter(f)}
-                >{l}</div>
+                >{l}</button>
               ))}
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto custom-scrollbar">
             {loading ? (
               <div className="text-center py-10 text-va-text3">Loading orders…</div>
             ) : (

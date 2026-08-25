@@ -16,7 +16,9 @@ const timeAgo = (value) => {
 };
 
 const cleanTitle = (title) => String(title || '')
-  .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}\u{FE0F}\u{200D}]/gu, '')
+  .replace(/\p{Extended_Pictographic}/gu, '')
+  .replaceAll('\uFE0F', '')
+  .replaceAll('\u200D', '')
   .replace(/\s+/g, ' ')
   .trim();
 

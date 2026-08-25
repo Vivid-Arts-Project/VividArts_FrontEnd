@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
 import Icon from '../components/Icon';
+import CustomerHeader from '../components/CustomerHeader';
 import { saveBlob } from '../utils/download';
 
 export default function InvoicePage({ orderId, onNavigate }) {
@@ -41,8 +42,9 @@ export default function InvoicePage({ orderId, onNavigate }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#090816] px-4 py-8 text-white sm:px-8">
-      <main className="mx-auto max-w-5xl">
+    <div className="min-h-screen bg-[#090816] text-white">
+      <CustomerHeader onNavigate={onNavigate} active="orders"/>
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[.18em] text-[#a99bff]">Payment completed</p>

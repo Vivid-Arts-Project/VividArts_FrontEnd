@@ -55,12 +55,12 @@ export default function UploadPhotoPage({ onNext, onBack = () => {}, initialPhot
 
   return (
     <div className="soft-navy-violet-bg min-h-screen pb-16 font-sans text-white">
-      <div className="mx-auto max-w-[980px] px-[18px] py-7">
+      <div className="mx-auto max-w-[1020px] px-3.5 py-6 sm:px-6 sm:py-8">
         <CommissionHeader onBack={onBack} onHome={onBack} />
         <Stepper current={1} />
 
       <main>
-        <div className="rounded-[18px] bg-white p-7 text-[#1b1830] shadow-xl">
+        <div className="rounded-[18px] bg-white p-5 text-[#1b1830] shadow-xl sm:p-7">
           <h2 className="text-xl font-bold">Reference Photo</h2>
           <p className="mt-1 text-sm text-[#6b6885]">
             Upload a clear, high-res photo for best results

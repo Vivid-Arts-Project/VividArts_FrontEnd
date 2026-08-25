@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
-import BrandLogo from '../components/BrandLogo';
+import CustomerHeader from '../components/CustomerHeader';
 import Icon from '../components/Icon';
 
 export default function CustomerReviewsPage({ onNavigate = () => {} }) {
@@ -31,15 +31,7 @@ export default function CustomerReviewsPage({ onNavigate = () => {} }) {
 
   return (
     <div className="min-h-screen bg-[#090816] font-sans text-white">
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0d0b1f]/90 px-4 py-3 backdrop-blur-xl sm:px-8">
-        <div className="mx-auto flex min-h-[66px] max-w-7xl items-center justify-between gap-4">
-          <button type="button" onClick={() => onNavigate('landing')} className="group flex min-w-0 items-center gap-3 text-left">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-[#b9afff]/30 bg-white shadow-[0_8px_24px_rgba(93,78,210,.28)] transition group-hover:-translate-y-0.5"><BrandLogo size={43}/></span>
-            <span className="hidden sm:block"><strong className="block text-sm tracking-[.12em]">VIVID ARTS</strong><span className="mt-1 block text-[9px] uppercase tracking-[.22em] text-white/40">Customer stories</span></span>
-          </button>
-          <button type="button" onClick={() => onNavigate('landing')} className="group inline-flex items-center rounded-xl border border-[#a99bff]/45 bg-gradient-to-r from-[#318fe2] to-[#7354d6] px-5 py-3 text-sm font-bold text-white shadow-[0_10px_28px_rgba(79,91,215,.35)] transition-all duration-300 hover:-translate-y-0.5 hover:from-[#45a3ef] hover:to-[#8868e7] hover:shadow-[0_14px_34px_rgba(111,87,230,.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b8afff] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090816]"><Icon name="arrowLeft" size={18} className="mr-2 transition-transform duration-300 group-hover:-translate-x-1"/> Back to home</button>
-        </div>
-      </header>
+      <CustomerHeader onNavigate={onNavigate} active="reviews"/>
 
       <main>
         <section className="relative overflow-hidden border-b border-white/10 px-4 py-8 sm:px-6 sm:py-10">

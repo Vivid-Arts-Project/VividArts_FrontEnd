@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import NotificationBell from './NotificationBell';
 import Icon from '../components/Icon';
 import BrandLogo from '../components/BrandLogo';
-import { clearCustomerSession, CUSTOMER_AUTH_EVENT, getCustomerToken } from '../authSession';
+import CustomerHeader from '../components/CustomerHeader';
+import { CUSTOMER_AUTH_EVENT, getCustomerToken } from '../authSession';
 import { clearCommissionDraft } from '../commissionDraft';
-import { api } from '../api';
 
 const stats = [
   { value: "200+", label: "Portraits delivered" },
@@ -57,9 +56,6 @@ export default function LandingPage({ onNavigate = () => {} }) {
   const [studioContact, setStudioContact] = useState(null);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(Boolean(getCustomerToken()));
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeNav, setActiveNav] = useState('home');
-  const [pendingOrderCount, setPendingOrderCount] = useState(0);
 
   useEffect(() => {
     clearCommissionDraft();
@@ -79,7 +75,6 @@ export default function LandingPage({ onNavigate = () => {} }) {
     const syncAuthentication = () => {
       const signedIn = Boolean(getCustomerToken());
       setIsSignedIn(signedIn);
-      if (!signedIn) setPendingOrderCount(0);
     };
     window.addEventListener(CUSTOMER_AUTH_EVENT, syncAuthentication);
 
@@ -87,22 +82,6 @@ export default function LandingPage({ onNavigate = () => {} }) {
       window.removeEventListener(CUSTOMER_AUTH_EVENT, syncAuthentication);
     };
   }, []);
-
-  useEffect(() => {
-    if (!isSignedIn) return undefined;
-    let active = true;
-    const loadPendingOrders = () => api.getMyOrders()
-      .then(orders => {
-        if (active) setPendingOrderCount(orders.filter(order => order.paymentStatus === 'payment_pending').length);
-      })
-      .catch(() => {});
-    loadPendingOrders();
-    window.addEventListener('vividarts:pending-orders', loadPendingOrders);
-    return () => {
-      active = false;
-      window.removeEventListener('vividarts:pending-orders', loadPendingOrders);
-    };
-  }, [isSignedIn]);
 
   useEffect(() => {
     const revealItems = Array.from(document.querySelectorAll('[data-home-reveal]'));
@@ -125,105 +104,14 @@ export default function LandingPage({ onNavigate = () => {} }) {
     return () => observer.disconnect();
   }, []);
 
-  const handleLogout = () => {
-    clearCustomerSession();
-    setIsSignedIn(false);
-    setPendingOrderCount(0);
-    setMobileMenuOpen(false);
-    // Optionally navigate to landing/home
-    onNavigate('landing');
-  };
-
   const handleAuthNavigation = (page) => {
     setShowAuthPrompt(false);
     onNavigate(page);
   };
 
-  const navItemClass = (key) => `inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/10 hover:text-white ${activeNav === key ? 'bg-white/10 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,.04)]' : 'text-[#aaa7bd]'}`;
-
   return (
     <div id="home" className="landing-page min-h-screen font-sans text-[#f5f4fb]">
-      <header className="sticky top-0 z-50 px-3 pt-3 sm:px-6 sm:pt-5">
-        <div className="mx-auto flex min-h-[68px] max-w-[1440px] items-center gap-4 rounded-[32px] border border-white/[.13] bg-[#151326]/70 px-3 py-2.5 shadow-[0_20px_45px_rgba(0,0,0,.38)] backdrop-blur-[20px] sm:px-5 lg:px-6">
-          <a href="#home" className="group flex shrink-0 items-center gap-3" aria-label="Vivid Arts home">
-            <span className="flex h-13 w-14 items-center justify-center rounded-2xl border border-[#b9afff]/30 bg-white shadow-[0_10px_28px_rgba(93,78,210,0.3)] transition duration-300 group-hover:-translate-y-0.5 group-hover:shadow-[0_14px_34px_rgba(111,87,230,0.4)]">
-              <BrandLogo size={48} />
-            </span>
-            <span className="hidden sm:block">
-              <span className="block text-[17px] font-black tracking-[0.12em] text-white">VIVID ARTS</span>
-              <span className="mt-1 block text-[9px] font-semibold uppercase tracking-[0.26em] text-[#aaa3c9]">Pencil portraits</span>
-            </span>
-          </a>
-          <nav className="hidden flex-1 items-center justify-center gap-1 px-4 xl:flex">
-            <a className={navItemClass('home')} href="#home" onClick={() => setActiveNav('home')}>
-              <Icon name="home" size={15} className={activeNav === 'home' ? 'text-[#a99bff]' : 'opacity-65'}/> Home
-            </a>
-            <a className={navItemClass('about')} href="#about" onClick={() => setActiveNav('about')}>
-              <Icon name="info" size={15} className={activeNav === 'about' ? 'text-[#a99bff]' : 'opacity-65'}/> About
-            </a>
-            <a className={navItemClass('process')} href="#how-it-works" onClick={() => setActiveNav('process')}>
-              <Icon name="orders" size={15} className={activeNav === 'process' ? 'text-[#a99bff]' : 'opacity-65'}/> How It Works
-            </a>
-            <button className={navItemClass('gallery')} onClick={() => { setActiveNav('gallery'); onNavigate('gallery'); }}>
-              <Icon name="proofs" size={15} className={activeNav === 'gallery' ? 'text-[#a99bff]' : 'opacity-65'}/> Gallery
-            </button>
-            <button className={navItemClass('reviews')} onClick={() => { setActiveNav('reviews'); onNavigate('reviews'); }}>
-              <Icon name="rating" size={15} className={activeNav === 'reviews' ? 'text-[#a99bff]' : 'opacity-65'}/> Reviews
-            </button>
-          </nav>
-
-          <div className="ml-auto flex shrink-0 items-center gap-2 md:gap-3">
-            <div className="hidden items-center gap-3 md:flex">
-              {!isSignedIn ? (
-                <button
-                  className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-5 py-2.5 text-sm font-bold text-white shadow-[0_5px_18px_rgba(126,87,225,.38)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(126,87,225,.48)] focus:outline-none focus:ring-2 focus:ring-[#a78bfa]"
-                  onClick={() => onNavigate('login')}
-                >
-                  Sign In
-                </button>
-              ) : (
-                <>
-                  <button className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-[#c9c5d8] transition duration-300 hover:-translate-y-0.5 hover:bg-white/10 hover:text-white" onClick={() => onNavigate('profile')}><Icon name="user" size={15}/>My Account</button>
-                  <button className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-[#aaa7bd] transition duration-300 hover:-translate-y-0.5 hover:bg-white/10 hover:text-white" onClick={handleLogout}><Icon name="power" size={15}/>Logout</button>
-                  <button className="relative inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-5 py-2.5 text-sm font-bold text-white shadow-[0_5px_18px_rgba(126,87,225,.38)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(126,87,225,.48)] focus:outline-none focus:ring-2 focus:ring-[#a78bfa]" onClick={() => onNavigate('orders')}><Icon name="orders" size={15}/>My Orders{pendingOrderCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#151326] bg-red-500 px-1 text-[10px] font-black text-white" aria-label={`${pendingOrderCount} incomplete orders`}>{pendingOrderCount}</span>}</button>
-                </>
-              )}
-            </div>
-            <NotificationBell />
-            <button
-              type="button"
-              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={mobileMenuOpen}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/[.07] text-white transition hover:border-[#a78bfa]/50 hover:bg-white/10 md:hidden"
-              onClick={() => setMobileMenuOpen(open => !open)}
-            >
-              <Icon name={mobileMenuOpen ? 'close' : 'menu'} size={21}/>
-            </button>
-          </div>
-        </div>
-        {mobileMenuOpen && (
-          <div className="mx-auto mt-2 max-w-[1440px] rounded-[24px] border border-white/[.13] bg-[#151326]/90 px-4 pb-5 pt-4 shadow-[0_20px_45px_rgba(0,0,0,.38)] backdrop-blur-[20px] md:hidden">
-            <nav className="grid grid-cols-2 gap-2 text-sm font-semibold text-[#d4d0e5]">
-              {[['Home', '#home', 'home', 'home'], ['About', '#about', 'info', 'about'], ['How It Works', '#how-it-works', 'orders', 'process'], ['Reviews', '#reviews', 'rating', 'reviews'], ['Gallery', '#gallery', 'proofs', 'gallery']].map(([label, href, icon, key]) => (
-                href === '#gallery' || href === '#reviews'
-                  ? <button key={href} className={`flex items-center justify-center gap-2 rounded-full border px-4 py-3 text-center transition ${activeNav === key ? 'border-white/15 bg-white/10 text-white' : 'border-white/[.08] bg-white/[.04] text-[#c5c1d2]'}`} onClick={() => { setActiveNav(key); setMobileMenuOpen(false); onNavigate(key); }}><Icon name={icon} size={15} className="text-[#a99bff]"/>{label}</button>
-                  : <a key={href} href={href} className={`flex items-center justify-center gap-2 rounded-full border px-4 py-3 text-center transition ${activeNav === key ? 'border-white/15 bg-white/10 text-white' : 'border-white/[.08] bg-white/[.04] text-[#c5c1d2]'}`} onClick={() => { setActiveNav(key); setMobileMenuOpen(false); }}><Icon name={icon} size={15} className="text-[#a99bff]"/>{label}</a>
-              ))}
-            </nav>
-            <div className="mt-3 grid gap-2">
-              {!isSignedIn ? (
-                <button className="rounded-full bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-4 py-3 text-sm font-bold shadow-[0_5px_18px_rgba(126,87,225,.35)]" onClick={() => { setMobileMenuOpen(false); onNavigate('login'); }}>Sign In</button>
-              ) : (
-                <div className="grid grid-cols-3 gap-2">
-                  <button className="rounded-xl border border-white/15 bg-white/[.07] px-4 py-3 text-sm font-bold" onClick={() => { setMobileMenuOpen(false); onNavigate('profile'); }}>My Account</button>
-                  <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[.07] px-4 py-3 text-sm font-bold" onClick={handleLogout}><Icon name="power" size={16}/>Logout</button>
-                  <button className="relative rounded-xl bg-gradient-to-r from-[#6366f1] to-[#9258e8] px-4 py-3 text-sm font-extrabold text-white" onClick={() => { setMobileMenuOpen(false); onNavigate('orders'); }}>My Orders{pendingOrderCount > 0 && <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#151326] bg-red-500 px-1 text-[10px] font-black text-white">{pendingOrderCount}</span>}</button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </header>
+      <CustomerHeader onNavigate={onNavigate} active="home"/>
 
       <main className="flex flex-col">
         <section className="order-1 mx-auto grid w-full max-w-7xl gap-12 px-6 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-8 lg:py-20">
