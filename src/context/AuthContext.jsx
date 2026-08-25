@@ -10,20 +10,25 @@ import { showNotification } from '../pages/notifications';
 // Any component can call useAuth() to get { admin, loading, login, logout }.
 
 export function AuthProvider({ children }) {
+  const shouldRestoreProtectedAdminRoute = window.location.pathname.startsWith('/admin')
+    && !['/admin/login', '/admin/register', '/admin/request-status'].includes(window.location.pathname);
   const [admin, setAdmin]     = useState(null);   // null = not logged in
-  const [loading, setLoading] = useState(hasAdminSession); // true while restoring this tab's session
+  const [loading, setLoading] = useState(() => hasAdminSession() || shouldRestoreProtectedAdminRoute);
 
   useEffect(() => {
-    if (!hasAdminSession()) return;
+    if (!hasAdminSession() && !shouldRestoreProtectedAdminRoute) return;
 
     api.get('/admin/me')
-      .then((res) => setAdmin(res.data))
+      .then((res) => {
+        startAdminSession();
+        setAdmin(res.data);
+      })
       .catch(() => {
         clearAdminSession();
         setAdmin(null);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [shouldRestoreProtectedAdminRoute]);
 
   const login = async (username, password) => {
     const res = await api.post('/admin/login', { username, password });

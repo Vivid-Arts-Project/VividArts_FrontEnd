@@ -10,7 +10,7 @@ import MyOrdersPage from './pages/MyOrdersPage';
 import InvoicePage from './pages/InvoicePage';
 import CustomerNotificationsPage from './pages/CustomerNotificationsPage';
 import CustomerReviewsPage from './pages/CustomerReviewsPage';
-import { isTrustedNavigation, useLocation, useNavigate } from './router';
+import { useLocation, useNavigate } from './router';
 import { Redirect } from './RouterComponents';
 import { clearCustomerSession, CUSTOMER_AUTH_EVENT, hasCustomerSession, useIdleTimeout } from './authSession';
 import { showNotification } from './pages/notifications';
@@ -37,9 +37,6 @@ function CustomerApp() {
   const path = useLocation().split(/[?#]/, 1)[0];
   const [isSignedIn, setIsSignedIn] = useState(hasCustomerSession);
   const navigateTo = (target = 'landing') => navigate(PATHS[target] ?? '/');
-  const isPaymentReturn = path === '/commission/payment'
-    && new URLSearchParams(window.location.search).has('payment')
-    && new URLSearchParams(window.location.search).has('order_id');
 
   const handleIdleLogout = useCallback(() => {
     clearCustomerSession();
@@ -62,30 +59,27 @@ function CustomerApp() {
 
   if (path.startsWith('/commission')) {
     if (!isSignedIn) return <Redirect to="/" replace />;
-    if (!isTrustedNavigation() && !isPaymentReturn) return <Redirect to="/" replace />;
     return <CommissionFlow onBack={() => navigateTo('landing')} onNavigate={navigateTo} />;
   }
   if (path === '/login') return <LoginPage onNavigate={navigateTo} />;
   if (path === '/forgot-password') return <ForgotPasswordPage onNavigate={navigateTo} />;
-  if (path === '/register') return isTrustedNavigation()
-    ? <RegisterPage onNavigate={navigateTo} />
-    : <Redirect to="/login" replace />;
+  if (path === '/register') return <RegisterPage onNavigate={navigateTo} />;
   if (path === '/profile') {
-    if (!isSignedIn || !isTrustedNavigation()) return <Redirect to="/" replace />;
+    if (!isSignedIn) return <Redirect to="/" replace />;
     return <ProfilePage onNavigate={navigateTo} />;
   }
   if (path === '/my-orders') {
-    if (!isSignedIn || !isTrustedNavigation()) return <Redirect to="/" replace />;
+    if (!isSignedIn) return <Redirect to="/" replace />;
     return <MyOrdersPage onNavigate={navigateTo} />;
   }
   if (path.startsWith('/invoice/')) {
-    if (!isSignedIn || !isTrustedNavigation()) return <Redirect to="/" replace />;
+    if (!isSignedIn) return <Redirect to="/" replace />;
     const orderId = decodeURIComponent(path.slice('/invoice/'.length));
     if (!orderId) return <Redirect to="/my-orders" replace />;
     return <InvoicePage orderId={orderId} onNavigate={navigateTo} />;
   }
   if (path === '/notifications') {
-    if (!isSignedIn || !isTrustedNavigation()) return <Redirect to="/" replace />;
+    if (!isSignedIn) return <Redirect to="/" replace />;
     return <CustomerNotificationsPage onNavigate={navigateTo} />;
   }
   if (path === '/') return <LandingPage onNavigate={navigateTo} />;

@@ -127,7 +127,7 @@ export function DashboardPage({ onNav }) {
   }, [calendarOpen]);
 
   const counts = {
-    active:   orders.filter(o => o.status !== 'done').length,
+    active:   orders.filter(o => !['done', 'cancelled'].includes(o.status)).length,
     sketch:   orders.filter(o => o.status === 'sketching').length,
     proof:    orders.filter(o => o.status === 'waiting_for_feedback').length,
     shading:  orders.filter(o => o.status === 'shading').length,
@@ -139,7 +139,7 @@ export function DashboardPage({ onNav }) {
   tomorrowEnd.setHours(23, 59, 59, 999);
   const actionOrders = orders
     .filter(order => {
-      if (order.status === 'done') return false;
+      if (['done', 'cancelled'].includes(order.status)) return false;
       const urgentDeadline = order.isUrgent && order.urgentDeadline ? new Date(`${order.urgentDeadline}T23:59:59`) : null;
       return (urgentDeadline && urgentDeadline <= tomorrowEnd) || ['waiting_for_feedback','revision_requested','approved','finished'].includes(order.status);
     })
@@ -151,7 +151,7 @@ export function DashboardPage({ onNav }) {
 
   return (
     <div className="flex-1 px-3 py-4 sm:px-6 sm:py-[22px]">
-      <div className="grid grid-cols-4 gap-3.5 mb-4">
+      <div className="grid grid-cols-1 gap-3.5 mb-4 sm:grid-cols-2 xl:grid-cols-4">
         <div className="bg-grad border border-transparent rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
           <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center text-white mb-3"><Icon name="orders"/></div>
           <div className="font-outfit text-[28px] font-extrabold text-white">{counts.active}</div>
@@ -198,7 +198,7 @@ export function DashboardPage({ onNav }) {
         </div>
       </div>
 
-      <div className="flex gap-3.5 mb-4">
+      <div className="flex flex-col lg:flex-row gap-3.5 mb-4">
         <div className="flex-1 min-w-0">
           <div className={CARD}>
             <div className={CARD_HEAD}>
@@ -213,7 +213,7 @@ export function DashboardPage({ onNav }) {
             </div>
           </div>
         </div>
-        <div className="flex-1 min-w-0 max-w-[300px]">
+        <div className="w-full lg:max-w-[300px]">
           <div className={CARD}>
             <div className={CARD_HEAD}><div className={CARD_TITLE}>Quick Stats</div><span className="rounded-full bg-va-bg2 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-va-text3">All time</span></div>
             <div className={CARD_BODY}>
@@ -271,7 +271,7 @@ export function ProofsPage({ onToast }) {
       <div className="rounded-lg px-3.5 py-2.5 text-sm flex gap-2 items-start mb-4 bg-va-info-bg border border-blue-300 text-va-info">
         <Icon name="orders" size={18} className="shrink-0"/> {orders.length} orders are waiting for a proof upload. Upload a watermarked image to send to the client for review.
       </div>
-      <div className="grid grid-cols-2 gap-3.5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
         {/* Left: order list */}
         <div>
           {orders.length === 0 ? (
@@ -432,51 +432,53 @@ export function ClientsPage() {
   return (
     <div className="flex-1 px-3 py-4 sm:px-6 sm:py-[22px]">
       <div className={CARD}>
-        <div className={CARD_HEAD}>
+        <div className="flex flex-col gap-3 border-b border-va-border px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-4">
           <div className={CARD_TITLE}>All Clients</div>
-          <div className="flex items-center gap-2 border border-va-border rounded-lg px-3 py-[7px] bg-va-bg text-xs text-va-text3 w-[220px] transition-colors focus-within:border-va-blue focus-within:bg-white">
+          <div className="flex items-center gap-2 border border-va-border rounded-lg px-3 py-[7px] bg-va-bg text-xs text-va-text3 w-full sm:w-[220px] transition-colors focus-within:border-va-blue focus-within:bg-white">
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke="var(--va-text3)" strokeWidth="1.2"/><path d="M9.5 9.5L12 12" stroke="var(--va-text3)" strokeWidth="1.4" strokeLinecap="round"/></svg>
             <input placeholder="Search clients…" value={search} onChange={e => setSearch(e.target.value)} className="border-none bg-transparent outline-none text-xs font-sans text-va-text w-full"/>
           </div>
         </div>
         {loadError && <div className="mx-4 mt-4 rounded-lg border border-red-300 bg-va-danger-bg px-3.5 py-2.5 text-xs text-va-danger">{loadError}</div>}
-        <table className="w-full border-collapse">
-          <thead>
-            <tr>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Client</th>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Email</th>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Phone</th>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Orders</th>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Last Order</th>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(c => (
-              <tr key={c.id} onClick={() => setSelected(c)} className="cursor-pointer transition-colors [&>td]:px-3.5 [&>td]:py-3 [&>td]:border-b [&>td]:border-va-border [&>td]:text-[13px] [&>td]:align-middle hover:[&>td]:bg-va-bg">
-                <td>
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-grad flex items-center justify-center font-bold text-xs text-white shrink-0">{c.fullName?.slice(0,2).toUpperCase()}</div>
-                    <div><div className="font-semibold">{c.username}</div><div className="text-[11px] text-va-text3">{c.fullName}</div></div>
-                  </div>
-                </td>
-                <td className="text-va-text3">{c.email}</td>
-                <td className="text-va-text3">{c.phone}</td>
-                <td><strong>{c.orders?.length || 0}</strong></td>
-                <td className="text-va-text3">{c.lastOrderAt ? new Date(c.lastOrderAt).toLocaleDateString() : '—'}</td>
-                <td><button className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM}`}>View details</button></td>
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="min-w-[650px] w-full border-collapse">
+            <thead>
+              <tr>
+                <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Client</th>
+                <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Email</th>
+                <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Phone</th>
+                <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Orders</th>
+                <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Last Order</th>
+                <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Actions</th>
               </tr>
-            ))}
-            {!loadError && filtered.length === 0 && (
-              <tr><td colSpan={6} className="text-center py-8 text-va-text3">No clients found.</td></tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filtered.map(c => (
+                <tr key={c.id} onClick={() => setSelected(c)} className="cursor-pointer transition-colors [&>td]:px-3.5 [&>td]:py-3 [&>td]:border-b [&>td]:border-va-border [&>td]:text-[13px] [&>td]:align-middle hover:[&>td]:bg-va-bg">
+                  <td>
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-grad flex items-center justify-center font-bold text-xs text-white shrink-0">{c.fullName?.slice(0,2).toUpperCase()}</div>
+                      <div><div className="font-semibold">{c.username}</div><div className="text-[11px] text-va-text3">{c.fullName}</div></div>
+                    </div>
+                  </td>
+                  <td className="text-va-text3">{c.email}</td>
+                  <td className="text-va-text3">{c.phone}</td>
+                  <td><strong>{c.orders?.length || 0}</strong></td>
+                  <td className="text-va-text3">{c.lastOrderAt ? new Date(c.lastOrderAt).toLocaleDateString() : '—'}</td>
+                  <td><button className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM}`}>View details</button></td>
+                </tr>
+              ))}
+              {!loadError && filtered.length === 0 && (
+                <tr><td colSpan={6} className="text-center py-8 text-va-text3">No clients found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
       {selected && (
         <div className={`${CARD} mt-4`}>
           <div className={CARD_HEAD}><div className={CARD_TITLE}>Client details — {selected.username}</div><button className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM}`} onClick={() => setSelected(null)}>Close</button></div>
-          <div className={`${CARD_BODY} grid grid-cols-2 gap-x-8`}>
+          <div className={`${CARD_BODY} grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4`}>
             <div><div className={DP_ROW}><span className={DP_KEY}>Full name</span><span className={DP_VAL}>{selected.fullName}</span></div><div className={DP_ROW}><span className={DP_KEY}>Email</span><span className={DP_VAL}>{selected.email}</span></div><div className={DP_ROW}><span className={DP_KEY}>Phone</span><span className={DP_VAL}>{selected.phone || '—'}</span></div><div className={DP_ROW}><span className={DP_KEY}>Address</span><span className={DP_VAL}>{selected.address || '—'}</span></div></div>
             <div><div className="text-xs font-bold mb-2">Order history ({selected.orders?.length || 0})</div>{selected.orders?.map(order => <div key={order.id} className="flex justify-between items-center gap-2 text-xs py-2 border-b border-va-border"><span>#{order.id.slice(0,8)}</span><span>{order.currency} {Number(order.totalPrice).toLocaleString()}</span><Badge status={order.status}/></div>)}</div>
           </div>
@@ -518,7 +520,7 @@ export function PaymentsPage() {
           <div className="text-xs text-va-warning font-semibold mt-2">{summary.halfPaidOrderCount || 0} half-paid {summary.halfPaidOrderCount === 1 ? 'order' : 'orders'}</div>
         </div>
         <div className="bg-white border border-va-border rounded-va px-5 py-[18px] shadow-va relative overflow-hidden">
-          <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-success mb-3"><Icon name="bank"/></div>
+          <div className="w-9 h-9 rounded-lg bg-grad-soft flex items-center justify-center text-va-success mb-3"><Icon name="completed"/></div>
           <div className="font-outfit text-[28px] font-extrabold text-va-text">{completed.filter(payment => payment.paymentType === 'full').length}</div>
           <div className="text-xs text-va-text3 mt-0.5">Completed balances</div>
         </div>
@@ -530,34 +532,36 @@ export function PaymentsPage() {
       </div>
       <div className={CARD}>
         <div className={CARD_HEAD}><div className={CARD_TITLE}>Payment Transactions</div></div>
-        <table className="w-full border-collapse">
-          <thead>
-            <tr>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Reference</th>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Order</th>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Client</th>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Purpose</th>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Amount</th>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Method</th>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Paid date</th>
-              <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payments.map(payment => (
-              <tr key={payment.paymentId} className="cursor-pointer transition-colors [&>td]:px-3.5 [&>td]:py-3 [&>td]:border-b [&>td]:border-va-border [&>td]:text-[13px] [&>td]:align-middle hover:[&>td]:bg-va-bg">
-                <td><span className={ORDER_ID_MONO}>{payment.transactionId || payment.payhereOrderId || `#${payment.paymentId}`}</span></td>
-                <td><div className="font-semibold">{payment.order_id ? `#${payment.order_id.slice(0, 8)}` : 'Unlinked'}</div><div className="text-[11px] text-va-text3">{payment.order?.productOption ? `${payment.order.productOption.paper_size} · ${payment.order.productOption.num_subjects} subject${Number(payment.order.productOption.num_subjects) === 1 ? '' : 's'}` : 'Order details unavailable'}</div></td>
-                <td>{payment.order?.customer?.full_name || payment.order?.customer?.username || 'Client'}</td>
-                <td><span className="text-xs bg-va-bg2 px-2 py-[3px] rounded font-semibold">{payment.paymentType === 'full' ? 'Balance' : 'Deposit'}</span></td>
-                <td><strong>{payment.currency} {Number(payment.amount || 0).toLocaleString()}</strong></td>
-                <td className="capitalize">{payment.paymentMethod || '—'}</td>
-                <td className="text-va-text3">{payment.completedAt ? new Date(payment.completedAt).toLocaleString() : '—'}</td>
-                <td><Badge status={payment.status}/></td>
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="min-w-[760px] w-full border-collapse">
+            <thead>
+              <tr>
+                <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Reference</th>
+                <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Order</th>
+                <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Client</th>
+                <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Purpose</th>
+                <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Amount</th>
+                <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Method</th>
+                <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Paid date</th>
+                <th className="text-[11px] font-bold text-va-text3 uppercase tracking-wide px-3.5 py-2.5 text-left bg-va-bg border-b border-va-border">Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {payments.map(payment => (
+                <tr key={payment.paymentId} className="cursor-pointer transition-colors [&>td]:px-3.5 [&>td]:py-3 [&>td]:border-b [&>td]:border-va-border [&>td]:text-[13px] [&>td]:align-middle hover:[&>td]:bg-va-bg">
+                  <td><span className={ORDER_ID_MONO}>{payment.transactionId || payment.payhereOrderId || `#${payment.paymentId}`}</span></td>
+                  <td><div className="font-semibold">{payment.order_id ? `#${payment.order_id.slice(0, 8)}` : 'Unlinked'}</div><div className="text-[11px] text-va-text3">{payment.order?.productOption ? `${payment.order.productOption.paper_size} · ${payment.order.productOption.num_subjects} subject${Number(payment.order.productOption.num_subjects) === 1 ? '' : 's'}` : 'Order details unavailable'}</div></td>
+                  <td>{payment.order?.customer?.full_name || payment.order?.customer?.username || 'Client'}</td>
+                  <td><span className="text-xs bg-va-bg2 px-2 py-[3px] rounded font-semibold">{payment.paymentType === 'full' ? 'Balance' : 'Deposit'}</span></td>
+                  <td><strong>{payment.currency} {Number(payment.amount || 0).toLocaleString()}</strong></td>
+                  <td>{payment.paymentMethod === 'card' ? 'PayHere' : payment.paymentMethod === 'legacy_bank' ? 'Legacy record' : '—'}</td>
+                  <td className="text-va-text3">{payment.completedAt ? new Date(payment.completedAt).toLocaleString() : '—'}</td>
+                  <td><Badge status={payment.status}/></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

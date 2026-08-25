@@ -12,6 +12,7 @@ export const STATUS_MAP = {
   framed:               { label: 'Framed',         icon: 'proofs',    cls: 'bg-va-success-bg text-va-success' },
   shipped:              { label: 'Shipped',        icon: 'package',   cls: 'bg-[#ECFDF5] text-[#059669]'      },
   done:                 { label: 'Done',           icon: 'completed', cls: 'bg-va-success-bg text-va-success' },
+  cancelled:            { label: 'Cancelled',      icon: 'alert',     cls: 'bg-va-danger-bg text-va-danger' },
 };
 
 export const STATUS_ACTION_LABELS = {
@@ -23,4 +24,5 @@ export const STATUS_ACTION_LABELS = {
   framed: 'Framed',
   shipped: 'Shipped',
   done: 'Done',
+  cancelled: 'Cancelled — history retained',
 };

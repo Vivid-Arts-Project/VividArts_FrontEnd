@@ -38,7 +38,7 @@ export default function OrderManagePage({ orderId, onToast }) {
     try {
       await deleteOrder(order.id, reason);
       setShowCancel(false);
-      onToast('Order cancelled and deleted');
+      onToast('Order cancelled. Its history was retained.');
       navigate('/admin');
     } catch (error) {
       onToast(error.response?.data?.error || 'Failed to cancel order');
@@ -48,7 +48,7 @@ export default function OrderManagePage({ orderId, onToast }) {
   };
 
   return <>
-    <DetailPanel key={`${order.id}:${order.status}`} order={order} businessAddress={admin?.businessAddress || ''} onClose={() => navigate('/admin')} onStatusSaved={load} onToast={onToast} onCancel={() => setShowCancel(true)}/>
+    <DetailPanel key={`${order.id}:${order.status}`} order={order} businessAddress={admin?.businessAddress || ''} onClose={() => navigate('/admin')} onStatusSaved={load} onToast={onToast} onCancel={order.status === 'cancelled' ? undefined : () => setShowCancel(true)}/>
     {showCancel && <CancelModal order={order} busy={cancelling} onClose={() => !cancelling && setShowCancel(false)} onConfirm={confirmCancel}/>}
   </>;
 }

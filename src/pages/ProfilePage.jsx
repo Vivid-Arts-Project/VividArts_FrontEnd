@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { clearCustomerSession, getCustomerToken, setCustomerUsername } from '../authSession';
-import RoundBrandLogo from '../components/RoundBrandLogo';
+import CustomerHeader from '../components/CustomerHeader';
 import Icon from '../components/Icon';
+import { showNotification } from './notifications';
 
 function ProfilePage({ onNavigate }) {
   const [user, setUser] = useState(null);
@@ -65,7 +66,7 @@ function ProfilePage({ onNavigate }) {
           'Content-Type': 'application/json',
         },
         credentials: 'same-origin',
-        body: JSON.stringify({ fullName, username, phoneNumber, email }),
+        body: JSON.stringify({ fullName, phoneNumber }),
       });
 
       const data = await response.json();
@@ -136,7 +137,9 @@ function ProfilePage({ onNavigate }) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Unable to update password.');
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      setMessageType('success'); setMessage(data.message);
+      clearCustomerSession();
+      showNotification('success', data.message || 'Password updated. Please sign in again.');
+      onNavigate('login');
     } catch (error) { setMessageType('error'); setMessage(error.message || 'Unable to update password.'); }
     finally { setIsChangingPassword(false); }
   };
@@ -156,41 +159,7 @@ function ProfilePage({ onNavigate }) {
 
   return (
     <div className="min-h-screen bg-[#090816] font-sans text-white">
-      {/* Top Navigation */}
-      <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0d0b1f]/90 px-4 py-3 backdrop-blur-xl sm:px-8">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
-          <button
-            type="button"
-            onClick={() => onNavigate('landing')}
-            className="flex items-center gap-3 border-none bg-transparent text-white cursor-pointer"
-          >
-            <RoundBrandLogo size={46}/>
-            <span className="text-left hidden sm:block">
-              <strong className="block font-outfit text-base font-extrabold tracking-[.08em] text-white">VIVID ARTS</strong>
-              <span className="block text-[10px] font-semibold tracking-[.2em] text-white/50">MY ACCOUNT</span>
-            </span>
-          </button>
-
-          <div className="flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => onNavigate('orders')}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[.06] px-4 py-2.5 text-xs font-bold text-white/90 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/10 hover:text-white"
-            >
-              <Icon name="orders" size={16} className="text-[#a99bff]"/>
-              <span>My Orders</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onNavigate('landing')}
-              className="group inline-flex items-center rounded-xl border border-[#a99bff]/45 bg-gradient-to-r from-[#318fe2] to-[#7354d6] px-4 py-2.5 text-xs font-bold text-white shadow-[0_8px_20px_rgba(79,91,215,.35)] transition-all duration-300 hover:-translate-y-0.5 hover:from-[#45a3ef] hover:to-[#8868e7]"
-            >
-              <Icon name="arrowLeft" size={15} className="mr-1.5 transition-transform duration-300 group-hover:-translate-x-1"/>
-              <span>Back to home</span>
-            </button>
-          </div>
-        </div>
-      </header>
+      <CustomerHeader onNavigate={onNavigate} active="profile"/>
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
         {/* Profile Hero Header Card */}
@@ -223,7 +192,7 @@ function ProfilePage({ onNavigate }) {
                 <span className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white">Change</span>
               </button>
             </div>
-            <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={onAvatarSelected}/>
+            <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={onAvatarSelected}/>
 
             {/* Profile Summary */}
             <div className="min-w-0 flex-1">
@@ -364,11 +333,10 @@ function ProfilePage({ onNavigate }) {
                     <input
                       type="email"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      disabled={!isEditing}
+                      disabled
                       required
                       placeholder="your.email@example.com"
-                      className="h-12 w-full border-none bg-transparent text-sm text-white outline-none disabled:cursor-default disabled:text-white/80"
+                      className="h-12 w-full cursor-not-allowed border-none bg-transparent text-sm text-white/60 outline-none"
                     />
                   </div>
                 </div>

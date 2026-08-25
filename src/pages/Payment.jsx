@@ -5,9 +5,10 @@ import Stepper from '../components/Stepper';
 // 💡 1. Notification function එක Import කරගන්න (path එක exact location එකට අනුව)
 import { showNotification } from './notifications';
 import CommissionHeader from '../components/CommissionHeader';
-import { getCustomerToken, preparePaymentReturnSession } from '../authSession';
+import { preparePaymentReturnSession } from '../authSession';
 import { trustCurrentNavigation } from '../router';
 import { saveBlob } from '../utils/download';
+import { createPendingPaymentOrder, loadCheckoutCustomer } from '../pendingOrder';
 
 const fallbackOrder = {
   size: { id: 'A3', label: 'A3' },
@@ -25,11 +26,6 @@ const fallbackOrder = {
 const currencies = [
   { code: 'LKR', label: 'LKR – Sri Lankan rupee', rate: 1 },
 ]
-const DEFAULT_CUSTOMER_INFO = {
-  firstName: '', lastName: '', email: '', phone: '',
-  address: 'Colombo', city: 'Colombo', country: 'Sri Lanka',
-};
-
 function formatMoney(amount, code, rate) {
   const value = Math.round(amount * rate)
   return `${code} ${value.toLocaleString()}`
@@ -54,7 +50,9 @@ function submitCheckoutForm(actionUrl, fields) {
 
 export default function Payment({
   order,
+  pendingOrder = null,
   referencePhoto = null,
+  onReferencePhotosUploaded = () => {},
   onBack = () => {},
   onComplete = () => {},
   onIncomplete = () => {},
@@ -69,7 +67,8 @@ export default function Payment({
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const checkoutPromiseRef = useRef(null)
   const customerProfilePromiseRef = useRef(null)
-  const [orderId, setOrderId] = useState(null);
+  const referencePhotosUploadedRef = useRef(Boolean(pendingOrder?.referencePhotosUploaded))
+  const [orderId, setOrderId] = useState(pendingOrder?.orderId || null);
   const [paymentReturn] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     return { status: params.get('payment'), orderId: params.get('order_id') };
@@ -83,7 +82,6 @@ export default function Payment({
   const [paymentStatus, setPaymentStatus] = useState('pending');
   const [isDownloading, setIsDownloading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('Your deposit has been received.');
-  const [customerInfo, setCustomerInfo] = useState(DEFAULT_CUSTOMER_INFO);
 
   useEffect(() => {
     onIncompleteRef.current = onIncomplete;
@@ -94,41 +92,19 @@ export default function Payment({
 
     const pendingCheckout = (async () => {
       setIsSavingDraft(true);
-      const checkoutCustomer = customerProfilePromiseRef.current
-        ? await customerProfilePromiseRef.current
-        : customerInfo;
-      const result = await api.createPaymentOrder({
-        currency: currency.code,
-        paymentMethod: 'card',
-        order: {
-          sizeId: safeOrder.sizeId || safeOrder.size?.id,
-          frameId: safeOrder.frameId || safeOrder.frame?.id,
-          people: safeOrder.people,
-          deliveryMethod: safeOrder.deliveryMethod || 'courier',
-          deliveryAddress: safeOrder.deliveryMethod === 'courier' ? safeOrder.deliveryAddress : null,
-          urgent: safeOrder.urgent === true,
-          urgentDeadline: safeOrder.urgent ? safeOrder.urgentDeadline : null,
-          scheduled: safeOrder.scheduled === true,
-          scheduledDate: safeOrder.scheduled ? safeOrder.scheduledDate : null,
-          notes: safeOrder.notes || '',
-        },
-        customer: {
-          ...checkoutCustomer,
-          address: safeOrder.deliveryMethod === 'courier' && safeOrder.deliveryAddress
-            ? safeOrder.deliveryAddress
-            : checkoutCustomer.address,
-        },
-      });
-
-      const commissionId = result.payment?.commissionId;
-      if (!result.success || !commissionId) {
-        throw new Error(result.error || 'Unable to save the pending order');
-      }
-      const pendingOrder = { commissionId, orderId: result.payment.orderId };
-      setOrderId(pendingOrder.orderId);
+      const savedOrder = pendingOrder || await createPendingPaymentOrder(
+        safeOrder,
+        await (customerProfilePromiseRef.current || loadCheckoutCustomer()),
+        currency.code,
+      );
+      setOrderId(savedOrder.orderId);
       window.dispatchEvent(new Event('vividarts:pending-orders'));
-      if (referencePhoto) await api.uploadReferencePhotos(commissionId, [referencePhoto]);
-      return pendingOrder;
+      if (referencePhoto && !referencePhotosUploadedRef.current) {
+        await api.uploadReferencePhotos(savedOrder.commissionId, [referencePhoto]);
+        referencePhotosUploadedRef.current = true;
+        onReferencePhotosUploaded();
+      }
+      return savedOrder;
     })();
 
     checkoutPromiseRef.current = pendingCheckout;
@@ -140,45 +116,10 @@ export default function Payment({
     } finally {
       setIsSavingDraft(false);
     }
-  }, [currency.code, customerInfo, referencePhoto, safeOrder]);
-
-  // Fetch prices on mount
-  useEffect(() => {
-    api.getPrices()
-      .then(data => {
-        if (data.success) {
-          console.log('Prices loaded:', data.prices);
-        }
-      })
-      .catch(err => console.error('Failed to load prices:', err));
-  }, []);
+  }, [currency.code, onReferencePhotosUploaded, pendingOrder, referencePhoto, safeOrder]);
 
   useEffect(() => {
-    const token = getCustomerToken();
-    if (!token) {
-      customerProfilePromiseRef.current = Promise.resolve(DEFAULT_CUSTOMER_INFO);
-      return;
-    }
-
-    customerProfilePromiseRef.current = api.getProfile(token)
-      .then((data) => {
-        const fullName = (data.full_name || data.username || '').trim();
-        const [firstName = '', ...lastNameParts] = fullName.split(/\s+/);
-        const profile = {
-          ...DEFAULT_CUSTOMER_INFO,
-          firstName,
-          lastName: lastNameParts.join(' '),
-          email: data.email || '',
-          phone: data.phone_number || '',
-          address: data.address && data.address !== 'N/A' ? data.address : DEFAULT_CUSTOMER_INFO.address,
-        };
-        setCustomerInfo(profile);
-        return profile;
-      })
-      .catch((err) => {
-        console.error('Failed to load customer profile:', err);
-        return DEFAULT_CUSTOMER_INFO;
-      });
+    customerProfilePromiseRef.current = loadCheckoutCustomer();
   }, []);
 
   useEffect(() => {
@@ -368,14 +309,14 @@ export default function Payment({
   }
 
   return (
-    <div className="max-w-[980px] mx-auto px-[18px] py-7">
+    <div className="mx-auto max-w-[1020px] px-3.5 py-6 sm:px-6 sm:py-8">
       <CommissionHeader onBack={onBack} onHome={handleHome} />
 
       <Stepper current={3} />
 
-      <main className="grid grid-cols-[1fr_340px] max-[720px]:grid-cols-1 gap-5 items-start">
+      <main className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_340px]">
         <div>
-          <div className="mb-4 rounded-[18px] border border-black/10 bg-white p-4 text-[#222] sm:p-6">
+          <div className="mb-4 rounded-[18px] border border-black/10 bg-white p-4 text-[#222] shadow-xl sm:p-6">
             <div className="text-sm font-semibold text-[#1a1a2e] mb-[18px] flex items-center flex-wrap gap-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#7f77dd] shrink-0"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
               Payment method
@@ -446,7 +387,7 @@ export default function Payment({
           </div>
         </div>
 
-        <div className="sticky top-5 max-[720px]:static">
+        <div className="lg:sticky lg:top-5">
           <div className="mb-4 rounded-[18px] border border-black/10 bg-white p-4 text-[#222] sm:p-6">
             <div className="text-sm font-semibold text-[#1a1a2e] mb-[18px] flex items-center gap-2">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#7f77dd] shrink-0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>

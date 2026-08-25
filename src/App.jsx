@@ -1,9 +1,9 @@
 import { NotificationContainer } from './pages/NotificationContainer';
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import BrandLogo from './components/BrandLogo';
 
 // Customer side — untouched, still owns its own internal page-switching
-import CustomerApp from './CustomerApp';
+const CustomerApp = lazy(() => import('./CustomerApp'));
 
 // Admin side
 import { AuthProvider } from './context/AuthContext.jsx';
@@ -11,9 +11,8 @@ import PrivateRoute from './components/PrivateRoute';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminRegister from './pages/admin/AdminRegister';
 import AdminRequestStatus from './pages/admin/AdminRequestStatus';
-import AdminApp from './pages/admin/AdminApp';
-import { isTrustedNavigation, useLocation } from './router';
-import { Redirect } from './RouterComponents';
+const AdminApp = lazy(() => import('./pages/admin/AdminApp'));
+import { useLocation } from './router';
 
 export default function App() {
   const path = useLocation().split(/[?#]/, 1)[0];
@@ -21,16 +20,14 @@ export default function App() {
   let content;
   if (path === '/admin/login') content = <AdminLogin />;
   else if (path === '/admin/request-status') content = <AdminRequestStatus />;
-  else if (path === '/admin/register') content = isTrustedNavigation()
-    ? <AdminRegister />
-    : <Redirect to="/admin/login" replace />;
+  else if (path === '/admin/register') content = <AdminRegister />;
   else if (path.startsWith('/admin')) content = <PrivateRoute><AdminApp /></PrivateRoute>;
   else content = <CustomerAvailability><CustomerApp /></CustomerAvailability>;
 
   return (
     <>
       <AuthProvider>
-        {content}
+        <Suspense fallback={<div className="min-h-screen bg-[#090816]"/>}>{content}</Suspense>
       </AuthProvider>
       <NotificationContainer />
     </>

@@ -11,6 +11,14 @@ export default function OrderTracker({
   const isRevision = effectiveStatus === 'revision_requested';
   const hasFrame = Boolean(frameType && frameType !== 'without_frame');
 
+  if (effectiveStatus === 'cancelled') {
+    return (
+      <div className={`overflow-hidden rounded-2xl border border-red-400/25 bg-gradient-to-br from-[#2a1525] via-[#181127] to-[#18152c] p-5 shadow-[0_16px_50px_rgba(0,0,0,.35)] ${className}`}>
+        <div className="flex items-center gap-3 text-red-200"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/15"><Icon name="alert" size={20}/></span><div><p className="text-xs font-extrabold uppercase tracking-[.16em]">Order cancelled</p><p className="mt-1 text-xs leading-5 text-white/45">Production has stopped. Your order and payment history remain available.</p></div></div>
+      </div>
+    );
+  }
+
   // Dynamic Stages: If customer ordered a frame, include the dedicated "Framed" step before Done
   const stages = [
     {
@@ -137,27 +145,28 @@ export default function OrderTracker({
       </div>
 
       {/* Progress Line Stepper Container */}
-      <div className="relative my-2 px-1 sm:px-3">
-        {/* Background Base Rail */}
-        <div
-          className="absolute top-[18px] sm:top-[22px] -translate-y-1/2 h-2 sm:h-2.5 rounded-full bg-white/10 border border-white/[.08] shadow-inner z-0"
-          style={{
-            left: `${halfColPercent}%`,
-            right: `${halfColPercent}%`,
-          }}
-        />
+      <div className="relative my-2 overflow-x-auto pb-2 custom-scrollbar">
+        <div className="relative min-w-[420px] px-1 sm:min-w-0 sm:px-3">
+          {/* Background Base Rail */}
+          <div
+            className="absolute top-[18px] sm:top-[22px] -translate-y-1/2 h-2 sm:h-2.5 rounded-full bg-white/10 border border-white/[.08] shadow-inner z-0"
+            style={{
+              left: `${halfColPercent}%`,
+              right: `${halfColPercent}%`,
+            }}
+          />
 
-        {/* Dynamic Vibrant Colored Progress Line */}
-        <div
-          className="absolute top-[18px] sm:top-[22px] -translate-y-1/2 h-2 sm:h-2.5 rounded-full bg-gradient-to-r from-[#2b8fe0] via-[#7b4fc8] via-[#a855f7] to-[#10b981] shadow-[0_0_16px_rgba(139,92,246,.75),0_0_24px_rgba(16,185,129,.45)] transition-all duration-700 ease-out z-0"
-          style={{
-            left: `${halfColPercent}%`,
-            width: `${progressRatio * trackWidthPercent}%`,
-          }}
-        />
+          {/* Dynamic Vibrant Colored Progress Line */}
+          <div
+            className="absolute top-[18px] sm:top-[22px] -translate-y-1/2 h-2 sm:h-2.5 rounded-full bg-gradient-to-r from-[#2b8fe0] via-[#7b4fc8] via-[#a855f7] to-[#10b981] shadow-[0_0_16px_rgba(139,92,246,.75),0_0_24px_rgba(16,185,129,.45)] transition-all duration-700 ease-out z-0"
+            style={{
+              left: `${halfColPercent}%`,
+              width: `${progressRatio * trackWidthPercent}%`,
+            }}
+          />
 
-        {/* Stage Nodes Grid */}
-        <div className={`relative z-10 grid ${hasFrame ? 'grid-cols-6' : 'grid-cols-5'}`}>
+          {/* Stage Nodes Grid */}
+          <div className={`relative z-10 grid ${hasFrame ? 'grid-cols-6' : 'grid-cols-5'}`}>
           {stages.map((stage, index) => {
             const isPassed = index < currentIndex || (isDone && index === currentIndex);
             const isCurrent = index === currentIndex && !isDone;
@@ -222,6 +231,7 @@ export default function OrderTracker({
               </div>
             );
           })}
+          </div>
         </div>
       </div>
     </div>

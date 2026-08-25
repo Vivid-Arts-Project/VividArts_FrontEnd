@@ -1,6 +1,5 @@
 import { useAuth } from '../context/useAuth';
 import { Redirect } from '../RouterComponents';
-import { isTrustedNavigation } from '../router';
 
 // Wrap any admin page with this component.
 // If the user is not logged in they get redirected to /admin/login.
@@ -29,7 +28,7 @@ export default function PrivateRoute({ children }) {
   }
 
   // Not logged in → send to login page
-  if (!admin || !isTrustedNavigation()) return <Redirect to="/admin/login" replace />;
+  if (!admin) return <Redirect to="/admin/login" replace />;
 
   // Logged in → render the protected page
   return children;

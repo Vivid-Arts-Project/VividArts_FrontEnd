@@ -29,7 +29,7 @@ export function CancelModal({ order, onClose, onConfirm, busy = false }) {
           <button type="button" aria-label="Close modal" className={MODAL_CLOSE} onClick={onClose}>×</button>
         </div>
         <div className={MODAL_BODY}>
-          <div className="rounded-lg px-3.5 py-2.5 text-sm flex gap-2 items-start mb-3.5 bg-va-warn-bg border border-orange-300 text-va-warn">⚠️ This action cannot be undone.</div>
+          <div className="rounded-lg px-3.5 py-2.5 text-sm flex gap-2 items-start mb-3.5 bg-va-warn-bg border border-orange-300 text-va-warn">⚠️ The order will stop, but its payment and activity history will be retained.</div>
           <p className="text-[13px] text-va-text2 leading-[1.7]">
             Are you sure you want to cancel order <strong>#{order.id?.slice(0,8)}</strong> for{' '}
             <strong>{order.customer?.fullName || 'this client'}</strong>? The client will be notified automatically.
@@ -50,7 +50,7 @@ export function CancelModal({ order, onClose, onConfirm, busy = false }) {
         <div className={MODAL_FOOT}>
           <button className={`${BTN_BASE} ${BTN_GHOST}`} disabled={busy} onClick={onClose}>Keep order</button>
           <button className={`${BTN_BASE} ${BTN_DANGER} px-4 py-2 disabled:cursor-not-allowed disabled:opacity-45`} disabled={busy || !reason.trim()} onClick={() => onConfirm(reason.trim())}>
-            {busy ? 'Deleting…' : 'Cancel and delete order'}
+            {busy ? 'Cancelling…' : 'Cancel order'}
           </button>
         </div>
       </div>

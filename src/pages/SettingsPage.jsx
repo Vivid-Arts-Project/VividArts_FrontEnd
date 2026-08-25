@@ -9,6 +9,8 @@ import {
 } from '../api/adminApi';
 import { useAuth } from '../context/useAuth';
 import Icon from '../components/Icon';
+import { useNavigate } from '../router';
+import { showNotification } from './notifications';
 
 // ── Small reusable loading skeleton ──────────────────────────────────────────
 function Skeleton({ width = '100%', height = 14 }) {
@@ -33,7 +35,14 @@ const CAT_LABELS = {
 // ══════════════════════════════════════════════════════════════════════════════
 export default function SettingsPage({ onToast }) {
   const [tab, setTab] = useState('profile');
-  const { updateAdmin } = useAuth();
+  const { updateAdmin, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handlePasswordChanged = useCallback(async message => {
+    await logout();
+    showNotification('success', message || 'Password updated. Please sign in again.');
+    navigate('/admin/login', { replace: true });
+  }, [logout, navigate]);
 
   // ── Shared admin data loaded once ─────────────────────────────────────────
   const [admin, setAdmin]     = useState(null);
@@ -81,7 +90,7 @@ export default function SettingsPage({ onToast }) {
       {tab === 'profile'       && <ProfileTab       key={admin?.updatedAt || admin?.id || 'loading'} admin={admin} loading={loading} onToast={onToast} onSaved={loadProfile} updateAdmin={updateAdmin}/>}
       {tab === 'business'      && <BusinessTab      key={admin?.updatedAt || admin?.id || 'loading'} admin={admin} loading={loading} onToast={onToast} onSaved={loadProfile}/>}
       {tab === 'notifications' && <NotificationsTab key={admin?.updatedAt || admin?.id || 'loading'} admin={admin} loading={loading} onToast={onToast} onSaved={loadProfile}/>}
-      {tab === 'security'      && <SecurityTab                                      onToast={onToast}/>}
+      {tab === 'security'      && <SecurityTab onToast={onToast} onPasswordChanged={handlePasswordChanged}/>}
       {tab === 'pricing'       && admin?.isSuperAdmin && <PricingTab onToast={onToast}/>}
       {tab === 'adminRequests' && admin?.isSuperAdmin && <AdminRequestsTab onToast={onToast}/>}
       {tab === 'availability'  && admin?.isSuperAdmin && <SiteAvailabilityTab onToast={onToast}/>}
@@ -387,7 +396,7 @@ function NotificationsTab({ admin, loading, onToast, onSaved }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // SECURITY TAB
 // ══════════════════════════════════════════════════════════════════════════════
-function SecurityTab({ onToast }) {
+function SecurityTab({ onToast, onPasswordChanged }) {
   const [form, setForm]   = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [saving, setSaving] = useState(false);
   const [visible, setVisible] = useState({ currentPassword: false, newPassword: false, confirmPassword: false });
@@ -412,9 +421,9 @@ function SecurityTab({ onToast }) {
     }
     setSaving(true);
     try {
-      await changePassword({ currentPassword: form.currentPassword, newPassword: form.newPassword });
-      onToast('✓ Password updated successfully');
+      const response = await changePassword({ currentPassword: form.currentPassword, newPassword: form.newPassword });
       setForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      await onPasswordChanged(response.data.message);
     } catch (e) {
       onToast('❌ ' + (e.response?.data?.error || 'Failed to update password'));
     } finally { setSaving(false); }

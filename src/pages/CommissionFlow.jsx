@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import UploadPhotoPage from "./UploadPhotoPage";
 import CustomisePage from "./CustomisePage";
 import Payment from "./Payment";
-import { clearCommissionDraft, getCommissionDraft, setCommissionOrder, setCommissionPhoto } from "../commissionDraft";
+import { clearCommissionDraft, getCommissionDraft, setCommissionOrder, setCommissionPendingOrder, setCommissionPhoto } from "../commissionDraft";
+import { api } from "../api";
+import { createPendingPaymentOrder, loadCheckoutCustomer, orderPreferenceKey } from "../pendingOrder";
 import { useLocation, useNavigate } from "../router";
 import { Redirect } from "../RouterComponents";
 
@@ -23,6 +25,9 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
   const path = useLocation().split(/[?#]/, 1)[0];
   const [photoData, setPhotoData] = useState(() => getCommissionDraft().photoData);
   const [order, setOrder] = useState(() => getCommissionDraft().order);
+  const [pendingOrder, setPendingOrder] = useState(() => getCommissionDraft().pendingOrder);
+  const checkoutCustomerPromiseRef = useRef(null);
+  const pendingCreationRef = useRef(null);
 
   // If PayHere just redirected back with ?payment=..., land straight on the
   // payment step so it can read the query param and show the confirmation.
@@ -33,21 +38,51 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
     window.scrollTo(0, 0);
   }, [path]);
 
+  useEffect(() => {
+    checkoutCustomerPromiseRef.current = loadCheckoutCustomer();
+  }, []);
+
   function handlePhotoNext(data) {
     setPhotoData(data);
     setCommissionPhoto(data);
     navigate('/commission/customize');
   }
 
-  function handleCustomiseNext(orderData) {
+  async function handleCustomiseNext(orderData) {
     setOrder(orderData);
     setCommissionOrder(orderData);
-    navigate('/commission/payment');
+    const preferenceKey = orderPreferenceKey(orderData);
+    if (pendingOrder?.preferenceKey === preferenceKey) {
+      navigate('/commission/payment');
+      return;
+    }
+
+    if (pendingCreationRef.current) return pendingCreationRef.current;
+    const saveOrder = (async () => {
+      const customer = await (checkoutCustomerPromiseRef.current || loadCheckoutCustomer());
+      const savedOrder = await createPendingPaymentOrder(orderData, customer);
+      const previousOrder = pendingOrder;
+      setPendingOrder(savedOrder);
+      setCommissionPendingOrder(savedOrder);
+      window.dispatchEvent(new Event('vividarts:pending-orders'));
+      navigate('/commission/payment');
+
+      if (previousOrder?.commissionId && previousOrder.commissionId !== savedOrder.commissionId) {
+        api.deleteIncompleteOrder(previousOrder.commissionId).catch(() => {});
+      }
+    })();
+    pendingCreationRef.current = saveOrder;
+    try {
+      await saveOrder;
+    } finally {
+      pendingCreationRef.current = null;
+    }
   }
 
   function handlePaymentComplete() {
     setPhotoData(null);
     setOrder(null);
+    setPendingOrder(null);
     clearCommissionDraft();
     onBack();
   }
@@ -55,8 +90,18 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
   function handleGoToOrders() {
     setPhotoData(null);
     setOrder(null);
+    setPendingOrder(null);
     clearCommissionDraft();
     onNavigate('orders');
+  }
+
+  function handleReferencePhotosUploaded() {
+    setPendingOrder(current => {
+      if (!current || current.referencePhotosUploaded) return current;
+      const updated = { ...current, referencePhotosUploaded: true };
+      setCommissionPendingOrder(updated);
+      return updated;
+    });
   }
 
   let page;
@@ -68,7 +113,9 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
   else if (path === '/commission/payment') page = order || isPaymentReturn
     ? <Payment
         order={order}
+        pendingOrder={pendingOrder}
         referencePhoto={photoData?.photo || null}
+        onReferencePhotosUploaded={handleReferencePhotosUploaded}
         onBack={() => navigate('/commission/customize')}
         onComplete={handlePaymentComplete}
         onOrders={handleGoToOrders}
@@ -76,6 +123,7 @@ export default function CommissionFlow({ onBack = () => {}, onNavigate = () => {
         onIncomplete={() => {
           setPhotoData(null);
           setOrder(null);
+          setPendingOrder(null);
           clearCommissionDraft();
           onNavigate('orders');
         }}

@@ -93,6 +93,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
   const [scheduledDateError, setScheduledDateError] = useState("");
   const [timelineResult, setTimelineResult] = useState(null);
   const [selectionError, setSelectionError] = useState("");
+  const [isContinuing, setIsContinuing] = useState(false);
   const [catalog, setCatalog] = useState(FALLBACK_CATALOG);
   const deliveryAddressRef = useRef(null);
   const urgentDeadlineRef = useRef(null);
@@ -164,7 +165,8 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
   );
   const deposit = Math.round(total * 0.5);
 
-  function handleContinue() {
+  async function handleContinue() {
+    if (isContinuing) return;
     if (!sizeId || !frameId || !deliveryMethod) {
       setSelectionError("Please select a portrait size, frame, and delivery option before continuing.");
       return;
@@ -206,7 +208,7 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
     setUrgentDeadlineError("");
     setScheduledDateError("");
     setDeliveryAddressError("");
-    onNext({
+    const orderData = {
       sizeId,
       frameId,
       people,
@@ -229,17 +231,25 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
       timeline,
       total,
       deposit,
-    });
+    };
+    setIsContinuing(true);
+    try {
+      await onNext(orderData);
+    } catch (error) {
+      setSelectionError(error.message || "Unable to save your order. Please try again.");
+    } finally {
+      setIsContinuing(false);
+    }
   }
 
   return (
     <div className="soft-navy-violet-bg min-h-screen pb-16 font-sans text-white">
-      <div className="mx-auto max-w-[980px] px-[18px] py-7">
+      <div className="mx-auto max-w-[1020px] px-3.5 py-6 sm:px-6 sm:py-8">
         <CommissionHeader onBack={onBack} onHome={() => onNavigate('landing')} />
         <Stepper current={2} />
 
-      <main className="grid gap-5 lg:grid-cols-[1.5fr_1fr] lg:items-start">
-        <section className="rounded-[18px] bg-white p-6 text-[#1b1830] shadow-xl sm:p-7">
+      <main className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <section className="rounded-[18px] bg-white p-5 text-[#1b1830] shadow-xl sm:p-7">
           <h2 className="text-xl font-bold">Customize Your Portrait</h2>
           <p className="mt-1 text-sm text-[#6b6885]">
             Price updates in real-time as you choose
@@ -588,10 +598,11 @@ export default function CustomisePage({ photoData, initialOrder = null, onNext =
             <button
               type="button"
               onClick={handleContinue}
-              className="mt-4 w-full rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-white"
+              disabled={isContinuing}
+              className="mt-4 w-full rounded-xl bg-gradient-to-r from-[#6366f1] to-[#8b5cf6] px-4 py-3.5 text-sm font-semibold text-white shadow-[0_8px_22px_rgba(99,102,241,0.35)] transition hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#a78bfa] focus:ring-offset-2 focus:ring-offset-white disabled:cursor-wait disabled:opacity-70"
               style={{ color: "#ffffff" }}
             >
-              Continue to payment →
+              {isContinuing ? "Saving order…" : "Continue to payment →"}
             </button>
           </section>
 
