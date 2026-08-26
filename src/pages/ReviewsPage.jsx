@@ -40,6 +40,7 @@ export default function ReviewsPage({ search = '', onToast = () => {} }) {
       onToast(message);
       await load();
       window.dispatchEvent(new Event('vividarts:admin-notifications'));
+      window.dispatchEvent(new Event('vividarts:sidebar-stats'));
     } catch (error) { onToast(error.response?.data?.error || 'Unable to update review'); }
     finally { setWorking(''); }
   };
@@ -47,7 +48,7 @@ export default function ReviewsPage({ search = '', onToast = () => {} }) {
   const remove = async review => {
     if (!window.confirm(`Delete “${review.title}” permanently?`)) return;
     setWorking(review.review_id);
-    try { await deleteReview(review.review_id); onToast('Review deleted'); await load(); }
+    try { await deleteReview(review.review_id); onToast('Review deleted'); await load(); window.dispatchEvent(new Event('vividarts:sidebar-stats')); }
     catch { onToast('Unable to delete review'); }
     finally { setWorking(''); }
   };

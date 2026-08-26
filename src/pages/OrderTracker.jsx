@@ -45,9 +45,16 @@ export default function OrderTracker({
     {
       key: 'approved',
       label: 'Proof Approved',
-      description: hasFrame ? 'Approved — preparing framing' : 'Artwork approved & finalizing',
+      description: 'Waiting for final payment',
       icon: 'completed',
       color: 'from-[#8b5cf6] to-[#a855f7]',
+    },
+    {
+      key: 'payment_finished',
+      label: 'Payment Finished',
+      description: 'Full payment received',
+      icon: 'payments',
+      color: 'from-[#0ea5e9] to-[#14b8a6]',
     },
     ...(hasFrame
       ? [
@@ -73,8 +80,9 @@ export default function OrderTracker({
     const normalized = String(currentStatus || '').toLowerCase().trim();
     if (normalized === 'payment_pending') return 0;
     if (['shipped', 'done', 'completed'].includes(normalized)) return stages.length - 1;
-    if (hasFrame && normalized === 'framed') return 4;
-    if (['approved', 'finished', ...(hasFrame ? [] : ['framed'])].includes(normalized)) return 3;
+    if (hasFrame && normalized === 'framed') return stages.findIndex(stage => stage.key === 'framed');
+    if (normalized === 'payment_finished' || (!hasFrame && normalized === 'framed')) return stages.findIndex(stage => stage.key === 'payment_finished');
+    if (['approved', 'finished'].includes(normalized)) return stages.findIndex(stage => stage.key === 'approved');
     if (['waiting_for_feedback', 'proof_sent'].includes(normalized)) return 2;
     if (['sketching', 'shading', 'revision_requested', 'revision'].includes(normalized)) return 1;
     return 0;
@@ -126,7 +134,11 @@ export default function OrderTracker({
             </span>
           ) : effectiveStatus === 'approved' || effectiveStatus === 'finished' ? (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/15 px-3.5 py-1 text-[11px] font-bold text-emerald-200 shadow-[0_0_14px_rgba(16,185,129,.25)]">
-              <Icon name="completed" size={13} className="text-emerald-300"/> Proof Approved {hasFrame ? '— Preparing custom frame' : '— Finalizing artwork'}
+              <Icon name="completed" size={13} className="text-emerald-300"/> Proof Approved — Waiting for final payment
+            </span>
+          ) : effectiveStatus === 'payment_finished' ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-400/40 bg-sky-500/15 px-3.5 py-1 text-[11px] font-bold text-sky-200 shadow-[0_0_14px_rgba(14,165,233,.25)]">
+              <Icon name="payments" size={13} className="text-sky-300"/> Payment Finished — Full balance received
             </span>
           ) : effectiveStatus === 'framed' ? (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-400/40 bg-purple-500/15 px-3.5 py-1 text-[11px] font-bold text-purple-200 shadow-[0_0_14px_rgba(168,85,247,.25)]">

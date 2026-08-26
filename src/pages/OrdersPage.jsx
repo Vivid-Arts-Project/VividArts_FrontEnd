@@ -5,12 +5,13 @@ import { STATUS_ACTION_LABELS, STATUS_MAP } from '../components/statusConfig';
 import { getOrders, updateStatus, sendMessage, setLocation, uploadProof, referencePhotoDownloadUrl } from '../api/adminApi';
 import { useNavigate } from '../router';
 
-const STAGE_ORDER = ['in_queue','sketching','waiting_for_feedback','approved','framed','shipped','done'];
+const STAGE_ORDER = ['in_queue','sketching','waiting_for_feedback','approved','payment_finished','framed','shipped','done'];
 const BASE_STAGES = [
   { key: 'in_queue',             label: 'Queued'          },
   { key: 'sketching',            label: 'Sketching'       },
   { key: 'waiting_for_feedback', label: 'Waiting for feedback or approval' },
-  { key: 'approved',             label: 'Proof approved — continue artwork' },
+  { key: 'approved',             label: 'Proof approved' },
+  { key: 'payment_finished',     label: 'Payment finished' },
 ];
 
 const BTN_FILL  = 'bg-grad text-white border-transparent hover:opacity-90';
@@ -30,7 +31,7 @@ const getFrameLabel = (frameType) => FRAME_LABELS[frameType] || frameType?.repla
 
 // ── Detail Panel ──────────────────────────────────────────────────────────────
 export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, businessAddress = '' }) {
-  const [status, setStatus]     = useState(order.status);
+  const [status, setStatus]     = useState(order.status === 'finished' ? 'approved' : order.status);
   const [saving, setSaving]     = useState(false);
   const [chatMsg, setChatMsg]   = useState('');
   const [location, setLoc]      = useState(order.artistLocation || '');
@@ -54,6 +55,7 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
   ];
   const statusOptions = (order.allowedTransitions || [effectiveStatus])
     .map(value => [value, STATUS_ACTION_LABELS[value] || STATUS_MAP[value]?.label || value]);
+  const hasManualStatusChange = statusOptions.some(([value]) => value !== effectiveStatus);
 
   const handleStatusSave = async () => {
     setSaving(true);
@@ -265,6 +267,7 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
               type="button"
               className="flex w-full items-center justify-between rounded-lg border border-va-border bg-va-bg px-3 py-2.5 text-left text-sm text-va-text transition-colors hover:border-va-border2"
               aria-expanded={statusMenuOpen}
+              disabled={!hasManualStatusChange}
               onClick={() => setStatusMenuOpen(open => !open)}
             >
               <span className="flex items-center gap-2 font-semibold">
@@ -289,7 +292,8 @@ export function DetailPanel({ order, onClose, onStatusSaved, onToast, onCancel, 
               </div>
             )}
           </div>
-          <button className={`${BTN_BASE} ${BTN_FILL} w-full py-[9px] text-[13px]`} onClick={handleStatusSave} disabled={saving}>
+          <div className="mb-2 rounded-lg bg-va-info-bg px-3 py-2 text-[11px] leading-relaxed text-va-text3">Proof sent and proof-review statuses update automatically. Payment Finished appears automatically after the full balance is paid.</div>
+          <button className={`${BTN_BASE} ${BTN_FILL} w-full py-[9px] text-[13px]`} onClick={handleStatusSave} disabled={saving || status === effectiveStatus}>
             {saving ? 'Saving…' : 'Save status update'}
           </button>
         </div>
@@ -394,7 +398,7 @@ export default function OrdersPage({ search, onToast }) {
       filter === 'sketch' ? o.status === 'sketching' :
       filter === 'proof'  ? o.status === 'waiting_for_feedback' :
       filter === 'revision' ? o.status === 'revision_requested' :
-      filter === 'approved' ? ['approved', 'finished'].includes(o.status) : true;
+      filter === 'approved' ? ['approved', 'finished', 'payment_finished'].includes(o.status) : true;
     return matchSearch && matchFilter;
   });
 
@@ -474,8 +478,7 @@ export default function OrdersPage({ search, onToast }) {
                   {filtered.map(o => (
                     <tr
                       key={o.id}
-                      className={`cursor-pointer transition-colors [&>td]:px-3.5 [&>td]:py-3 [&>td]:border-b [&>td]:text-[13px] [&>td]:align-middle ${['approved', 'finished'].includes(o.status) ? '[&>td]:border-emerald-200 [&>td]:bg-emerald-50/70 hover:[&>td]:bg-emerald-100/70' : '[&>td]:border-va-border hover:[&>td]:bg-va-bg'}`}
-                      onClick={() => navigate(`/admin/orders/${o.id}`)}
+                      className={`transition-colors [&>td]:px-3.5 [&>td]:py-3 [&>td]:border-b [&>td]:text-[13px] [&>td]:align-middle ${['approved', 'finished', 'payment_finished'].includes(o.status) ? '[&>td]:border-emerald-200 [&>td]:bg-emerald-50/70 hover:[&>td]:bg-emerald-100/70' : '[&>td]:border-va-border hover:[&>td]:bg-va-bg'}`}
                     >
                       <td><span className="font-mono text-xs font-medium">#{o.id?.slice(0,8)}</span></td>
                       <td>
@@ -494,7 +497,7 @@ export default function OrdersPage({ search, onToast }) {
                           ? <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-[3px] rounded-full whitespace-nowrap bg-[#eeecff] text-va-purple">Scheduled · {o.scheduledDate ? new Date(o.scheduledDate).toLocaleDateString() : 'date set'}</span>
                           : <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-[3px] rounded-full whitespace-nowrap bg-[#F0F0F8] text-[#555]">Normal</span>}
                       </td>
-                      <td><div className="flex flex-col items-start gap-1"><Badge status={o.status}/>{['approved', 'finished'].includes(o.status) && <span className="text-[10px] font-bold text-emerald-700">Ready for next step</span>}</div></td>
+                      <td><div className="flex flex-col items-start gap-1"><Badge status={o.status}/>{['approved', 'finished'].includes(o.status) && <span className="text-[10px] font-bold text-amber-700">Awaiting balance payment</span>}{o.status === 'payment_finished' && <span className="text-[10px] font-bold text-emerald-700">Ready for next step</span>}</div></td>
                       <td>
                         <div className="flex gap-[5px]">
                           <button className={`${BTN_BASE} ${BTN_FILL} ${BTN_SM}`} onClick={e => { e.stopPropagation(); navigate(`/admin/orders/${o.id}`); }}>Manage</button>

@@ -13,12 +13,12 @@ const NAV = [
   { section: 'People' },
   { id: 'clients',   icon: 'clients', label: 'Clients',       badgeDanger: false },
   { id: 'gallery',   icon: 'proofs', label: 'Website Images', badgeDanger: false },
-  { id: 'reviews',   icon: 'rating', label: 'Reviews',        badgeDanger: false },
+  { id: 'reviews',   icon: 'rating', label: 'Reviews',        badgeDanger: true  },
   { section: 'Finance' },
   { id: 'payments',  icon: 'payments', label: 'Payments',      badgeDanger: false },
   { id: 'invoices',  icon: 'invoices', label: 'Invoices',      badgeDanger: false },
   { section: 'System' },
-  { id: 'settings',  icon: 'settings', label: 'Settings',      badgeDanger: false },
+  { id: 'settings',  icon: 'settings', label: 'Settings',      badgeDanger: true  },
 ];
 
 export default function Sidebar({ page, onNav, stats, isOpen = false, onClose = () => {} }) {
@@ -31,6 +31,8 @@ export default function Sidebar({ page, onNav, stats, isOpen = false, onClose = 
     if (id === 'orders')    return stats.total            || null;
     if (id === 'proofs')    return stats.inQueue          || null;
     if (id === 'revisions') return stats.revisionRequested || null;
+    if (id === 'reviews')   return stats.pendingReviews     || null;
+    if (id === 'settings')  return stats.pendingAdminRequests || null;
     return null;
   };
 

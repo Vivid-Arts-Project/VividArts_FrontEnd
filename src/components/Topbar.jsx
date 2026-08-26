@@ -39,6 +39,7 @@ export default function Topbar({ page, search, onSearch, onMenu }) {
   const meta = PAGE_META[page] || { title: page, bread: page };
   const unreadCount = notifications.filter(notification => !notification.is_read).length;
   const businessName = admin?.businessName || 'Vivid Arts';
+  const showSearch = ['orders', 'reviews'].includes(page);
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -117,10 +118,10 @@ export default function Topbar({ page, search, onSearch, onMenu }) {
           </div>
         </div>
         <div className="relative flex shrink-0 items-center gap-1.5 sm:gap-2.5">
-          <div className="hidden items-center gap-2 rounded-lg border border-va-border bg-va-bg px-3 py-[7px] text-[13px] text-va-text3 transition-colors focus-within:border-va-blue focus-within:bg-white sm:flex sm:w-[180px] lg:w-[220px]">
+          {showSearch && <div className="hidden items-center gap-2 rounded-lg border border-va-border bg-va-bg px-3 py-[7px] text-[13px] text-va-text3 transition-colors focus-within:border-va-blue focus-within:bg-white sm:flex sm:w-[180px] lg:w-[220px]">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke="var(--va-text3)" strokeWidth="1.2"/><path d="M9.5 9.5L12 12" stroke="var(--va-text3)" strokeWidth="1.4" strokeLinecap="round"/></svg>
-            <input placeholder="Search orders, clients…" value={search} onChange={event => onSearch(event.target.value)} className="w-full border-none bg-transparent font-sans text-[13px] text-va-text outline-none"/>
-          </div>
+            <input placeholder={page === 'reviews' ? 'Search reviews…' : 'Search orders…'} value={search} onChange={event => onSearch(event.target.value)} className="w-full border-none bg-transparent font-sans text-[13px] text-va-text outline-none"/>
+          </div>}
           <button type="button" aria-label="Notifications" aria-expanded={showNotif} className={`relative flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border transition-all ${showNotif ? 'border-va-purple bg-grad-soft text-va-purple shadow-[0_0_0_3px_rgba(91,63,168,0.08)]' : 'border-va-border bg-white text-va-text2 hover:border-va-border2 hover:bg-va-bg hover:text-va-purple'}`} onClick={() => { setShowNotif(value => !value); setToastNotification(null); }}>
             <Icon name="bell" size={18}/>
             {unreadCount > 0 && <span className="absolute right-[3px] top-[2px] flex min-h-4 min-w-4 items-center justify-center rounded-full border-2 border-white bg-va-danger px-0.5 text-[8px] font-extrabold leading-none text-white">{unreadCount > 9 ? '9+' : unreadCount}</span>}

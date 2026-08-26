@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import Sidebar  from '../../components/Sidebar';
 import Topbar   from '../../components/Topbar';
 import Toast    from '../../components/Toast';
-//import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 
 import OrdersPage    from '../OrdersPage';
 import OrderManagePage from '../OrderManagePage';
@@ -15,7 +15,7 @@ import SettingsPage from '../SettingsPage';
 import GalleryManager from '../GalleryManager';
 import AdminNotificationsPage from '../AdminNotificationsPage';
 import ReviewsPage from '../ReviewsPage';
-import { getOrders } from '../../api/adminApi';
+import { getAdminRegistrationRequests, getOrders, getReviews } from '../../api/adminApi';
 import { startVisiblePolling } from '../../utils/polling';
 
 const ADMIN_PAGES = new Set(['dashboard', 'orders', 'proofs', 'revisions', 'clients', 'reviews', 'payments', 'invoices', 'settings', 'gallery']);
@@ -28,6 +28,7 @@ const pageFromPath = (path) => {
 };
 
 export default function AdminApp() {
+  const { admin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.split(/[?#]/, 1)[0];
@@ -62,15 +63,24 @@ export default function AdminApp() {
 
   useEffect(() => {
     let active = true;
-    const loadStats = () => getOrders()
-      .then(response => { if (active) setStats(response.data.stats); })
+    const loadStats = () => Promise.all([
+      getOrders(),
+      getReviews('pending', 1, 1),
+      admin?.isSuperAdmin ? getAdminRegistrationRequests() : Promise.resolve({ data: [] }),
+    ])
+      .then(([orderResponse, reviewResponse, requestResponse]) => { if (active) setStats({
+        ...orderResponse.data.stats,
+        pendingReviews: reviewResponse.data.pagination?.total || 0,
+        pendingAdminRequests: (requestResponse.data || []).filter(request => request.status === 'pending').length,
+      }); })
       .catch(() => {});
     const stopPolling = startVisiblePolling(loadStats, 5_000);
-    return () => { active = false; stopPolling(); };
-  }, []);
+    window.addEventListener('vividarts:sidebar-stats', loadStats);
+    return () => { active = false; stopPolling(); window.removeEventListener('vividarts:sidebar-stats', loadStats); };
+  }, [admin?.isSuperAdmin]);
 
   const renderPage = () => {
-    const props = { search, onToast: showToast, onNav: handlePageNavigation, onStatsLoaded: setStats };
+    const props = { search, stats, onToast: showToast, onNav: handlePageNavigation, onStatsLoaded: setStats };
     if (orderMatch) return <OrderManagePage {...props} orderId={decodeURIComponent(orderMatch[1])}/>;
     if (notificationHistory) return <AdminNotificationsPage {...props}/>;
     switch (page) {

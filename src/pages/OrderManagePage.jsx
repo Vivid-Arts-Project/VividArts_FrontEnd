@@ -30,7 +30,7 @@ export default function OrderManagePage({ orderId, onToast }) {
   }, [load]);
 
   if (loading) return <div className="flex flex-1 items-center justify-center text-sm text-va-text3">Loading order…</div>;
-  if (!order) return <div className="flex flex-1 flex-col items-center justify-center gap-3"><div className="text-sm text-va-text3">This order could not be loaded.</div><button className="btn btn-fill" onClick={() => navigate('/admin')}>Back to orders</button></div>;
+  if (!order) return <div className="flex flex-1 flex-col items-center justify-center gap-3"><div className="text-sm text-va-text3">This order could not be loaded.</div><button className="btn btn-fill" onClick={() => navigate('/admin/orders')}>Back to orders</button></div>;
 
   const confirmCancel = async (reason) => {
     if (cancelling) return;
@@ -39,7 +39,7 @@ export default function OrderManagePage({ orderId, onToast }) {
       await deleteOrder(order.id, reason);
       setShowCancel(false);
       onToast('Order cancelled. Its history was retained.');
-      navigate('/admin');
+      navigate('/admin/orders');
     } catch (error) {
       onToast(error.response?.data?.error || 'Failed to cancel order');
     } finally {
@@ -48,7 +48,7 @@ export default function OrderManagePage({ orderId, onToast }) {
   };
 
   return <>
-    <DetailPanel key={`${order.id}:${order.status}`} order={order} businessAddress={admin?.businessAddress || ''} onClose={() => navigate('/admin')} onStatusSaved={load} onToast={onToast} onCancel={order.status === 'cancelled' ? undefined : () => setShowCancel(true)}/>
+    <DetailPanel key={`${order.id}:${order.status}`} order={order} businessAddress={admin?.businessAddress || ''} onClose={() => navigate('/admin/orders')} onStatusSaved={load} onToast={onToast} onCancel={order.status === 'cancelled' ? undefined : () => setShowCancel(true)}/>
     {showCancel && <CancelModal order={order} busy={cancelling} onClose={() => !cancelling && setShowCancel(false)} onConfirm={confirmCancel}/>}
   </>;
 }
