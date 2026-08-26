@@ -33,7 +33,7 @@ const CAT_LABELS = {
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
-export default function SettingsPage({ onToast }) {
+export default function SettingsPage({ onToast, stats = {} }) {
   const [tab, setTab] = useState('profile');
   const { updateAdmin, logout } = useAuth();
   const navigate = useNavigate();
@@ -83,6 +83,7 @@ export default function SettingsPage({ onToast }) {
             onClick={() => setTab(t)}
           >
             {{ profile: 'Profile', business: 'Business', notifications: 'Notifications', security: 'Security', pricing: 'Pricing Config', adminRequests: 'Admin Management', availability: 'Site Availability' }[t]}
+            {t === 'adminRequests' && stats.pendingAdminRequests > 0 && <span className="ml-2 inline-flex min-w-5 items-center justify-center rounded-full bg-va-danger px-1.5 py-0.5 text-[10px] font-bold text-white">{stats.pendingAdminRequests}</span>}
           </button>
         ))}
       </div>
@@ -108,7 +109,7 @@ function AdminRequestsTab({ onToast }) {
   useEffect(() => { load(); }, [load]);
   const decide = async (request, decision) => {
     setBusy(request.id);
-    try { await decideAdminRegistrationRequest(request.id, decision, decision === 'rejected' ? rejectionNote.trim() : ''); await load(); onToast(`Administrator request ${decision}`); setRejectingRequest(null); setRejectionNote(''); }
+    try { await decideAdminRegistrationRequest(request.id, decision, decision === 'rejected' ? rejectionNote.trim() : ''); await load(); window.dispatchEvent(new Event('vividarts:sidebar-stats')); onToast(`Administrator request ${decision}`); setRejectingRequest(null); setRejectionNote(''); }
     catch (error) { onToast(error.response?.data?.error || 'Unable to update request'); }
     finally { setBusy(''); }
   };

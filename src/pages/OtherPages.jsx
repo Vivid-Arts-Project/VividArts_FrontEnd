@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Badge from '../components/Badge';
 import Icon from '../components/Icon';
 import { getOrders, getCustomers, getPayments, downloadInvoice, uploadProof, getCalendarEvents } from '../api/adminApi';
-import { useNavigate } from '../router';
+import { useLocation, useNavigate } from '../router';
 import { saveBlob } from '../utils/download';
 import { startVisiblePolling } from '../utils/polling';
 
@@ -27,19 +27,25 @@ const DP_VAL = 'font-semibold text-va-text text-right max-w-[60%]';
 const ORDER_ID_MONO = 'font-mono text-xs font-medium';
 
 // ── Revenue Chart ─────────────────────────────────────────────────────────────
-function RevenueChart({ orders }) {
+function RevenueChart({ payments }) {
   const months = Array.from({ length: 12 }, (_, index) => new Date(2000, index, 1).toLocaleString(undefined, { month: 'short' }));
   const currentYear = new Date().getFullYear();
-  const vals = months.map((_, month) => orders.filter(order => { const date = new Date(order.createdAt); return date.getFullYear() === currentYear && date.getMonth() === month; }).reduce((sum, order) => sum + Number(order.amountPaid || 0), 0));
+  const vals = months.map((_, month) => payments.filter(payment => {
+    const paidAt = new Date(payment.completedAt);
+    return payment.status === 'completed' && !Number.isNaN(paidAt.getTime()) && paidAt.getFullYear() === currentYear && paidAt.getMonth() === month;
+  }).reduce((sum, payment) => sum + Number(payment.amount || 0), 0));
   const max = Math.max(...vals, 1);
   return (
     <div className="flex items-end gap-1.5 h-[120px] px-1">
       {months.map((m, i) => (
-        <div key={m} className="flex-1 flex flex-col items-center gap-1">
-          <div
-            className={`w-full rounded-t transition-all min-h-[4px] ${!vals[i] ? 'bg-va-bg2' : 'bg-grad'}`}
-            style={{ height: vals[i] ? `${Math.max(8,(vals[i]/max)*100)}%` : '8%' }}
-          />
+        <div key={m} className="flex h-full min-w-0 flex-1 flex-col items-center gap-1">
+          <div className="flex min-h-0 w-full flex-1 items-end">
+            <div
+              className={`w-full rounded-t transition-all min-h-[4px] ${!vals[i] ? 'bg-va-bg2' : 'bg-grad'}`}
+              style={{ height: vals[i] ? `${Math.max(8,(vals[i]/max)*100)}%` : '8%' }}
+              title={`${m}: LKR ${vals[i].toLocaleString()}`}
+            />
+          </div>
           <div className="text-[10px] text-va-text3 font-medium">{m}</div>
         </div>
       ))}
@@ -56,11 +62,11 @@ function EventCalendar({ month, events, onMonthChange, onOpenOrders, compact = f
   const leading = firstDay.getDay();
   const dayCount = new Date(year, monthIndex + 1, 0).getDate();
   const cells = [...Array(leading).fill(null), ...Array.from({ length: dayCount }, (_, index) => index + 1)];
-  while (cells.length % 7) cells.push(null);
+  while (cells.length < 42) cells.push(null);
   const todayKey = localDateKey(new Date());
   const moveMonth = direction => onMonthChange(new Date(year, monthIndex + direction, 1));
-  return <div className={CARD}>
-    <div className={compact ? 'px-4 py-3 border-b border-va-border flex items-center justify-between' : CARD_HEAD}>
+  return <div className={`${CARD} ${compact ? 'h-full' : ''}`}>
+    <div className={compact ? 'px-4 py-3 border-b border-va-border flex items-center justify-between' : 'border-b border-va-border py-4 pl-5 pr-16 flex items-center justify-between'}>
       <div><div className={CARD_TITLE}>Order Event Calendar</div><div className="mt-0.5 text-[11px] text-va-text3">Urgent deadlines and scheduled dates</div></div>
       <div className="flex items-center gap-2"><button type="button" onClick={() => moveMonth(-1)} className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM}`} aria-label="Previous month">←</button><strong className={`${compact ? 'min-w-[105px] text-xs' : 'min-w-[130px] text-sm'} text-center text-va-text`}>{month.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</strong><button type="button" onClick={() => moveMonth(1)} className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM}`} aria-label="Next month">→</button></div>
     </div>
@@ -102,13 +108,25 @@ function ActionRequiredCard({ orders, tomorrowEnd, onOpenOrders }) {
 // ══════════════════════════════════════════════════════════════════════════════
 export function DashboardPage({ onNav }) {
   const [orders, setOrders] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [clientCount, setClientCount] = useState(0);
   const [calendarMonth, setCalendarMonth] = useState(() => { const date = new Date(); return new Date(date.getFullYear(), date.getMonth(), 1); });
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [calendarOpen, setCalendarOpen] = useState(false);
   useEffect(() => {
+    let active = true;
     getOrders().then(r => setOrders(r.data.orders)).catch(() => {});
     getCustomers().then(r => setClientCount((r.data.customers || []).length)).catch(() => {});
+    const loadPayments = async () => {
+      const first = await getPayments(1, 100);
+      const totalPages = first.data.pagination?.totalPages || 1;
+      const remaining = totalPages > 1
+        ? await Promise.all(Array.from({ length: totalPages - 1 }, (_, index) => getPayments(index + 2, 100)) )
+        : [];
+      if (active) setPayments([...(first.data.payments || []), ...remaining.flatMap(response => response.data.payments || [])]);
+    };
+    loadPayments().catch(() => {});
+    return () => { active = false; };
   }, []);
   useEffect(() => {
     let active = true;
@@ -128,10 +146,16 @@ export function DashboardPage({ onNav }) {
 
   const counts = {
     active:   orders.filter(o => !['done', 'cancelled'].includes(o.status)).length,
+    queued:   orders.filter(o => o.status === 'in_queue').length,
+    urgentActive: orders.filter(o => o.isUrgent && !['done', 'cancelled'].includes(o.status)).length,
+    scheduledActive: orders.filter(o => o.isScheduled && !['done', 'cancelled'].includes(o.status)).length,
     sketch:   orders.filter(o => o.status === 'sketching').length,
     proof:    orders.filter(o => o.status === 'waiting_for_feedback').length,
     shading:  orders.filter(o => o.status === 'shading').length,
     approved: orders.filter(o => ['approved', 'finished'].includes(o.status)).length,
+    paymentFinished: orders.filter(o => o.status === 'payment_finished').length,
+    framed:   orders.filter(o => o.status === 'framed').length,
+    shipped:  orders.filter(o => o.status === 'shipped').length,
     completed: orders.filter(o => o.status === 'done').length,
   };
   const tomorrowEnd = new Date();
@@ -141,7 +165,7 @@ export function DashboardPage({ onNav }) {
     .filter(order => {
       if (['done', 'cancelled'].includes(order.status)) return false;
       const urgentDeadline = order.isUrgent && order.urgentDeadline ? new Date(`${order.urgentDeadline}T23:59:59`) : null;
-      return (urgentDeadline && urgentDeadline <= tomorrowEnd) || ['waiting_for_feedback','revision_requested','approved','finished'].includes(order.status);
+      return (urgentDeadline && urgentDeadline <= tomorrowEnd) || ['waiting_for_feedback','revision_requested','payment_finished'].includes(order.status);
     })
     .sort((a, b) => {
       const aDeadline = a.isUrgent && a.urgentDeadline ? new Date(a.urgentDeadline).getTime() : Number.MAX_SAFE_INTEGER;
@@ -180,52 +204,57 @@ export function DashboardPage({ onNav }) {
 
       <div className="mb-4"><ActionRequiredCard orders={actionOrders} tomorrowEnd={tomorrowEnd} onOpenOrders={() => onNav('orders')}/></div>
 
-      <div className="mb-4 flex flex-col items-stretch gap-3.5 lg:flex-row">
-        <div className="w-full max-w-[560px]"><EventCalendar compact month={calendarMonth} events={calendarEvents} onMonthChange={setCalendarMonth} onOpenOrders={() => onNav('orders')} onExpand={() => setCalendarOpen(true)}/></div>
-        <div className="w-full lg:max-w-[280px]">
+      <div className="mb-4 grid grid-cols-1 items-stretch gap-3.5 lg:grid-cols-12">
+        <div className="min-w-0 lg:col-span-6"><EventCalendar compact month={calendarMonth} events={calendarEvents} onMonthChange={setCalendarMonth} onOpenOrders={() => onNav('orders')} onExpand={() => setCalendarOpen(true)}/></div>
+        <div className="min-w-0 lg:col-span-3">
           <div className={`${CARD} h-full`}>
             <div className={CARD_HEAD}><div className={CARD_TITLE}>Orders by Status</div></div>
             <div className={CARD_BODY}>
               <div className="py-4 text-center"><div className="bg-grad bg-clip-text font-outfit text-4xl font-extrabold text-transparent">{counts.active}</div><div className="mt-0.5 text-xs text-va-text3">active orders</div></div>
               {[
+                ['bg-slate-500', 'Queued', counts.queued],
                 ['bg-va-blue', 'Sketching', counts.sketch],
                 ['bg-va-purple', 'Proof Sent', counts.proof],
                 ['bg-va-warn', 'Revision', orders.filter(order => order.status === 'revision_requested').length],
-                ['bg-va-success', 'Approved & Finished', counts.approved],
+                ['bg-va-success', 'Approved', counts.approved],
+                ['bg-sky-600', 'Payment Finished', counts.paymentFinished],
+                ['bg-amber-600', 'Framed', counts.framed],
+                ['bg-cyan-600', 'Shipped', counts.shipped],
+                ['bg-emerald-700', 'Done', counts.completed],
               ].map(([color, label, count]) => <div key={label} className="mb-2 flex items-center justify-between text-xs"><div className="flex items-center gap-1.5"><div className={`h-2.5 w-2.5 rounded-sm ${color}`}/>{label}</div><strong>{count}</strong></div>)}
             </div>
           </div>
         </div>
-      </div>
-
-      <div className="flex flex-col lg:flex-row gap-3.5 mb-4">
-        <div className="flex-1 min-w-0">
-          <div className={CARD}>
-            <div className={CARD_HEAD}>
-              <div className={CARD_TITLE}>Monthly Payments — {new Date().getFullYear()}</div>
-              <span className="text-xs text-va-text3">LKR</span>
-            </div>
-            <div className={CARD_BODY}>
-              <RevenueChart orders={orders}/>
-              <div className="flex gap-3.5 mt-3 flex-wrap">
-                <div className="text-xs text-va-text3">Collected YTD: <strong className="text-va-text">LKR {orders.filter(order => new Date(order.createdAt).getFullYear() === new Date().getFullYear()).reduce((sum, order) => sum + Number(order.amountPaid || 0), 0).toLocaleString()}</strong></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="w-full lg:max-w-[300px]">
-          <div className={CARD}>
+        <div className="min-w-0 lg:col-span-3">
+          <div className={`${CARD} h-full`}>
             <div className={CARD_HEAD}><div className={CARD_TITLE}>Quick Stats</div><span className="rounded-full bg-va-bg2 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-va-text3">All time</span></div>
             <div className={CARD_BODY}>
               {[
                 ['Avg. order value', orders.length ? `LKR ${Math.round(orders.reduce((sum, order) => sum + Number(order.totalPrice || 0), 0) / orders.length).toLocaleString()}` : '—'],
                 ['Revision requests', orders.filter(order => order.status === 'revision_requested').length],
-                ['Awaiting proof approval', orders.filter(order => order.status === 'waiting_for_feedback').length],
+                ['Active urgent orders', counts.urgentActive],
+                ['Scheduled orders', counts.scheduledActive],
                 ['Orders with a frame', orders.filter(order => order.frameType && order.frameType !== 'without_frame').length],
                 ['Courier delivery', orders.filter(order => order.pickupOption === 'courier').length],
                 ['Completed orders', orders.filter(order => order.status === 'done').length],
               ].map(([key,value]) => <div key={key} className={DP_ROW}><span className={DP_KEY}>{key}</span><span className={DP_VAL}>{value}</span></div>)}
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className={`${CARD} mb-4`}>
+        <div className={CARD_HEAD}>
+          <div className={CARD_TITLE}>Monthly Payments — {new Date().getFullYear()}</div>
+          <span className="text-xs text-va-text3">LKR</span>
+        </div>
+        <div className={CARD_BODY}>
+          <RevenueChart payments={payments}/>
+          <div className="flex gap-3.5 mt-3 flex-wrap">
+            <div className="text-xs text-va-text3">Collected YTD: <strong className="text-va-text">LKR {payments.filter(payment => {
+              const paidAt = new Date(payment.completedAt);
+              return payment.status === 'completed' && !Number.isNaN(paidAt.getTime()) && paidAt.getFullYear() === new Date().getFullYear();
+            }).reduce((sum, payment) => sum + Number(payment.amount || 0), 0).toLocaleString()}</strong></div>
           </div>
         </div>
       </div>
@@ -424,6 +453,14 @@ export function ClientsPage() {
         : (error.response?.data?.error || 'Clients could not be loaded. Please retry.'));
     });
   }, []);
+  useEffect(() => {
+    if (!selected) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    const close = event => { if (event.key === 'Escape') setSelected(null); };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', close);
+    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener('keydown', close); };
+  }, [selected]);
 
   const filtered = customers.filter(c =>
     [c.username, c.fullName, c.email, c.phone].join(' ').toLowerCase().includes(search.toLowerCase())
@@ -454,7 +491,7 @@ export function ClientsPage() {
             </thead>
             <tbody>
               {filtered.map(c => (
-                <tr key={c.id} onClick={() => setSelected(c)} className="cursor-pointer transition-colors [&>td]:px-3.5 [&>td]:py-3 [&>td]:border-b [&>td]:border-va-border [&>td]:text-[13px] [&>td]:align-middle hover:[&>td]:bg-va-bg">
+                <tr key={c.id} className="transition-colors [&>td]:px-3.5 [&>td]:py-3 [&>td]:border-b [&>td]:border-va-border [&>td]:text-[13px] [&>td]:align-middle hover:[&>td]:bg-va-bg">
                   <td>
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-full bg-grad flex items-center justify-center font-bold text-xs text-white shrink-0">{c.fullName?.slice(0,2).toUpperCase()}</div>
@@ -465,7 +502,7 @@ export function ClientsPage() {
                   <td className="text-va-text3">{c.phone}</td>
                   <td><strong>{c.orders?.length || 0}</strong></td>
                   <td className="text-va-text3">{c.lastOrderAt ? new Date(c.lastOrderAt).toLocaleDateString() : '—'}</td>
-                  <td><button className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM}`}>View details</button></td>
+                  <td><button type="button" className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM}`} onClick={() => setSelected(c)}>View details</button></td>
                 </tr>
               ))}
               {!loadError && filtered.length === 0 && (
@@ -476,11 +513,13 @@ export function ClientsPage() {
         </div>
       </div>
       {selected && (
-        <div className={`${CARD} mt-4`}>
-          <div className={CARD_HEAD}><div className={CARD_TITLE}>Client details — {selected.username}</div><button className={`${BTN_BASE} ${BTN_GHOST} ${BTN_SM}`} onClick={() => setSelected(null)}>Close</button></div>
-          <div className={`${CARD_BODY} grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4`}>
-            <div><div className={DP_ROW}><span className={DP_KEY}>Full name</span><span className={DP_VAL}>{selected.fullName}</span></div><div className={DP_ROW}><span className={DP_KEY}>Email</span><span className={DP_VAL}>{selected.email}</span></div><div className={DP_ROW}><span className={DP_KEY}>Phone</span><span className={DP_VAL}>{selected.phone || '—'}</span></div><div className={DP_ROW}><span className={DP_KEY}>Address</span><span className={DP_VAL}>{selected.address || '—'}</span></div></div>
-            <div><div className="text-xs font-bold mb-2">Order history ({selected.orders?.length || 0})</div>{selected.orders?.map(order => <div key={order.id} className="flex justify-between items-center gap-2 text-xs py-2 border-b border-va-border"><span>#{order.id.slice(0,8)}</span><span>{order.currency} {Number(order.totalPrice).toLocaleString()}</span><Badge status={order.status}/></div>)}</div>
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-[#100d29]/65 p-3 backdrop-blur-sm sm:p-6" role="dialog" aria-modal="true" aria-labelledby="client-details-title" onMouseDown={event => { if (event.target === event.currentTarget) setSelected(null); }}>
+          <div className={`${CARD} flex max-h-[90vh] w-full max-w-3xl flex-col`}>
+            <div className={CARD_HEAD}><div id="client-details-title" className={CARD_TITLE}>Client details — {selected.username}</div><button type="button" aria-label="Close client details" className="flex h-8 w-8 items-center justify-center rounded-full border border-va-border bg-white text-lg text-va-text3 hover:bg-va-bg" onClick={() => setSelected(null)}>×</button></div>
+            <div className={`${CARD_BODY} grid min-h-0 grid-cols-1 gap-x-8 gap-y-5 overflow-y-auto sm:grid-cols-2`}>
+              <div><div className={DP_ROW}><span className={DP_KEY}>Full name</span><span className={DP_VAL}>{selected.fullName}</span></div><div className={DP_ROW}><span className={DP_KEY}>Email</span><span className={DP_VAL}>{selected.email}</span></div><div className={DP_ROW}><span className={DP_KEY}>Phone</span><span className={DP_VAL}>{selected.phone || '—'}</span></div><div className={DP_ROW}><span className={DP_KEY}>Address</span><span className={DP_VAL}>{selected.address || '—'}</span></div></div>
+              <div><div className="mb-2 text-xs font-bold">Order history ({selected.orders?.length || 0})</div>{selected.orders?.map(order => <div key={order.id} className="flex items-center justify-between gap-2 border-b border-va-border py-2 text-xs"><span>#{order.id.slice(0,8)}</span><span>{order.currency} {Number(order.totalPrice).toLocaleString()}</span><Badge status={order.status}/></div>)}{!selected.orders?.length && <div className="py-5 text-center text-xs text-va-text3">No orders yet.</div>}</div>
+            </div>
           </div>
         </div>
       )}
@@ -492,6 +531,7 @@ export function ClientsPage() {
 // PAYMENTS PAGE
 // ══════════════════════════════════════════════════════════════════════════════
 export function PaymentsPage() {
+  const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [summary, setSummary] = useState({ balancePending: 0, halfPaidOrderCount: 0 });
   useEffect(() => {
@@ -548,7 +588,7 @@ export function PaymentsPage() {
             </thead>
             <tbody>
               {payments.map(payment => (
-                <tr key={payment.paymentId} className="cursor-pointer transition-colors [&>td]:px-3.5 [&>td]:py-3 [&>td]:border-b [&>td]:border-va-border [&>td]:text-[13px] [&>td]:align-middle hover:[&>td]:bg-va-bg">
+                <tr key={payment.paymentId} role="link" tabIndex={0} aria-label={`Open invoice for payment ${payment.payhereOrderId || payment.paymentId}`} onClick={() => payment.payhereOrderId && navigate(`/admin/invoices?payment=${encodeURIComponent(payment.payhereOrderId)}`)} onKeyDown={event => { if ((event.key === 'Enter' || event.key === ' ') && payment.payhereOrderId) navigate(`/admin/invoices?payment=${encodeURIComponent(payment.payhereOrderId)}`); }} className="cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-va-purple [&>td]:px-3.5 [&>td]:py-3 [&>td]:border-b [&>td]:border-va-border [&>td]:text-[13px] [&>td]:align-middle hover:[&>td]:bg-va-bg">
                   <td><span className={ORDER_ID_MONO}>{payment.transactionId || payment.payhereOrderId || `#${payment.paymentId}`}</span></td>
                   <td><div className="font-semibold">{payment.order_id ? `#${payment.order_id.slice(0, 8)}` : 'Unlinked'}</div><div className="text-[11px] text-va-text3">{payment.order?.productOption ? `${payment.order.productOption.paper_size} · ${payment.order.productOption.num_subjects} subject${Number(payment.order.productOption.num_subjects) === 1 ? '' : 's'}` : 'Order details unavailable'}</div></td>
                   <td>{payment.order?.customer?.full_name || payment.order?.customer?.username || 'Client'}</td>
@@ -571,6 +611,7 @@ export function PaymentsPage() {
 // INVOICES PAGE
 // ══════════════════════════════════════════════════════════════════════════════
 export function InvoicesPage() {
+  const location = useLocation();
   const [payments, setPayments] = useState([]);
   const [downloading, setDownloading] = useState('');
   const [error, setError] = useState('');
@@ -578,6 +619,11 @@ export function InvoicesPage() {
     const load = () => getPayments().then(r => setPayments((r.data.payments || []).filter(p => p.status === 'completed'))).catch(() => {});
     return startVisiblePolling(load, 10_000);
   }, []);
+  const selectedPayment = new URLSearchParams(location.split('?')[1] || '').get('payment');
+  useEffect(() => {
+    if (!selectedPayment || !payments.length) return;
+    document.getElementById(`invoice-${selectedPayment}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [payments, selectedPayment]);
 
   const handleDownload = async (payhereOrderId) => {
     if (!payhereOrderId || downloading) return;
@@ -603,7 +649,7 @@ export function InvoicesPage() {
         <div className={CARD_BODY}>
           {error && <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{error}</div>}
           {payments.map(payment => (
-            <div key={payment.paymentId} className="flex items-center justify-between py-3 border-b border-va-border last:border-b-0">
+            <div id={`invoice-${payment.payhereOrderId}`} key={payment.paymentId} className={`flex items-center justify-between rounded-lg border-b border-va-border px-3 py-3 transition-colors last:border-b-0 ${selectedPayment === payment.payhereOrderId ? 'bg-va-info-bg ring-2 ring-inset ring-va-blue' : ''}`}>
               <div>
                 <div className="text-[13px] font-semibold">{payment.payhereOrderId}</div>
                 <div className="text-xs text-va-text3 mt-0.5">{payment.order?.customer?.fullName || 'Client'} · {new Date(payment.updatedAt).toLocaleDateString()}</div>
