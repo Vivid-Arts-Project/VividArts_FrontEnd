@@ -157,7 +157,7 @@ export default function OrderTracker({
       </div>
 
       {/* Progress Line Stepper Container */}
-      <div className="relative my-2 overflow-x-auto pb-2 custom-scrollbar">
+      <div className="relative -mt-2 mb-2 overflow-x-auto pb-2 pt-4 custom-scrollbar">
         <div className="relative min-w-[420px] px-1 sm:min-w-0 sm:px-3">
           {/* Background Base Rail */}
           <div
