@@ -5,11 +5,13 @@ export default function OrderTracker({
   workflowStatus = null,
   isPaymentPending = false,
   frameType = 'without_frame',
+  pickupOption = 'pickup',
   className = '',
 }) {
   const effectiveStatus = isPaymentPending ? 'payment_pending' : (workflowStatus || status);
   const isRevision = effectiveStatus === 'revision_requested';
   const hasFrame = Boolean(frameType && frameType !== 'without_frame');
+  const usesCourier = pickupOption === 'courier';
 
   if (effectiveStatus === 'cancelled') {
     return (
@@ -67,10 +69,21 @@ export default function OrderTracker({
           },
         ]
       : []),
+    ...(usesCourier
+      ? [
+          {
+            key: 'shipped',
+            label: 'Shipped',
+            description: 'Handed to courier',
+            icon: 'package',
+            color: 'from-[#14b8a6] to-[#10b981]',
+          },
+        ]
+      : []),
     {
       key: 'done',
       label: 'Completed',
-      description: 'Shipped / Ready for pickup',
+      description: usesCourier ? 'Delivered to customer' : 'Ready for pickup',
       icon: 'package',
       color: 'from-[#10b981] to-[#059669]',
     },
@@ -79,7 +92,11 @@ export default function OrderTracker({
   const getStageIndex = (currentStatus) => {
     const normalized = String(currentStatus || '').toLowerCase().trim();
     if (normalized === 'payment_pending') return 0;
-    if (['shipped', 'done', 'completed'].includes(normalized)) return stages.length - 1;
+    if (['done', 'completed'].includes(normalized)) return stages.length - 1;
+    if (normalized === 'shipped') {
+      const shippedIndex = stages.findIndex(stage => stage.key === 'shipped');
+      return shippedIndex >= 0 ? shippedIndex : stages.length - 1;
+    }
     if (hasFrame && normalized === 'framed') return stages.findIndex(stage => stage.key === 'framed');
     if (normalized === 'payment_finished' || (!hasFrame && normalized === 'framed')) return stages.findIndex(stage => stage.key === 'payment_finished');
     if (['approved', 'finished'].includes(normalized)) return stages.findIndex(stage => stage.key === 'approved');
@@ -89,7 +106,7 @@ export default function OrderTracker({
   };
 
   const currentIndex = getStageIndex(effectiveStatus);
-  const isDone = currentIndex === stages.length - 1 && ['shipped', 'done', 'completed'].includes(effectiveStatus);
+  const isDone = currentIndex === stages.length - 1 && ['done', 'completed'].includes(effectiveStatus);
   
   // Center-to-center percentage calculation
   const totalStages = stages.length;
@@ -98,6 +115,9 @@ export default function OrderTracker({
   // Center offset of first and last node
   const halfColPercent = 100 / (2 * totalStages);
   const trackWidthPercent = 100 - (2 * halfColPercent);
+  // Keep every stage on one row. Smaller viewports scroll horizontally instead
+  // of wrapping the last one or two stages onto a second line.
+  const minimumStepperWidth = Math.max(420, totalStages * 140);
 
   return (
     <div className={`overflow-hidden rounded-2xl border border-white/[.12] bg-gradient-to-br from-[#161435]/95 via-[#111027]/98 to-[#131f3b]/95 p-4 sm:p-6 shadow-[0_16px_50px_rgba(0,0,0,.35)] ${className}`}>
@@ -144,6 +164,10 @@ export default function OrderTracker({
             <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-400/40 bg-purple-500/15 px-3.5 py-1 text-[11px] font-bold text-purple-200 shadow-[0_0_14px_rgba(168,85,247,.25)]">
               <Icon name="proofs" size={13} className="text-purple-300"/> Artwork Framed & Packaged
             </span>
+          ) : effectiveStatus === 'shipped' ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-teal-400/40 bg-teal-500/15 px-3.5 py-1 text-[11px] font-bold text-teal-200 shadow-[0_0_14px_rgba(20,184,166,.25)]">
+              <Icon name="package" size={13} className="text-teal-300"/> Order Shipped — On the way
+            </span>
           ) : isDone ? (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/50 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 px-3.5 py-1 text-[11px] font-bold text-emerald-300 shadow-[0_0_16px_rgba(16,185,129,.3)]">
               <Icon name="completed" size={13} className="text-emerald-300"/> Order Completed
@@ -158,7 +182,10 @@ export default function OrderTracker({
 
       {/* Progress Line Stepper Container */}
       <div className="relative -mt-2 mb-2 overflow-x-auto pb-2 pt-4 custom-scrollbar">
-        <div className="relative min-w-[420px] px-1 sm:min-w-0 sm:px-3">
+        <div
+          className="relative px-1 sm:px-3"
+          style={{ minWidth: `${minimumStepperWidth}px` }}
+        >
           {/* Background Base Rail */}
           <div
             className="absolute top-[18px] sm:top-[22px] -translate-y-1/2 h-2 sm:h-2.5 rounded-full bg-white/10 border border-white/[.08] shadow-inner z-0"
@@ -178,7 +205,10 @@ export default function OrderTracker({
           />
 
           {/* Stage Nodes Grid */}
-          <div className={`relative z-10 grid ${hasFrame ? 'grid-cols-6' : 'grid-cols-5'}`}>
+          <div
+            className="relative z-10 grid"
+            style={{ gridTemplateColumns: `repeat(${totalStages}, minmax(0, 1fr))` }}
+          >
           {stages.map((stage, index) => {
             const isPassed = index < currentIndex || (isDone && index === currentIndex);
             const isCurrent = index === currentIndex && !isDone;
