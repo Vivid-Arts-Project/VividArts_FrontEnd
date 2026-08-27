@@ -378,6 +378,7 @@ export default function MyOrdersPage({ onNavigate }) {
                     workflowStatus={order.workflowStatus}
                     isPaymentPending={paymentPending}
                     frameType={order.frameType}
+                    pickupOption={order.pickupOption}
                   />
                 </div>
 
